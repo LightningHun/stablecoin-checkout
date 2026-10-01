@@ -105,6 +105,12 @@ Use keyboard-accessible controls, explicit labels, visible focus and status anno
 
 [DESIGN_SPEC.md](DESIGN_SPEC.md) defines the 24-page visual reference and D01-D12 state mapping. Implement these as projections of the same controller state, not separate routes or copied pages. Small presentational header/footer/step components and shared CSS tokens may be added without changing data ownership. Before the first quote, selection is a draft and Continue creates it; after a quote exists, a changed pair triggers the single replacement action. Financial facts, timers, QR and available actions remain derived from the accepted API snapshot. Independent visual comparison joins G3A; repeatable visual regressions join G4, with VM01-VM02 auditing at G5.
 
+## Implementation details confirmed during review
+
+Successful malformed responses keep transfer controls blocked until a validated snapshot arrives. HTTP 5xx after a mutation is an uncertain outcome, so the controller does not offer another creation. The reducer rejects decreases in received amounts. The mock retains an observed-funds latch through failed states and only an explicit demo reset clears it. Supported network metadata and address shapes are validated without imposing an unsupported real-chain checksum or recalculating total_due.
+
+On focus/visibility or a wall/monotonic discontinuity, awaiting transfer instructions wait for a fresh accepted time sample. Received-funds states stay independent of the old expiry. Selection visibility derives from controller permission so detected funds immediately close a previously open Change selector. Evaluator controls are available only with ?demo=1. Preview starts the same mock and serves the built bundle via the /api proxy.
+
 ## Decision rationale
 
 These decisions are preserved here so separate ADR input files are unnecessary. Record any changed decision with its context, alternatives, outcome and consequences in implementation evidence.

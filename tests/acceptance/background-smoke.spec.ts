@@ -11,23 +11,28 @@ test('T06 real two-minute background tab keeps the absolute deadline', async ({ 
   test.setTimeout(150000)
   await request.post('/api/demo/reset', { data: { ttlMs: 900000 } })
   const profile = await mkdtemp(join(tmpdir(), 'checkout-background-'))
-  const process = spawn(chromium.executablePath(), ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] })
+  const browserProcess = spawn(chromium.executablePath(), ['--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', '--no-default-browser-check', 'about:blank'], { stdio: ['ignore', 'ignore', 'pipe'] })
   let browser: Browser | undefined
+  let browserLog = ''
+  const lifecycle: Array<{ event: string; at: string; code?: number | null; signal?: string | null }> = []
+  browserProcess.stderr.on('data', (chunk: Buffer) => { browserLog = (browserLog + chunk.toString()).slice(-12000) })
+  browserProcess.once('exit', (code, signal) => { lifecycle.push({ event: 'native-process-exit', at: new Date().toISOString(), code, signal }) })
   try {
   const endpoint = await new Promise<string>((resolve, reject) => {
     let buffer = ''
     const timeout = setTimeout(() => reject(new Error('Native Chromium startup timed out')), 15000)
-    process.stderr.on('data', (chunk: Buffer) => {
+    browserProcess.stderr.on('data', (chunk: Buffer) => {
       buffer += chunk.toString()
       const match = /DevTools listening on (ws:\/\/\S+)/.exec(buffer)
       if (match) { clearTimeout(timeout); resolve(match[1]!) }
     })
-    process.once('error', error => { clearTimeout(timeout); reject(error) })
+    browserProcess.once('error', error => { clearTimeout(timeout); reject(error) })
   })
   browser = await chromium.connectOverCDP(endpoint, { noDefaults: true })
+  browser.once('disconnected', () => { lifecycle.push({ event: 'cdp-disconnected', at: new Date().toISOString() }) })
   const context = browser.contexts()[0]!
   const page = context.pages()[0]!
-  await page.goto('http://127.0.0.1:5173/')
+  await page.goto(String(info.project.use.baseURL ?? 'http://127.0.0.1:5173/'))
   await page.getByRole('button', { name: /Continue with/ }).click()
   const countdown = page.getByTestId('countdown')
   await expect(countdown).toBeVisible()
@@ -51,8 +56,9 @@ test('T06 real two-minute background tab keeps the absolute deadline', async ({ 
   await info.attach('real-background-observation', { contentType: 'application/json', body: JSON.stringify({ harness: 'Native headed Chromium; isolated profile; CDP noDefaults; no visibility emulation', hiddenForAtLeastMs: 120000, elapsedMs: Date.now() - started, beforeSeconds: before, afterSeconds: parse((await countdown.textContent())!), visibilityAfterReturn: await page.evaluate(() => document.visibilityState) }) })
   await foreground.close()
   } finally {
+    await info.attach('native-browser-lifecycle', { body: JSON.stringify({ lifecycle, stderr: browserLog }), contentType: 'application/json' })
     await browser?.close()
-    process.kill('SIGTERM')
+    browserProcess.kill('SIGTERM')
     await rm(profile, { recursive: true, force: true, maxRetries: 3, retryDelay: 100 })
   }
 })

@@ -87,7 +87,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
       return;
     timer = setTimeout(
       () => void poll(),
-      Math.min(30000, pollMs * 2 ** Math.min(failures, 4)),
+      Math.min(30000, pollMs * 2 ** Math.min(Math.max(0, failures - 1), 4)),
     );
   }
   function markError(cause: unknown) {

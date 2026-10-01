@@ -7,7 +7,7 @@ Status: implementation in progress; see reports/gates for actual gate evidence. 
 ## Ordered work
 
 - [x] P00: Confirm requirements, assumptions and architecture; obtain G0/G1 evidence.
-- [ ] P01: Bootstrap tooling and independent acceptance-test design; establish G2 readiness.
+- [x] P01: Bootstrap tooling and independent acceptance-test design; establish G2 readiness.
 - [x] P02: Implement exact money and the pure state model.
 - [x] P03: Implement the HTTP mock, fixtures, client and boundary validation.
 - [x] P04: Build quote selection and transfer UI.

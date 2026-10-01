@@ -23,6 +23,7 @@ for (const view of views) for (const width of [1280, 390]) {
           crypto_address: '0x1111111111111111111111111111111111111111' } })
     }
     await page.goto('/')
+    await expect(page.getByRole('button', { name: /Continue with/ })).toBeEnabled()
     if (view.id === 'D02' || view.id === 'D12') {
       await page.getByRole('radio', { name: 'USDC', exact: true }).check()
       await page.getByRole('radio', { name: /Polygon/ }).check()
@@ -35,7 +36,12 @@ for (const view of views) for (const width of [1280, 390]) {
         await expect(page.getByText(/Getting your quote/i)).toBeVisible()
         await noTransferAction(page)
       } else {
-        await expect(page.getByTestId('payment-status')).toBeVisible()
+        await expect(page.getByTestId('payment-status')).toHaveAttribute('data-status', view.state!)
+        if (view.state === 'awaiting_payment' || view.state === 'underpaid') {
+          const qr = page.getByTestId('transfer-qr')
+          await expect(qr).toBeVisible()
+          await expect.poll(() => qr.evaluate(image => (image as HTMLImageElement).complete && (image as HTMLImageElement).naturalWidth > 0)).toBe(true)
+        }
       }
     }
     if (view.id === 'D11') {
