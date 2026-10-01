@@ -122,5 +122,4 @@ These decisions are preserved here so separate ADR input files are unnecessary. 
 
 ## One thing I would defend
 
-Quote expiry and payment status must be separate. A local deadline can stop offering transfer instructions without denying that funds were detected. Reconciliation before a new quote protects against a second payment during uncertainty. The implementation verifier must observe this behavior, and the test auditor must prove the suite catches its deliberate removal.
-
+I would defend withholding a retry button after an uncertain creation POST. A timeout or HTTP 500 does not establish whether the server created a payment, and this contract supplies neither an idempotency key nor an order-to-attempt lookup. Retrying could create a second payment target while the first remains valid. The page therefore stops new creation and unsafe sending while preserving any verified facts. This sacrifices immediate recovery for a clear boundary on what the client knows. With a real provider, the first improvement would be idempotent creation and an explicit reconciliation endpoint, so the shopper could recover without guessing. The same principle keeps local quote expiry separate from observed funds: an expired clock can hide instructions, but it cannot erase a detected payment.

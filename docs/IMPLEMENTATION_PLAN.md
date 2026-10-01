@@ -2,7 +2,7 @@
 
 Build a running Vue 3 / TypeScript / Vite checkout with the controllable HTTP mock. Use the instructions and specifications bundled with this file; no previous conversation, README, task ledger, report schema, generator or Git repository is required to start.
 
-Status: implementation in progress; see reports/gates for actual gate evidence. Update the checklist as actual work progresses. Local Git initialization and commits are authorized as stated in AGENTS.md. README creation remains deferred. Use actual commit SHAs plus artifact hashes for candidate identification.
+Status: authorized implementation and verification work complete. G0-G5 passed; G6 verified technical delivery and records incomplete full submission compliance because README and unavailable human work-history evidence remain deferred. See reports/gates for actual candidate-specific evidence. Local Git initialization and commits are authorized as stated in AGENTS.md.
 
 ## Ordered work
 
@@ -14,8 +14,8 @@ Status: implementation in progress; see reports/gates for actual gate evidence. 
 - [x] P05: Complete controller, polling, clock and recovery.
 - [x] P06: Complete all scenarios, evaluator controls and usability.
 - [x] P07: Obtain independent G3 and G3A reviews.
-- [ ] P08: Run G4 tests and G5 test-effectiveness audit.
-- [ ] P09: Explain results and assess G6 deliverables, identifying deferred items.
+- [x] P08: Run G4 tests and G5 test-effectiveness audit.
+- [x] P09: Explain results and assess G6 deliverables, identifying deferred items.
 
 Tasks depend on the preceding task. Developer tests run throughout; formal acceptance follows the gate sequence. Make small factual local commits for completed slices under the Git policy in AGENTS.md.
 

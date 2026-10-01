@@ -61,3 +61,13 @@ Complete recomputed inputs and artifacts: `reports/logs/g3-final-fingerprint.jso
 - built HTML: `4cd458f37eef7088a96013c2ab7a6d41857b82cc207c8053482bf37b24e557b1`
 
 Reviewer-owned writes are this addendum and `reports/logs/g3-final-*`. The final reviewed worktree remains clean.
+
+## Evidence-only carryforward to 4901886
+
+Independent reviewer `/root/g3_code_review` confirms **G3 pass applies to `49018863d317cce6adf837c832d8823419002b71`**. Inspected `git diff --name-status` and `--numstat` from `3b7a43ad4f4bd74a4dce8387876db8e977e6a2b6` (exit 0) and independently recomputed hashes directly from the new commit's Git blobs. The delta contains 24 D01–D12 desktop/mobile PNG baselines plus reports, plan documentation and a generated-manifest ignore rule. There are no application, configuration, lockfile, fixture or test-source changes.
+
+- unchanged application SHA-256: `2af8c975a57298f7f9165c9dc6b52c6eb836b67ac1937e7fb08272176481513e`
+- new suite SHA-256, including the 24 PNGs: `6e253a4b3827245675fe0db4132648e30d338482da13de8c91a85585247bddd5`
+- independent comparison evidence: `reports/logs/g3-carryforward-4901886.json`
+
+The G3 command results above carry forward because every reviewed executable input is unchanged; no redundant command rerun was performed. Baseline fidelity remains the G3A reviewer's responsibility, and G4/G5 must use the new candidate and suite fingerprint. No new G3 finding. Signed by reviewer session `/root/g3_code_review`.
