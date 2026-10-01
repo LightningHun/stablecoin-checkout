@@ -37,7 +37,8 @@ async function reset() {
       data-testid="demo-apply-state"
       @click="command('scenario', { status: state })"
     >
-      Apply state</button
+      Apply state
+</button
     ><label
       >Connection<select v-model="fault" data-testid="demo-fault">
         <option value="none">Healthy</option>
@@ -50,12 +51,14 @@ async function reset() {
       data-testid="demo-apply-fault"
       @click="command('scenario', { fault })"
     >
-      Apply connection</button
+      Apply connection
+</button
     ><button
       class="secondary"
       @click="command('scenario', { advanceMs: 900000 })"
     >
-      Advance 15 minutes</button
+      Advance 15 minutes
+</button
     ><button class="secondary" data-testid="demo-reset" @click="reset">
       Reset demo
     </button>

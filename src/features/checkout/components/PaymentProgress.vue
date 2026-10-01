@@ -58,7 +58,8 @@ function title() {
     <template v-if="payment">
       <template
         v-if="payment.status === 'detected' || payment.status === 'confirming'"
-        ><div class="confirmation-bars" aria-hidden="true">
+        >
+<div class="confirmation-bars" aria-hidden="true">
           <span
             v-for="n in payment.required_confirmations"
             :key="n"
@@ -71,7 +72,8 @@ function title() {
         </p>
         <p>
           ♙ Your rate is locked in — this quote no longer expires.
-        </p></template
+        </p>
+</template
       >
       <p v-if="payment.status === 'awaiting_payment'" class="muted">
         {{
@@ -93,11 +95,13 @@ function title() {
         payment reference.
       </p>
       <template v-if="payment.status === 'failed'"
-        ><p>Reason: {{ payment.reason.replaceAll("_", " ") }}.</p>
+        >
+<p>Reason: {{ payment.reason.replaceAll("_", " ") }}.</p>
         <p>
           Do not send again. Ask {{ payment.merchant.name }} for assistance with
           the details below. This cannot be fixed here.
-        </p></template
+        </p>
+</template
       >
       <dl
         v-if="
@@ -138,7 +142,8 @@ function title() {
           <dd>{{ new Date(payment.settled_at).toLocaleString("en-GB") }}</dd>
         </div>
         <template v-if="['paid', 'overpaid', 'failed'].includes(payment.status)"
-          ><div>
+          >
+<div>
             <dt>Order</dt>
             <dd class="mono">{{ payment.order_id }}</dd>
           </div>
@@ -149,7 +154,8 @@ function title() {
           <div>
             <dt>Payment reference</dt>
             <dd class="mono">{{ payment.payment_reference }}</dd>
-          </div></template
+          </div>
+</template
         >
       </dl>
       <CopyButton

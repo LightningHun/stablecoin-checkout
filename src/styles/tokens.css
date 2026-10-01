@@ -10,6 +10,6 @@
   --solana: #07805f;
   --column: 560px;
   --gap: 24px;
-  --font: Arial, Helvetica, sans-serif;
+  --font: -apple-system, BlinkMacSystemFont, Arial, Helvetica, sans-serif;
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }

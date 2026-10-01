@@ -25,6 +25,7 @@ const {
 } = controller;
 const selecting = ref(true),
   focusTarget = ref<HTMLElement | null>(null);
+const showDemo = new URLSearchParams(location.search).has("demo");
 const reload = () => window.location.reload();
 const locale =
   new URLSearchParams(location.search).get("locale") ||
@@ -265,6 +266,6 @@ onMounted(() => void controller.initialize());
       }}</span
       ><span>Demo checkout · no real funds</span>
     </footer>
-    <DemoControls @refresh="controller.retry" @reset="reload" />
+    <DemoControls v-if="showDemo" @refresh="controller.retry" @reset="reload" />
   </main>
 </template>

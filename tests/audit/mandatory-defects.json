@@ -1,0 +1,20 @@
+{
+  "contract": "docs/VERIFICATION.md and docs/DESIGN_SPEC.md",
+  "rule": "Run each single mutation only in an isolated fixed-candidate checkout; record expected assertion, actual assertion, patch hash, restoration and green rerun. Compilation or harness errors are not kills.",
+  "defects": [
+    { "id": "M01", "change": "Allow local expiry after detected", "tests": ["T08"], "target": "tests/component/controller.test.ts" },
+    { "id": "M02", "change": "Count down by ticks instead of absolute deadline", "tests": ["T06"], "target": "tests/unit/clock.test.ts" },
+    { "id": "M03", "change": "Remove the single-flight polling guard", "tests": ["T09"], "target": "tests/component/controller.test.ts" },
+    { "id": "M04", "change": "Schedule GET after terminal state", "tests": ["T10"], "target": "tests/component/controller.test.ts" },
+    { "id": "M05", "change": "Accept an old quote generation", "tests": ["T03", "T10"], "target": "tests/unit/policy.test.ts" },
+    { "id": "M06", "change": "Convert eighteen-decimal amount through Number", "tests": ["T05"], "target": "tests/unit/money.test.ts" },
+    { "id": "M07", "change": "Copy or encode previous network address", "tests": ["T03", "T04"], "target": "tests/acceptance/transport.spec.ts" },
+    { "id": "M08", "change": "Render original total instead of outstanding", "tests": ["T12"], "target": "tests/acceptance/checkout.spec.ts" },
+    { "id": "M09", "change": "Promise automatic excess refund", "tests": ["T13"], "target": "tests/acceptance/checkout.spec.ts" },
+    { "id": "M10", "change": "Requote before detecting funds during reconciliation", "tests": ["T08", "T14"], "target": "tests/component/controller.test.ts" },
+    { "id": "M11", "change": "Turn HTTP 500 into payment failed", "tests": ["T15"], "target": "tests/acceptance/checkout.spec.ts" },
+    { "id": "M12", "change": "Issue a new payment reference on requote", "tests": ["T14", "T16"], "target": "tests/contract/http.test.ts" },
+    { "id": "VM01", "change": "Remove mobile QR/address stacking", "tests": ["D03", "T18"], "target": "tests/acceptance/checkout.spec.ts" },
+    { "id": "VM02", "change": "Render Continue/send action in detected", "tests": ["D04", "T08"], "target": "tests/acceptance/checkout.spec.ts" }
+  ]
+}

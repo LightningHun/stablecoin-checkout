@@ -1,6 +1,6 @@
 # Vue checkout architecture
 
-Status: implementation design. The user selected Vue 3, TypeScript and Vite. The domain and verification rules come from the reviewed architecture, with mock-specific assumptions made explicit in `API_CONTRACT.md`.
+Status: implemented; independent verification results are recorded under reports/gates. The user selected Vue 3, TypeScript and Vite. The domain and verification rules come from the reviewed architecture, with mock-specific assumptions made explicit in `API_CONTRACT.md`.
 
 ## Outcome and boundaries
 
@@ -8,7 +8,7 @@ A shopper sees the merchant, order, exact amount and an unmistakable network; th
 
 ## Target layout
 
-Create these paths during implementation; they are not present yet.
+Implemented module layout (additional presentational copy, badge and demo controls are included):
 
 ```text
 src/

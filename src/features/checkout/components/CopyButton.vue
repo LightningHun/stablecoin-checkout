@@ -18,7 +18,8 @@ async function copy() {
   <div class="copy-control">
     <button class="secondary" :data-testid="testid" @click="copy">
       <span aria-hidden="true">▢</span>
-      {{ feedback === "Copied" ? "Copied" : label }}</button
+      {{ feedback === "Copied" ? "Copied" : label }}
+</button
     ><span class="sr-only" role="status">{{ feedback }}</span>
     <div v-if="fallback" class="copy-fallback">
       <label

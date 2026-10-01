@@ -11,3 +11,5 @@ reports/manifests/*.json
 test-results/
 playwright-report/
 coverage/
+reports/playwright/
+reports/playwright-results/

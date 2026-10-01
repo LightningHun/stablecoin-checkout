@@ -1,0 +1,13 @@
+# Running the checkout
+
+Use Node 22.12 or newer (verified on 22.19.0), npm 10.9.3. Run `npm ci`, then `npm run dev`. The script starts Vite at http://127.0.0.1:5173 and the HTTP mock at http://127.0.0.1:8787; Vite proxies `/api`. Stop with Ctrl-C. Do not run dev and preview together on the default mock port.
+
+For the built application: `npm run build`, then `npm run preview`. Preview serves http://127.0.0.1:4173 and starts the same mock. Set MOCK_PORT to another local port when concurrent isolated verification requires it. No persistence: stopping the mock clears the order. The demo sends no real funds.
+
+Open http://127.0.0.1:5173/?demo=1 to show evaluator controls below the shopper page. Continue creates a quote. Expand Demo controls, choose a Payment state and Apply state; all eight API states are supported. Connection controls choose Healthy, HTTP 500, Disconnect or Slow (5 seconds), then Apply connection. Advance 15 minutes exercises expiry. Reset demo returns to the initial order; reset before exploring a different terminal lifecycle. These controls intentionally bypass provider-like progression and are a local evaluation surface only.
+
+HTTP controls: POST `/api/demo/reset` with `{}` resets state; optional `now` (ISO), `freeze` (boolean) and `ttlMs` produce deterministic scenarios. POST `/api/demo/scenario` with `status`, `fault` (`none`, `500`, `disconnect`, `slow`), `delayMs`, or `advanceMs` controls the server. GET `/api/demo` exposes the current scenario, payment and request metrics. Controls bypass injected faults. Normal quotes last 15 minutes. Server responses include ISO `x-server-time` and `Cache-Control: no-store`.
+
+Use `?locale=en-IE` or `?locale=de-DE` to inspect fiat formatting while retaining English UI. No real wallet, account, blockchain, provider affiliation, merchant contact URL or return destination is configured.
+
+Checks: `npm run typecheck`, `npm run lint`, `npm run build`, `npm run test:unit`, `npm run test:component`, `npm run test:contract`, `npm run test:e2e`, `npm run test:visual`, `npm run test:mutation`. `npm run verify` aggregates ordinary checks; independent review and mutation evidence live in reports/gates. Browser setup: `npx playwright install chromium`. Formal verification is separate from developer checks. README creation remains deferred by request.

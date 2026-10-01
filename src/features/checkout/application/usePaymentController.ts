@@ -113,7 +113,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     result: ApiResult<Payment>,
     gen: number,
     replace = false,
-    expected = payment.value?.payment_reference,
+    expected = replace ? undefined : payment.value?.payment_reference,
   ): boolean {
     if (disposed || gen !== generation.value) return false;
     const next = acceptSnapshot(
