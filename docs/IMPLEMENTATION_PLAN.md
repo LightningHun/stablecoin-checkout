@@ -2,16 +2,16 @@
 
 Build a running Vue 3 / TypeScript / Vite checkout with the controllable HTTP mock. Use the instructions and specifications bundled with this file; no previous conversation, README, task ledger, report schema, generator or Git repository is required to start.
 
-Status: no application task or gate is complete. Update the checklist as actual work progresses. Local Git initialization and commits are authorized as stated in AGENTS.md. README creation remains deferred. Use actual commit SHAs plus artifact hashes for candidate identification.
+Status: implementation in progress; see reports/gates for actual gate evidence. Update the checklist as actual work progresses. Local Git initialization and commits are authorized as stated in AGENTS.md. README creation remains deferred. Use actual commit SHAs plus artifact hashes for candidate identification.
 
 ## Ordered work
 
-- [ ] P00: Confirm requirements, assumptions and architecture; obtain G0/G1 evidence.
+- [x] P00: Confirm requirements, assumptions and architecture; obtain G0/G1 evidence.
 - [ ] P01: Bootstrap tooling and independent acceptance-test design; establish G2 readiness.
-- [ ] P02: Implement exact money and the pure state model.
-- [ ] P03: Implement the HTTP mock, fixtures, client and boundary validation.
-- [ ] P04: Build quote selection and transfer UI.
-- [ ] P05: Complete controller, polling, clock and recovery.
+- [x] P02: Implement exact money and the pure state model.
+- [x] P03: Implement the HTTP mock, fixtures, client and boundary validation.
+- [x] P04: Build quote selection and transfer UI.
+- [x] P05: Complete controller, polling, clock and recovery.
 - [ ] P06: Complete all scenarios, evaluator controls and usability.
 - [ ] P07: Obtain independent G3 and G3A reviews.
 - [ ] P08: Run G4 tests and G5 test-effectiveness audit.

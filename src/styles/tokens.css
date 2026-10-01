@@ -1,0 +1,15 @@
+:root {
+  --ink: #0a0a0a;
+  --muted: #707070;
+  --line: #e5e5e5;
+  --border: #c8c8c8;
+  --surface: #f1f1f1;
+  --tron: #df0920;
+  --ethereum: #4355cc;
+  --polygon: #7c3bea;
+  --solana: #07805f;
+  --column: 560px;
+  --gap: 24px;
+  --font: Arial, Helvetica, sans-serif;
+  --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
