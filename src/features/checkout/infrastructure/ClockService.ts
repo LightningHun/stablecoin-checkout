@@ -2,6 +2,7 @@ export class ClockService {
   private anchor: number | null = null;
   private at = 0;
   private uncertainty = 0;
+  private wallAt = 0;
   constructor(
     private monotonic: () => number = () => performance.now(),
     private wall: () => number = () => Date.now(),
@@ -13,6 +14,7 @@ export class ClockService {
     this.uncertainty = (end - start) / 2;
     this.anchor = time + this.uncertainty;
     this.at = this.monotonic();
+    this.wallAt = this.wall();
   }
   now(): number {
     return this.anchor === null
@@ -21,6 +23,12 @@ export class ClockService {
   }
   remaining(expiresAt: string): number {
     return Math.max(0, Date.parse(expiresAt) - this.now() - this.uncertainty);
+  }
+  needsResync(): boolean {
+    return (
+      this.anchor !== null &&
+      Math.abs(this.wall() - this.wallAt - (this.monotonic() - this.at)) > 2000
+    );
   }
   get sampled(): boolean {
     return this.anchor !== null;

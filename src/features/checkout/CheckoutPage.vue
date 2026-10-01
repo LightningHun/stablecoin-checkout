@@ -34,6 +34,7 @@ const locale =
 const merchant = computed(
   () => payment.value?.merchant.name ?? "Payment Project",
 );
+const selectionVisible = computed(() => selecting.value && canChange.value);
 const selectedNetwork = computed(() =>
   currencies.value
     .find((c) => c.code === draft.value.currency)
@@ -115,14 +116,17 @@ onMounted(() => void controller.initialize());
       :amount="payment?.order.amount ?? '149.90'"
       :locale="locale"
     />
-    <section class="step" :class="{ done: !selecting, active: selecting }">
+    <section
+      class="step"
+      :class="{ done: !selectionVisible, active: selectionVisible }"
+    >
       <span class="step-marker" aria-hidden="true">{{
-        selecting ? "1" : "✓"
+        selectionVisible ? "1" : "✓"
       }}</span>
       <div class="step-heading">
         <h2>Pay with</h2>
         <button
-          v-if="!selecting && payment && canChange"
+          v-if="!selectionVisible && payment && canChange"
           class="text-button"
           data-testid="change"
           @click="selecting = true"
@@ -131,7 +135,7 @@ onMounted(() => void controller.initialize());
         </button>
       </div>
       <AssetNetworkSelector
-        v-if="selecting"
+        v-if="selectionVisible"
         :currencies="currencies"
         :pair="draft"
         :disabled="busy || health === 'loading'"
@@ -149,9 +153,9 @@ onMounted(() => void controller.initialize());
       tabindex="-1"
       class="step send-step"
       :class="{
-        active: !selecting && activeSend,
+        active: !selectionVisible && activeSend,
         done: funds && !activeSend,
-        inactive: selecting,
+        inactive: selectionVisible,
       }"
     >
       <span class="step-marker" aria-hidden="true">{{
@@ -167,7 +171,7 @@ onMounted(() => void controller.initialize());
           >Action needed</span
         >
       </div>
-      <p v-if="selecting" class="muted">
+      <p v-if="selectionVisible" class="muted">
         Amount, address and QR code appear after you choose a network.
       </p>
       <div v-else-if="busy" class="loading-quote" data-testid="quote-loading">
@@ -255,7 +259,7 @@ onMounted(() => void controller.initialize());
         >
       </div>
       <PaymentProgress
-        :payment="selecting ? null : payment"
+        :payment="selectionVisible ? null : payment"
         :health="health"
         :last-checked="lastChecked"
       />

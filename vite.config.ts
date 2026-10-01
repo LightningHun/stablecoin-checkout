@@ -5,6 +5,7 @@ export default defineConfig({
   server: {
     host: "127.0.0.1",
     port: 5173,
+    watch: { ignored: ["**/tmp/**", "**/reports/**", "**/tests/**", "**/docs/**"] },
     strictPort: true,
     proxy: { "/api": `http://127.0.0.1:${process.env.MOCK_PORT || 8787}` },
   },

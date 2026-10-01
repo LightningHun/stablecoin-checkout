@@ -17,6 +17,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
     sequence = 100306,
     current: Payment | null = null;
   const payments = new Map<string, Payment>();
+  let fundsObserved = false;
   let frozen: number | null = null,
     offset = 0;
   const now = () => frozen ?? (options.now?.() ?? Date.now()) + offset;
@@ -55,6 +56,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
     return data ? (JSON.parse(data) as Record<string, unknown>) : {};
   }
   function save(p: Payment) {
+    fundsObserved ||= hasFunds(p.status);
     payments.set(p.payment_reference, p);
     current = p;
     return p;
@@ -72,6 +74,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
         const input = await body(req);
         scenario = defaultScenario();
         payments.clear();
+        fundsObserved = false;
         current = null;
         sequence = 100306;
         frozen =
@@ -147,7 +150,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
       if (path === "/api/payments" && req.method === "POST") {
         if (input.order_id !== "ORD-88213")
           return json(res, 400, { title: "Unknown order" });
-        if (current && hasFunds(current.status))
+        if (fundsObserved)
           return conflict(
             res,
             "Funds already observed",
@@ -168,7 +171,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
       if (!original) return json(res, 404, { title: "Unknown payment" });
       const p = refresh(original);
       if (match[2] && req.method === "POST") {
-        if (p.status !== "expired")
+        if (p.status !== "expired" || fundsObserved)
           return conflict(
             res,
             "Quote has not expired",

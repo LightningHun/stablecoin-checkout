@@ -19,6 +19,9 @@ describe('T11 boundary validation of independent wire payloads', () => {
     { ...paymentSnapshot(), quote: { ...paymentSnapshot().quote, total_due: '163.6900001' } },
     { ...paymentSnapshot(), quote: { ...paymentSnapshot().quote, total_due: 163.69 } },
     { ...paymentSnapshot(), quote: { ...paymentSnapshot().quote, expires_at: 'never' } },
+    { ...paymentSnapshot(), quote: { ...paymentSnapshot().quote, network_name: 'Ethereum (ERC-20)' } },
+    { ...paymentSnapshot(), quote: { ...paymentSnapshot().quote, crypto_address: '0x1111111111111111111111111111111111111111' } },
+    { ...paymentSnapshot(), quote: { ...paymentSnapshot().quote, crypto_currency: 'ETH' } },
   ])('rejects malformed, inconsistent or impossible payload %#', body => {
     expect(() => parsePayment(body)).toThrow()
   })

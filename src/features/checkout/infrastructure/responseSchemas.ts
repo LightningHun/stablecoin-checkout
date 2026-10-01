@@ -12,18 +12,105 @@ const network = z.object({
   required_confirmations: count.positive(),
   avg_confirmation_seconds: count.positive(),
 });
-export const catalogueSchema = z.object({
-  currencies: z
-    .array(
-      z.object({
-        code,
-        name: z.string().min(1),
-        decimals: z.union([z.literal(6), z.literal(18)]),
-        networks: z.array(network).min(1),
-      }),
+export const catalogueSchema = z
+  .object({
+    currencies: z
+      .array(
+        z.object({
+          code,
+          name: z.string().min(1),
+          decimals: z.union([z.literal(6), z.literal(18)]),
+          networks: z.array(network).min(1),
+        }),
+      )
+      .min(1),
+  })
+  .superRefine(({ currencies }, ctx) => {
+    const keys = currencies.flatMap((c) =>
+      c.networks.map((n) => c.code + "/" + n.id),
+    );
+    const unique = new Set(keys);
+    if (
+      currencies.length !== 3 ||
+      new Set(currencies.map((c) => c.code)).size !== 3 ||
+      keys.length !== 6 ||
+      unique.size !== 6
     )
-    .min(1),
-});
+      ctx.addIssue({
+        code: "custom",
+        message: "Incomplete or duplicated catalogue",
+      });
+    for (const c of currencies) {
+      const scale = c.code === "ETH" ? 18 : 6;
+      if (c.decimals !== scale)
+        ctx.addIssue({ code: "custom", message: "Invalid currency scale" });
+      for (const n of c.networks) {
+        const rule = pairRules[c.code + "/" + n.id];
+        if (
+          !rule ||
+          n.name !== rule.name ||
+          n.required_confirmations !== rule.confirmations ||
+          n.avg_confirmation_seconds !== rule.seconds ||
+          n.network_fee !== rule.fee
+        )
+          ctx.addIssue({ code: "custom", message: "Invalid network metadata" });
+      }
+    }
+  });
+// Fixed supported pairs are part of this mock contract, not provider discovery.
+const pairRules: Record<
+  string,
+  {
+    name: string;
+    confirmations: number;
+    fee: string;
+    seconds: number;
+    address: RegExp;
+  }
+> = {
+  "USDT/tron": {
+    name: "Tron (TRC-20)",
+    confirmations: 1,
+    fee: "1.00",
+    seconds: 60,
+    address: /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
+  },
+  "USDT/ethereum": {
+    name: "Ethereum (ERC-20)",
+    confirmations: 3,
+    fee: "4.50",
+    seconds: 180,
+    address: /^0x[0-9a-fA-F]{40}$/,
+  },
+  "USDC/ethereum": {
+    name: "Ethereum (ERC-20)",
+    confirmations: 3,
+    fee: "4.50",
+    seconds: 180,
+    address: /^0x[0-9a-fA-F]{40}$/,
+  },
+  "USDC/polygon": {
+    name: "Polygon",
+    confirmations: 6,
+    fee: "0.10",
+    seconds: 30,
+    address: /^0x[0-9a-fA-F]{40}$/,
+  },
+  "USDC/solana": {
+    name: "Solana",
+    confirmations: 1,
+    fee: "0.01",
+    seconds: 15,
+    address: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
+  },
+  "ETH/ethereum": {
+    name: "Ethereum",
+    confirmations: 3,
+    fee: "3.20",
+    seconds: 180,
+    address: /^0x[0-9a-fA-F]{40}$/,
+  },
+};
 const quote = z.object({
   crypto_currency: code,
   network: z.string().min(1),
@@ -94,6 +181,15 @@ export const paymentSchema = z
       ctx.addIssue({ code: "custom", message });
     try {
       const scale = p.quote.crypto_currency === "ETH" ? 18 : 6;
+      const rule = pairRules[p.quote.crypto_currency + "/" + p.quote.network];
+      if (
+        !rule ||
+        p.quote.network_name !== rule.name ||
+        p.quote.required_confirmations !== rule.confirmations ||
+        !rule.address.test(p.quote.crypto_address) ||
+        parseUnits(p.quote.network_fee, scale) !== parseUnits(rule.fee, scale)
+      )
+        reject("Unsupported or inconsistent quote network");
       const total = parseUnits(p.quote.total_due, scale);
       for (const v of [p.quote.crypto_amount, p.quote.network_fee])
         parseUnits(v, scale);

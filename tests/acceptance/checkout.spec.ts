@@ -53,6 +53,19 @@ test('T08 VM02 detected removes every transfer action and survives deadline plus
   await expect(page.getByRole('button', { name: /new quote/i })).toHaveCount(0)
 })
 
+test('T08 VM02 detection closes an already-open Change selector and removes Continue', async ({ page }) => {
+  const api = await stubApi(page)
+  await startQuote(page)
+  await page.getByRole('button', { name: 'Change', exact: true }).click()
+  await expect(page.getByRole('radio', { name: 'USDT', exact: true })).toBeVisible()
+  api.setState('detected')
+  await page.clock.runFor(2200)
+  await expect(page.getByTestId('payment-status')).toContainText(/money arrived/i)
+  await expect(page.getByRole('radio')).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /^Continue|^Send|^Change$/i })).toHaveCount(0)
+  await noTransferAction(page)
+})
+
 test('T12 underpaid sends only the outstanding amount and duplicate delivery is idempotent', async ({ page }) => {
   const api = await stubApi(page)
   await startQuote(page)
@@ -89,6 +102,16 @@ test('T11 malformed status preserves verified facts and disables unsafe transfer
   await expect(page.getByRole('alert')).toContainText(/invalid|protocol|unrecognised|unrecognized/i)
   await noTransferAction(page)
   await expect(page.locator('main')).not.toContainText(/^Paid$/)
+})
+
+test('T11 invalid JSON HTTP 200 is a protocol failure that disables all transfer controls', async ({ page }) => {
+  await stubApi(page)
+  await startQuote(page)
+  await page.route('**/api/payments/AQH-100306-PMT', route => route.fulfill({ status: 200, headers: { 'content-type': 'application/json', 'x-server-time': '2026-08-14T08:37:10.842Z' }, body: '{invalid-json' }))
+  await page.clock.runFor(2200)
+  await expect(page.getByRole('alert')).toBeVisible()
+  await expect(page.getByTestId('payment-status')).toHaveAttribute('data-status', 'awaiting_payment')
+  await noTransferAction(page)
 })
 
 test('T15 transport failure keeps known funds instead of inventing payment failed', async ({ page }) => {

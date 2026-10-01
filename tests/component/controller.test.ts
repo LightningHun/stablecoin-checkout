@@ -12,7 +12,7 @@ const sample = <T>(data: T): ApiResult<T> => ({ data, serverTime: new Date(Date.
 const payment = (status: Parameters<typeof paymentSnapshot>[0] = 'awaiting_payment') => paymentSnapshot(status) as unknown as Payment
 const currencies: Currency[] = (['USDT', 'USDC', 'ETH'] as CurrencyCode[]).map(code => ({ code, name: code, decimals: code === 'ETH' ? 18 : 6, networks: catalogueRows.filter(row => row[0] === code).map(row => ({ id: row[2], name: row[3], network_fee: row[4], required_confirmations: row[5], avg_confirmation_seconds: row[6] })) }))
 
-async function setup(initial = payment()) {
+async function setup(initial = payment(), clock = new ClockService(() => Date.now() - fixedNow, () => Date.now())) {
   let current = initial
   const client = {
     currencies: vi.fn<PaymentClient['currencies']>(async () => sample(currencies)),
@@ -22,7 +22,7 @@ async function setup(initial = payment()) {
   }
   const scope = effectScope()
   scopes.push(scope)
-  const controller = scope.run(() => usePaymentController({ client, clock: new ClockService(() => Date.now() - fixedNow, () => Date.now()), pollMs: 2000, timeoutMs: 10000 }))!
+  const controller = scope.run(() => usePaymentController({ client, clock, pollMs: 2000, timeoutMs: 10000 }))!
   await controller.initialize()
   await controller.create(pair)
   await nextTick()
@@ -52,6 +52,23 @@ describe('T06–T15 actual composable lifecycle', () => {
     expect(controller.remaining.value).toBe(900000)
     vi.setSystemTime(fixedNow + 119000)
     await vi.advanceTimersByTimeAsync(1000)
+    expect(controller.remaining.value).toBe(780000)
+  })
+  it('T07 offline resume with halted monotonic clock withholds sending until the server clock is resampled', async () => {
+    const clock = new ClockService(() => 0, () => Date.now())
+    const { controller, client } = await setup(payment(), clock)
+    expect(controller.availability.value).toBe('usable')
+    client.status.mockRejectedValue(new TypeError('Disconnected'))
+    vi.setSystemTime(fixedNow + 120000)
+    window.dispatchEvent(new Event('focus'))
+    await controller.retry()
+    expect(controller.payment.value?.status).toBe('awaiting_payment')
+    expect(controller.health.value).toBe('stale')
+    expect(controller.availability.value).not.toBe('usable')
+    expect(controller.canChange.value).toBe(false)
+    client.status.mockResolvedValue(sample(payment()))
+    await controller.retry()
+    expect(controller.availability.value).toBe('usable')
     expect(controller.remaining.value).toBe(780000)
   })
   it('T09 slow GET and simultaneous focus/retry events keep maximum active GET at one', async () => {
@@ -134,6 +151,19 @@ describe('T06–T15 actual composable lifecycle', () => {
     expect(controller.health.value).toBe('stale')
     expect(client.status).toHaveBeenCalledTimes(1)
   })
+  it('T11 a protocol block survives a later transport failure until a validated response restores trust', async () => {
+    const { controller, client } = await setup()
+    client.status.mockRejectedValueOnce(new ApiError('Invalid JSON', 0, true))
+    await controller.retry()
+    expect(controller.availability.value).not.toBe('usable')
+    client.status.mockRejectedValueOnce(new ApiError('HTTP 500', 500))
+    await controller.retry()
+    expect(controller.availability.value).not.toBe('usable')
+    expect(controller.canChange.value).toBe(false)
+    await controller.retry()
+    expect(controller.availability.value).toBe('usable')
+    expect(controller.payment.value?.status).toBe('awaiting_payment')
+  })
   it('T15 repeated GET failures back off rather than hammering the server', async () => {
     const { controller, client } = await setup()
     client.status.mockRejectedValue(new ApiError('HTTP 500', 500))
@@ -170,6 +200,28 @@ describe('T06–T15 actual composable lifecycle', () => {
     await controller.select({ currency: 'USDC', network: 'polygon' })
     await vi.advanceTimersByTimeAsync(120000)
     expect(client.create).toHaveBeenCalledTimes(2)
+    expect(controller.availability.value).not.toBe('usable')
+  })
+  it('T15 creation HTTP 500 is an uncertain mutation outcome and blocks a second creation', async () => {
+    const { controller, client } = await setup()
+    client.create.mockRejectedValue(new ApiError('HTTP 500', 500))
+    await controller.select({ currency: 'USDC', network: 'polygon' })
+    expect(controller.uncertain.value).toBe(true)
+    expect(controller.availability.value).not.toBe('usable')
+    expect(controller.canChange.value).toBe(false)
+    await controller.create(pair)
+    await controller.retry()
+    await vi.advanceTimersByTimeAsync(120000)
+    expect(client.create).toHaveBeenCalledTimes(2)
+  })
+  it('T11 received-money regression preserves the previous verified amount and pauses transfer', async () => {
+    const { controller, setCurrent } = await setup()
+    setCurrent(payment('underpaid'))
+    await controller.retry()
+    setCurrent({ ...payment('underpaid'), amount_received: '100.00', amount_outstanding: '63.69' } as Payment)
+    await controller.retry()
+    expect(controller.payment.value).toMatchObject({ amount_received: '120.00', amount_outstanding: '43.69' })
+    expect(controller.health.value).toBe('stale')
     expect(controller.availability.value).not.toBe('usable')
   })
   it('T08/T14 M10 reconciliation observes detected funds before attempting a requote', async () => {

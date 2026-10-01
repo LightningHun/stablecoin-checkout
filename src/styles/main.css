@@ -764,7 +764,62 @@ legend {
 }
 
 /* Keep display spacing while preserving the canonical amount and address strings. */
-.transfer-value > span { margin-left: 7px; }
-.address { font-size: 15px; }
-.payment-progress[data-status="selection"] .progress-heading strong { color: var(--muted); font-weight: 400; font-size: 13px; }
-.selector > p:last-child { margin-bottom: 4px; }
+.transfer-value > span {
+  margin-left: 7px;
+}
+.address {
+  font-size: 15px;
+}
+.payment-progress[data-status="selection"] .progress-heading strong {
+  color: var(--muted);
+  font-weight: 400;
+  font-size: 13px;
+}
+.selector > p:last-child {
+  margin-bottom: 4px;
+}
+
+.confirmation-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+  flex: none;
+}
+.confirmation-icon.large {
+  width: 32px;
+  height: 32px;
+  font-size: 18px;
+}
+.confirmation-icon.failed {
+  background: white;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+.progress-heading:has(.confirmation-icon) {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+}
+.partial-progress {
+  height: 4px;
+  background: var(--line);
+  margin: 16px 0;
+}
+.partial-progress span {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+@media (max-width: 600px) {
+  .progress-heading:has(.confirmation-icon) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+  }
+  .progress-heading .confirmations {
+    grid-column: 1/-1;
+  }
+}

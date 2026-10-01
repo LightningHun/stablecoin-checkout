@@ -1,3 +1,4 @@
+import { parseUnits } from "./money";
 export const statuses = [
   "awaiting_payment",
   "detected",
@@ -133,6 +134,20 @@ export function acceptSnapshot(
     "confirmations" in previous &&
     "confirmations" in incoming &&
     incoming.confirmations < previous.confirmations
+  )
+    return null;
+  if (
+    previous &&
+    "amount_received" in previous &&
+    "amount_received" in incoming &&
+    parseUnits(
+      incoming.amount_received,
+      incoming.quote.crypto_currency === "ETH" ? 18 : 6,
+    ) <
+      parseUnits(
+        previous.amount_received,
+        previous.quote.crypto_currency === "ETH" ? 18 : 6,
+      )
   )
     return null;
   return incoming;

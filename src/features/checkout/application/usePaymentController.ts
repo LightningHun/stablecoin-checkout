@@ -29,6 +29,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     protocolBlocked = ref(false),
     uncertain = ref(false);
   const draft = shallowRef<Pair>({ currency: "USDT", network: "tron" });
+  const clockUncertain = ref(false);
   const tick = ref(0),
     lastChecked = ref<number | null>(null),
     generation = ref(0);
@@ -56,7 +57,10 @@ export function usePaymentController(options: ControllerOptions = {}) {
                 remaining.value,
             )
           : 0),
-      busy.value || protocolBlocked.value || uncertain.value,
+      busy.value ||
+        protocolBlocked.value ||
+        uncertain.value ||
+        (clockUncertain.value && payment.value?.status === "awaiting_payment"),
     );
   });
   const canChange = computed(
@@ -64,7 +68,9 @@ export function usePaymentController(options: ControllerOptions = {}) {
       !busy.value &&
       !uncertain.value &&
       !protocolBlocked.value &&
-      (!payment.value || payment.value.status === "awaiting_payment"),
+      (!payment.value ||
+        (payment.value.status === "awaiting_payment" &&
+          availability.value === "usable")),
   );
   function clearPoll() {
     clearTimeout(timer);
@@ -88,12 +94,13 @@ export function usePaymentController(options: ControllerOptions = {}) {
     health.value = payment.value ? "stale" : "unavailable";
     error.value =
       cause instanceof Error ? cause.message : "Connection unavailable";
-    protocolBlocked.value = cause instanceof ApiError && cause.protocol;
+    protocolBlocked.value ||= cause instanceof ApiError && cause.protocol;
     failures++;
   }
   function sample<T>(result: ApiResult<T>) {
     clock.sample(result.serverTime, result.start, result.end);
     tick.value++;
+    clockUncertain.value = false;
     lastChecked.value = clock.now();
   }
   async function request<T>(
@@ -183,6 +190,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
         if (disposed || gen !== generation.value) return;
         sample(result);
         currencies.value = result.data;
+        protocolBlocked.value = false;
         health.value = "fresh";
         error.value = "";
       } catch (cause) {
@@ -249,7 +257,11 @@ export function usePaymentController(options: ControllerOptions = {}) {
           }
         } else if (
           posted &&
-          !(cause instanceof ApiError && cause.status >= 400)
+          !(
+            cause instanceof ApiError &&
+            cause.status >= 400 &&
+            cause.status < 500
+          )
         ) {
           uncertain.value = true;
           error.value =
@@ -293,6 +305,8 @@ export function usePaymentController(options: ControllerOptions = {}) {
   }
   function resume() {
     tick.value++;
+    if (payment.value?.status === "awaiting_payment")
+      clockUncertain.value = true;
     if (
       !disposed &&
       !busy.value &&
@@ -303,6 +317,14 @@ export function usePaymentController(options: ControllerOptions = {}) {
   }
   const ticker = setInterval(() => {
     tick.value++;
+    if (
+      clock.needsResync() &&
+      payment.value?.status === "awaiting_payment" &&
+      !clockUncertain.value
+    ) {
+      clockUncertain.value = true;
+      void poll();
+    }
     if (
       payment.value?.status === "awaiting_payment" &&
       remaining.value === 0 &&

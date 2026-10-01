@@ -17,6 +17,10 @@ describe('T08/T10/T11 independent payment policy', () => {
   it('T12 exposes only the outstanding amount', () => expect(transferAmount(snapshot('underpaid'))).toBe('43.69'))
   it('allows skipped progress from awaiting directly to paid', () => expect(acceptSnapshot(snapshot(), snapshot('paid'))?.status).toBe('paid'))
   it('rejects regressive payment snapshots after funds are observed', () => expect(acceptSnapshot(snapshot('detected'), snapshot())).toBeNull())
+  it('T11 rejects received-money regression even when the status and remaining arithmetic are coherent', () => {
+    const lowerReceived = { ...snapshot('underpaid'), amount_received: '100.00', amount_outstanding: '63.69' } as Payment
+    expect(acceptSnapshot(snapshot('underpaid'), lowerReceived)).toBeNull()
+  })
   it('T10 rejects old references and same-reference old generations', () => {
     expect(acceptSnapshot(snapshot(), { ...snapshot(), payment_reference: 'OLD' }, 'AQH-100306-PMT', 2, 2)).toBeNull()
     expect(acceptSnapshot(snapshot(), snapshot('paid'), 'AQH-100306-PMT', 1, 2)).toBeNull()

@@ -38,4 +38,15 @@ describe('T06/T07 absolute deadline and server-aware clock', () => {
     expect(clock.remaining(sourceQuote.expires_at)).toBeLessThanOrEqual(900000)
     expect(clock.remaining(sourceQuote.expires_at)).toBeGreaterThanOrEqual(898000)
   })
+  it('T07 flags a halted monotonic clock until a fresh server sample resolves uncertainty', () => {
+    let wall = fixedNow
+    const clock = new ClockService(() => 0, () => wall)
+    clock.sample(new Date(fixedNow).toISOString(), 0, 0)
+    expect(clock.needsResync()).toBe(false)
+    wall += 120000
+    expect(clock.needsResync()).toBe(true)
+    clock.sample(new Date(wall).toISOString(), 0, 0)
+    expect(clock.needsResync()).toBe(false)
+    expect(clock.remaining(sourceQuote.expires_at)).toBe(780000)
+  })
 })

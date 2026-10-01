@@ -47,7 +47,7 @@ for (const view of views) for (const width of [1280, 390]) {
     await page.evaluate(() => document.fonts.ready)
     await noHorizontalOverflow(page)
     await page.clock.pauseAt(new Date(fixedNow + 5000))
-    await info.attach('reference-map', { body: JSON.stringify({ view: view.id, pdfPage: view.pages[width === 1280 ? 0 : 1], width, deviceScaleFactor: 1, font: 'system sans-serif substitution', clock: '2026-08-14T08:37:13.842Z', deviations: 'docs/DESIGN_SPEC.md conflict resolutions' }), contentType: 'application/json' })
+    await info.attach('reference-map', { body: JSON.stringify({ view: view.id, pdfPage: view.pages[width === 1280 ? 0 : 1], width, deviceScaleFactor: 1, font: 'system sans-serif substitution', clock: '2026-08-14T08:37:15.842Z', deviations: 'docs/DESIGN_SPEC.md conflict resolutions' }), contentType: 'application/json' })
     await expect(page).toHaveScreenshot(`${view.id}-${width}.png`, { fullPage: true, animations: 'disabled' })
   })
 }

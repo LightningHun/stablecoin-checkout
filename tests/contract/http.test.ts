@@ -85,6 +85,18 @@ describe('T16 real HTTP source contract', () => {
     expect((await request(`/api/payments/${payment.payment_reference}/requote`, { currency: 'USDT', network: 'tron' })).status).toBe(409)
     expect((await (await request(`/api/payments/${payment.payment_reference}`)).json()).status).toBe('detected')
   })
+  it('T03/T08 remembers observed funds after settlement failure and retains the existing reference', async () => {
+    const payment = await (await create()).json()
+    await request('/api/demo/scenario', { status: 'detected' })
+    expect((await (await request(`/api/payments/${payment.payment_reference}`)).json()).status).toBe('detected')
+    await request('/api/demo/scenario', { status: 'failed' })
+    expect((await (await request(`/api/payments/${payment.payment_reference}`)).json()).status).toBe('failed')
+    expect((await create('USDC', 'polygon')).status).toBe(409)
+    expect((await request(`/api/payments/${payment.payment_reference}/requote`, { currency: 'USDT', network: 'tron' })).status).toBe(409)
+    const retained = await request(`/api/payments/${payment.payment_reference}`)
+    expect(retained.status).toBe(200)
+    expect(await retained.json()).toMatchObject({ payment_reference: payment.payment_reference, status: 'failed' })
+  })
   it.each(statuses)('T11/T17 deterministic scenario %s returns a full coherent snapshot', async status => {
     const payment = await (await create()).json()
     expect((await request('/api/demo/scenario', { status })).status).toBe(200)

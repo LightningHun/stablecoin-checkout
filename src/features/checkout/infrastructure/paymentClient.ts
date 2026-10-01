@@ -40,9 +40,23 @@ export function createPaymentClient(base = "/api"): PaymentClient {
       headers: input ? { "Content-Type": "application/json" } : {},
       body: input ? JSON.stringify(input) : undefined,
     });
-    const value: unknown = await response.json();
+    let value: unknown;
+    try {
+      value = await response.json();
+    } catch {
+      throw new ApiError(
+        response.ok
+          ? "The payment server returned invalid JSON. Transfer controls are paused."
+          : `HTTP ${response.status}`,
+        response.ok ? 0 : response.status,
+        response.ok,
+      );
+    }
     if (!response.ok) {
-      const problem = value as { detail?: string; title?: string };
+      const problem = (value && typeof value === "object" ? value : {}) as {
+        detail?: string;
+        title?: string;
+      };
       throw new ApiError(
         problem.detail || problem.title || `HTTP ${response.status}`,
         response.status,
