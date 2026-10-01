@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.DS_Store
+.env*
+!.env.example
+tmp/
+reports/logs/
+reports/screenshots/
+reports/traces/
+reports/manifests/*.json
+test-results/
+playwright-report/
+coverage/
