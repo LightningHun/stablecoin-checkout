@@ -4,7 +4,7 @@
 
 Independent acceptance designer /root/test_designer derived fixtures and expectations before production implementation. Coordinator authored domain, mock, controller and Vue UI. Test designer demonstrated a real precision mutant failing then restored green; this is G2 readiness, not a G5 audit.
 
-Initial npm installation had sandbox DNS failure and required network permission. Local HTTP listening required sandbox escalation. Dependency audit found a moderate development-only Vitest advisory; update in progress. Initial test-utils transitive dependency required newer Node, so compatible version selection is in progress.
+Initial npm installation had sandbox DNS failure and required network permission. Local HTTP listening required sandbox escalation. Dependency audit found a moderate development-only Vitest advisory; the pinned update resolved it and npm audit reported zero vulnerabilities. The final dependency set is verified on Node 22.19.0; an initial test-utils transitive dependency also required the newer supported Node runtime.
 
 No human code improvement or three human-rejected agent proposals have occurred in this session. The source's requested examples remain unavailable; no examples or reversals will be invented. README remains deferred, remote/push/deploy not requested.
 
@@ -17,3 +17,5 @@ A clean developer browser run passed36 cases; actual background smoke could not 
 User requested15-second browser expiry verification instead of waiting15minutes. Added a real15-second HTTP/browser case; it passed in15579ms, hid expired transfer controls, and renewed the same payment reference. The normal demo TTL remains15minutes. The separate source-required native background test subsequently passed with realhidden/visible state, elapsed120807ms and countdown900to780; a prior browser-closed run remains recorded as unsuccessful.
 
 G3 recheck passed on848c884 with all seven findings resolved. G3A identified a visual-test readiness race: payment-status existed before POST acceptance. Independent test designer strengthened preconditions to accepted data-status and loaded QR before freeze/capture. Coordinator also noticed the initial retry-backoff test expected4/8seconds although the architecture specifies2/4/8/16/30; designer confirmed the expectation mistake and is correcting it from the source, with red evidence before the implementation correction. No acceptance criterion is weakened.
+
+The corrected backoff expectation failed against 848c884, then passed after the formula correction in 3b7a43a. Independent G3 final review confirmed 2/4/8/16/30/30-second scheduling, reset to 2 seconds after recovery, one pending poll, and complete disposal. Node 22 clean-install, type, lint, build and all 121 unit/component/HTTP tests passed in its clean review worktree. G3A and later gates remain separately recorded.

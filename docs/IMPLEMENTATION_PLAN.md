@@ -12,8 +12,8 @@ Status: implementation in progress; see reports/gates for actual gate evidence. 
 - [x] P03: Implement the HTTP mock, fixtures, client and boundary validation.
 - [x] P04: Build quote selection and transfer UI.
 - [x] P05: Complete controller, polling, clock and recovery.
-- [ ] P06: Complete all scenarios, evaluator controls and usability.
-- [ ] P07: Obtain independent G3 and G3A reviews.
+- [x] P06: Complete all scenarios, evaluator controls and usability.
+- [x] P07: Obtain independent G3 and G3A reviews.
 - [ ] P08: Run G4 tests and G5 test-effectiveness audit.
 - [ ] P09: Explain results and assess G6 deliverables, identifying deferred items.
 
