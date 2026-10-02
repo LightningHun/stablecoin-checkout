@@ -2,12 +2,14 @@
 import { computed, onMounted, onScopeDispose, ref } from "vue";
 import type { Currency, Pair, CurrencyCode } from "../domain/paymentModel";
 import NetworkBadge from "./NetworkBadge.vue";
+import { useAutoHeightTransition } from "./useAutoHeightTransition";
 const props = defineProps<{
   currencies: Currency[];
   pair: Pair;
   disabled: boolean;
 }>();
 const emit = defineEmits<{ select: [pair: Pair]; continue: [] }>();
+const networkOptions = useAutoHeightTransition(() => props.pair.currency);
 const currency = computed(() =>
   props.currencies.find((c) => c.code === props.pair.currency),
 );
@@ -72,7 +74,7 @@ function changeCurrency(code: CurrencyCode) {
     </fieldset>
     <fieldset :disabled="disabled">
       <legend class="eyebrow">Network</legend>
-      <div class="network-options">
+      <div ref="networkOptions" class="network-options">
         <label
           v-for="n in currency?.networks"
           :key="n.id"

@@ -207,6 +207,12 @@ legend {
   display: grid;
   gap: 8px;
   margin-top: 6px;
+  transition: height var(--motion-medium, 220ms)
+    var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+}
+.network-options.is-resizing {
+  overflow: hidden;
+  align-content: start;
 }
 .network-option {
   display: flex;
