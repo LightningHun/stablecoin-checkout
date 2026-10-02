@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onMounted, onScopeDispose, ref } from "vue";
 import type { Currency, Pair, CurrencyCode } from "../domain/paymentModel";
 import NetworkBadge from "./NetworkBadge.vue";
 const props = defineProps<{
@@ -14,6 +14,34 @@ const currency = computed(() =>
 const selected = computed(() =>
   currency.value?.networks.find((n) => n.id === props.pair.network),
 );
+const continueButton = ref<HTMLButtonElement | null>(null);
+const continueLabel = ref<HTMLSpanElement | null>(null);
+const continueWidth = ref<string>();
+let labelObserver: ResizeObserver | undefined;
+
+onMounted(() => {
+  const button = continueButton.value;
+  const label = continueLabel.value;
+  if (!button || !label || typeof ResizeObserver === "undefined") return;
+
+  // Measure only the destination width; CSS handles the animation independently.
+  const updateWidth = () => {
+    if (!selected.value || !label.offsetWidth) return;
+    const style = getComputedStyle(button);
+    const width =
+      label.offsetWidth +
+      Number.parseFloat(style.paddingLeft) +
+      Number.parseFloat(style.paddingRight) +
+      Number.parseFloat(style.borderLeftWidth) +
+      Number.parseFloat(style.borderRightWidth);
+    continueWidth.value = `${Math.ceil(width)}px`;
+  };
+  updateWidth();
+  labelObserver = new ResizeObserver(updateWidth);
+  labelObserver.observe(label);
+});
+onScopeDispose(() => labelObserver?.disconnect());
+
 function changeCurrency(code: CurrencyCode) {
   const c = props.currencies.find((c) => c.code === code);
   if (c)
@@ -83,13 +111,39 @@ function changeCurrency(code: CurrencyCode) {
       Fees are set by the network. Your wallet must support the one you choose.
     </p>
     <button
+      ref="continueButton"
       data-testid="continue"
-      class="primary"
+      class="primary continue-button"
+      :style="{ '--continue-button-width': continueWidth }"
       :disabled="disabled || !selected"
       @click="emit('continue')"
     >
-      Continue with {{ pair.currency }} on {{ selected?.name }}
+      <span ref="continueLabel" class="continue-label">
+        Continue with {{ pair.currency }} on {{ selected?.name }}
+      </span>
     </button>
     <p class="small muted">Your rate is fixed when the quote is ready.</p>
   </div>
 </template>
+
+<style scoped>
+@media (min-width: 601px) {
+  .continue-button {
+    width: var(--continue-button-width, auto);
+    max-width: 100%;
+    overflow: hidden;
+    transition: width var(--motion-medium, 220ms)
+      var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+  }
+  .continue-label {
+    display: block;
+    width: max-content;
+    margin-inline: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .continue-button {
+    transition: none;
+  }
+}
+</style>
