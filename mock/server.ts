@@ -17,6 +17,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
     sequence = 100306,
     current: Payment | null = null;
   const payments = new Map<string, Payment>();
+  const confirmationReachedAt = new Map<string, number>();
   let fundsObserved = false;
   let frozen: number | null = null,
     offset = 0;
@@ -55,17 +56,44 @@ export function createMockServer(options: { now?: () => number } = {}) {
     }
     return data ? (JSON.parse(data) as Record<string, unknown>) : {};
   }
-  function save(p: Payment) {
+  function save(p: Payment, reachedAt = now()) {
     fundsObserved ||= hasFunds(p.status);
+    if (p.status === "detected" || p.status === "confirming")
+      confirmationReachedAt.set(p.payment_reference, reachedAt);
+    else confirmationReachedAt.delete(p.payment_reference);
     payments.set(p.payment_reference, p);
     current = p;
     return p;
   }
   function refresh(p: Payment) {
-    return p.status === "awaiting_payment" &&
+    if (
+      p.status === "awaiting_payment" &&
       Date.parse(p.quote.expires_at) <= now()
-      ? save(withStatus(p, "expired", now()))
-      : p;
+    )
+      return save(withStatus(p, "expired", now()));
+    if (p.status !== "detected" && p.status !== "confirming") return p;
+
+    const reachedAt = confirmationReachedAt.get(p.payment_reference);
+    const network = catalogue
+      .find((currency) => currency.code === p.quote.crypto_currency)
+      ?.networks.find((entry) => entry.id === p.quote.network);
+    if (reachedAt === undefined || !network) return p;
+    const intervalMs = network.avg_confirmation_seconds * 1000;
+    const elapsed = Math.floor((now() - reachedAt) / intervalMs);
+    if (elapsed <= 0) return p;
+
+    const gained = Math.min(elapsed, p.required_confirmations - p.confirmations);
+    const confirmations = p.confirmations + gained;
+    // Retain partial intervals and settle at the due time, even on a late read.
+    const advancedAt = reachedAt + gained * intervalMs;
+    const advanced = withStatus(
+      p,
+      confirmations === p.required_confirmations ? "paid" : "confirming",
+      advancedAt,
+    );
+    if (advanced.status === "confirming" || advanced.status === "paid")
+      return save({ ...advanced, confirmations, tx_hash: p.tx_hash }, advancedAt);
+    return p;
   }
   return createServer(async (req, res) => {
     const path = new URL(req.url ?? "/", "http://localhost").pathname;
@@ -74,6 +102,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
         const input = await body(req);
         scenario = defaultScenario();
         payments.clear();
+        confirmationReachedAt.clear();
         fundsObserved = false;
         current = null;
         sequence = 100306;
@@ -111,8 +140,13 @@ export function createMockServer(options: { now?: () => number } = {}) {
           input.status &&
           current &&
           statuses.includes(input.status as PaymentStatus)
-        )
-          save(withStatus(current, input.status as PaymentStatus, now()));
+        ) {
+          const appliedAt = now();
+          save(
+            withStatus(current, input.status as PaymentStatus, appliedAt),
+            appliedAt,
+          );
+        }
         return json(res, 200, { scenario, payment: current });
       }
       if (path === "/api/demo" && req.method === "GET")
