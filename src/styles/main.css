@@ -293,6 +293,16 @@ legend {
 .secondary span {
   margin-right: 6px;
 }
+.copy-control > .secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.copy-icon {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
 .text-button {
   border: 0;
   background: transparent;
@@ -479,6 +489,14 @@ legend {
 .result {
   font-size: 20px;
   letter-spacing: -0.4px;
+}
+.recovery-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.recovery-heading svg {
+  flex: none;
 }
 .recovery-grid {
   display: grid;

@@ -5,7 +5,25 @@ const emit = defineEmits<{ requote: [] }>();
 </script>
 <template>
   <div class="recovery">
-    <strong>△ This quote expired</strong>
+    <strong class="recovery-heading">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="1.8"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M12 3.5l9.5 17H2.5L12 3.5z" />
+        <path d="M12 10v5" />
+        <circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none" />
+      </svg>
+      This quote expired
+    </strong>
     <p class="muted">
       The fixed rate ended. Do not use the previous transfer instructions.
     </p>
