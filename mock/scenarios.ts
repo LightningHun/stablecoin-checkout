@@ -6,12 +6,14 @@ export interface Scenario {
   delayMs: number;
   ttlMs: number;
   orderAmount: string;
+  requireSignature: boolean;
 }
 export const defaultScenario = (): Scenario => ({
   fault: "none",
   delayMs: 5000,
   ttlMs: 900000,
   orderAmount: "149.90",
+  requireSignature: false,
 });
 
 export function normalizeOrderAmount(value: unknown): string {

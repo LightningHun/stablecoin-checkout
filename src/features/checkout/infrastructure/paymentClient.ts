@@ -1,6 +1,10 @@
 import type { Currency, Pair, Payment } from "../domain/paymentModel";
-import { catalogueSchema, parsePayment } from "./responseSchemas";
-import type { CatalogueInfo } from "./responseSchemas";
+import {
+  catalogueSchema,
+  parsePayment,
+  checkoutLinkSchema,
+} from "./responseSchemas";
+import type { CatalogueInfo, CheckoutLinkVerdict } from "./responseSchemas";
 export interface ApiResult<T> {
   data: T;
   serverTime: string;
@@ -8,6 +12,11 @@ export interface ApiResult<T> {
   end: number;
 }
 export interface PaymentClient {
+  validateLink?(
+    order: string | null,
+    signature: string | null,
+    signal: AbortSignal,
+  ): Promise<ApiResult<CheckoutLinkVerdict>>;
   catalogue?(signal: AbortSignal): Promise<ApiResult<CatalogueInfo>>;
   currencies(signal: AbortSignal): Promise<ApiResult<Currency[]>>;
   create(pair: Pair, signal: AbortSignal): Promise<ApiResult<Payment>>;
@@ -97,6 +106,20 @@ export function createPaymentClient(
     }
   }
   return {
+    validateLink: (order, signature, signal) => {
+      const query = new URLSearchParams();
+      if (order !== null) query.set("order_id", order);
+      if (signature !== null) query.set("sig", signature);
+      return request("/checkout/link?" + query.toString(), signal, (value) => {
+        const verdict = checkoutLinkSchema.parse(value);
+        if (
+          verdict.order_id !==
+          (verdict.valid ? order : (order?.slice(0, 64) ?? null))
+        )
+          throw Error("Unexpected checkout link order");
+        return verdict;
+      });
+    },
     catalogue: (signal) => request(cataloguePath, signal, parseCatalogue),
     currencies: (signal) =>
       request(cataloguePath, signal, (v) => parseCatalogue(v).currencies),

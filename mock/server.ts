@@ -1,4 +1,6 @@
 import { createServer } from "node:http";
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { MOCK_LINK_SECRET } from "./config";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { catalogue } from "./catalogue";
 import { makePayment, withStatus } from "./fixtures";
@@ -14,12 +16,13 @@ import type {
 } from "../src/features/checkout/domain/paymentModel";
 export function createMockServer(options: { now?: () => number } = {}) {
   let scenario = defaultScenario(),
-    sequence = 100306;
+    sequence = 100306,
+    orderSequence = 88214;
   const orders = new Map<
     string,
     { current: Payment | null; fundsObserved: boolean }
-  >();
-  // Amounts can be configured before a quote exists; this does not create an order.
+  >([["ORD-88213", { current: null, fundsObserved: false }]]);
+  // Only registered orders can receive amount configuration or payment attempts.
   const orderAmounts = new Map<string, string>();
   const orderAmount = (orderId: string) =>
     orderAmounts.get(orderId) ?? "149.90";
@@ -67,9 +70,32 @@ export function createMockServer(options: { now?: () => number } = {}) {
     return data ? (JSON.parse(data) as Record<string, unknown>) : {};
   }
   function readOrderId(value: unknown = "ORD-88213"): string {
-    if (typeof value !== "string" || !/^ORD-[0-9]{5}$/.test(value))
+    if (
+      typeof value !== "string" ||
+      !/^ORD-[0-9]{5}$/.test(value) ||
+      !orders.has(value)
+    )
       throw Error("Unknown order");
     return value;
+  }
+  function signature(orderId: string) {
+    return createHmac("sha256", MOCK_LINK_SECRET)
+      .update(orderId)
+      .digest("hex")
+      .slice(0, 16);
+  }
+  async function injectFault(req: IncomingMessage, res: ServerResponse) {
+    if (scenario.fault === "slow")
+      await new Promise((resolve) => setTimeout(resolve, scenario.delayMs));
+    if (scenario.fault === "disconnect") {
+      req.socket.destroy();
+      return true;
+    }
+    if (scenario.fault === "500") {
+      json(res, 500, { title: "Temporary payment server error" });
+      return true;
+    }
+    return false;
   }
   function save(p: Payment, reachedAt = now()) {
     const order = orders.get(p.order_id) ?? {
@@ -134,6 +160,8 @@ export function createMockServer(options: { now?: () => number } = {}) {
         payments.clear();
         confirmationReachedAt.clear();
         orders.clear();
+        orders.set("ORD-88213", { current: null, fundsObserved: false });
+        orderSequence = 88214;
         orderAmounts.clear();
         orderAmounts.set("ORD-88213", scenario.orderAmount);
         sequence = 100306;
@@ -157,12 +185,34 @@ export function createMockServer(options: { now?: () => number } = {}) {
           now: new Date(now()).toISOString(),
         });
       }
+      if (path === "/api/demo/orders" && req.method === "POST") {
+        const input = await body(req);
+        const amount =
+          "amount" in input ? normalizeOrderAmount(input.amount) : "149.90";
+        if (orderSequence > 99999) throw Error("Demo order registry is full");
+        const order_id = `ORD-${orderSequence++}`;
+        orders.set(order_id, { current: null, fundsObserved: false });
+        orderAmounts.set(order_id, amount);
+        const sig = signature(order_id);
+        return json(res, 201, {
+          order_id,
+          sig,
+          checkout_url: `/?order=${order_id}&sig=${sig}`,
+        });
+      }
       if (path === "/api/demo/scenario" && req.method === "POST") {
         const input = await body(req);
         // Validate before changing clocks, payment state, or any scenario fields.
         const orderId = readOrderId(input.order_id);
+        if (
+          "requireSignature" in input &&
+          typeof input.requireSignature !== "boolean"
+        )
+          throw Error("Invalid signature requirement");
         if ("orderAmount" in input)
           orderAmounts.set(orderId, normalizeOrderAmount(input.orderAmount));
+        if (typeof input.requireSignature === "boolean")
+          scenario.requireSignature = input.requireSignature;
         const current = orders.get(orderId)?.current ?? null;
         if (typeof input.advanceMs === "number") {
           if (frozen !== null) frozen += input.advanceMs;
@@ -196,6 +246,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
           scenario: scenarioFor(orderId),
           payment: orders.get(orderId)?.current ?? null,
           metrics,
+          requireSignature: scenario.requireSignature,
           now: new Date(now()).toISOString(),
           orders: [...orders].map(([order_id, order]) => ({
             order_id,
@@ -204,6 +255,36 @@ export function createMockServer(options: { now?: () => number } = {}) {
             fundsObserved: order.fundsObserved,
           })),
         });
+      }
+      if (path === "/api/checkout/link" && req.method === "GET") {
+        if (await injectFault(req, res)) return;
+        const orderId = url.searchParams.get("order_id");
+        const sig = url.searchParams.get("sig");
+        let reason: string | null = null;
+        if (orderId === null || !/^ORD-[0-9]{5}$/.test(orderId))
+          reason = "malformed_order";
+        else if (!orders.has(orderId)) reason = "unknown_order";
+        else if (sig !== null) {
+          if (
+            !/^[0-9a-f]{16}$/.test(sig) ||
+            !timingSafeEqual(Buffer.from(sig), Buffer.from(signature(orderId)))
+          )
+            reason = "invalid_signature";
+        } else if (scenario.requireSignature) reason = "missing_signature";
+        const checked_at = new Date(now()).toISOString();
+        return json(
+          res,
+          200,
+          reason === null
+            ? { valid: true, order_id: orderId, checked_at }
+            : {
+                valid: false,
+                reason,
+                order_id: orderId?.slice(0, 64) ?? null,
+                checked_at,
+                help_url: "mailto:help@payment-project.example",
+              },
+        );
       }
       if (path === "/api/currencies" && req.method === "GET") {
         const orderId = readOrderId(
@@ -234,14 +315,10 @@ export function createMockServer(options: { now?: () => number } = {}) {
         });
       } else metrics.posts++;
       const input = req.method === "POST" ? await body(req) : {};
-      if (scenario.fault === "slow")
-        await new Promise((resolve) => setTimeout(resolve, scenario.delayMs));
-      if (scenario.fault === "disconnect") {
-        req.socket.destroy();
-        return;
-      }
-      if (scenario.fault === "500")
-        return json(res, 500, { title: "Temporary payment server error" });
+      // Unknown orders never create payments, including while faults are injected.
+      if (path === "/api/payments" && req.method === "POST")
+        readOrderId(input.order_id);
+      if (await injectFault(req, res)) return;
       if (path === "/api/payments" && req.method === "POST") {
         const orderId = readOrderId(input.order_id);
         const order = orders.get(orderId);
