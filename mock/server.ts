@@ -14,11 +14,21 @@ import type {
 } from "../src/features/checkout/domain/paymentModel";
 export function createMockServer(options: { now?: () => number } = {}) {
   let scenario = defaultScenario(),
-    sequence = 100306,
-    current: Payment | null = null;
+    sequence = 100306;
+  const orders = new Map<
+    string,
+    { current: Payment | null; fundsObserved: boolean }
+  >();
+  // Amounts can be configured before a quote exists; this does not create an order.
+  const orderAmounts = new Map<string, string>();
+  const orderAmount = (orderId: string) =>
+    orderAmounts.get(orderId) ?? "149.90";
+  const scenarioFor = (orderId: string) => ({
+    ...scenario,
+    orderAmount: orderAmount(orderId),
+  });
   const payments = new Map<string, Payment>();
   const confirmationReachedAt = new Map<string, number>();
-  let fundsObserved = false;
   let frozen: number | null = null,
     offset = 0;
   const now = () => frozen ?? (options.now?.() ?? Date.now()) + offset;
@@ -56,13 +66,23 @@ export function createMockServer(options: { now?: () => number } = {}) {
     }
     return data ? (JSON.parse(data) as Record<string, unknown>) : {};
   }
+  function readOrderId(value: unknown = "ORD-88213"): string {
+    if (typeof value !== "string" || !/^ORD-[0-9]{5}$/.test(value))
+      throw Error("Unknown order");
+    return value;
+  }
   function save(p: Payment, reachedAt = now()) {
-    fundsObserved ||= hasFunds(p.status);
+    const order = orders.get(p.order_id) ?? {
+      current: null,
+      fundsObserved: false,
+    };
+    order.fundsObserved ||= hasFunds(p.status);
     if (p.status === "detected" || p.status === "confirming")
       confirmationReachedAt.set(p.payment_reference, reachedAt);
     else confirmationReachedAt.delete(p.payment_reference);
     payments.set(p.payment_reference, p);
-    current = p;
+    order.current = p;
+    orders.set(p.order_id, order);
     return p;
   }
   function refresh(p: Payment) {
@@ -82,7 +102,10 @@ export function createMockServer(options: { now?: () => number } = {}) {
     const elapsed = Math.floor((now() - reachedAt) / intervalMs);
     if (elapsed <= 0) return p;
 
-    const gained = Math.min(elapsed, p.required_confirmations - p.confirmations);
+    const gained = Math.min(
+      elapsed,
+      p.required_confirmations - p.confirmations,
+    );
     const confirmations = p.confirmations + gained;
     // Retain partial intervals and settle at the due time, even on a late read.
     const advancedAt = reachedAt + gained * intervalMs;
@@ -92,11 +115,15 @@ export function createMockServer(options: { now?: () => number } = {}) {
       advancedAt,
     );
     if (advanced.status === "confirming" || advanced.status === "paid")
-      return save({ ...advanced, confirmations, tx_hash: p.tx_hash }, advancedAt);
+      return save(
+        { ...advanced, confirmations, tx_hash: p.tx_hash },
+        advancedAt,
+      );
     return p;
   }
   return createServer(async (req, res) => {
-    const path = new URL(req.url ?? "/", "http://localhost").pathname;
+    const url = new URL(req.url ?? "/", "http://localhost");
+    const path = url.pathname;
     try {
       if (path === "/api/demo/reset" && req.method === "POST") {
         const input = await body(req);
@@ -106,8 +133,9 @@ export function createMockServer(options: { now?: () => number } = {}) {
         scenario = nextScenario;
         payments.clear();
         confirmationReachedAt.clear();
-        fundsObserved = false;
-        current = null;
+        orders.clear();
+        orderAmounts.clear();
+        orderAmounts.set("ORD-88213", scenario.orderAmount);
         sequence = 100306;
         frozen =
           input.freeze === true
@@ -132,8 +160,10 @@ export function createMockServer(options: { now?: () => number } = {}) {
       if (path === "/api/demo/scenario" && req.method === "POST") {
         const input = await body(req);
         // Validate before changing clocks, payment state, or any scenario fields.
+        const orderId = readOrderId(input.order_id);
         if ("orderAmount" in input)
-          scenario.orderAmount = normalizeOrderAmount(input.orderAmount);
+          orderAmounts.set(orderId, normalizeOrderAmount(input.orderAmount));
+        const current = orders.get(orderId)?.current ?? null;
         if (typeof input.advanceMs === "number") {
           if (frozen !== null) frozen += input.advanceMs;
           else offset += input.advanceMs;
@@ -153,25 +183,42 @@ export function createMockServer(options: { now?: () => number } = {}) {
             appliedAt,
           );
         }
-        return json(res, 200, { scenario, payment: current });
-      }
-      if (path === "/api/demo" && req.method === "GET")
         return json(res, 200, {
-          scenario,
-          payment: current,
+          scenario: scenarioFor(orderId),
+          payment: orders.get(orderId)?.current ?? null,
+        });
+      }
+      if (path === "/api/demo" && req.method === "GET") {
+        const orderId = readOrderId(
+          url.searchParams.get("order_id") ?? undefined,
+        );
+        return json(res, 200, {
+          scenario: scenarioFor(orderId),
+          payment: orders.get(orderId)?.current ?? null,
           metrics,
           now: new Date(now()).toISOString(),
+          orders: [...orders].map(([order_id, order]) => ({
+            order_id,
+            payment_reference: order.current?.payment_reference ?? null,
+            status: order.current?.status ?? null,
+            fundsObserved: order.fundsObserved,
+          })),
         });
-      if (path === "/api/currencies" && req.method === "GET")
+      }
+      if (path === "/api/currencies" && req.method === "GET") {
+        const orderId = readOrderId(
+          url.searchParams.get("order_id") ?? undefined,
+        );
         return json(res, 200, {
           currencies: catalogue,
           order: {
-            order_id: "ORD-88213",
+            order_id: orderId,
             currency: "EUR",
-            amount: scenario.orderAmount,
+            amount: orderAmount(orderId),
           },
           merchant: { name: "Payment Project", logo_url: null },
         });
+      }
       if (!path.startsWith("/api/payments"))
         return json(res, 404, { title: "Not found" });
       const isGet = req.method === "GET";
@@ -196,9 +243,9 @@ export function createMockServer(options: { now?: () => number } = {}) {
       if (scenario.fault === "500")
         return json(res, 500, { title: "Temporary payment server error" });
       if (path === "/api/payments" && req.method === "POST") {
-        if (input.order_id !== "ORD-88213")
-          return json(res, 400, { title: "Unknown order" });
-        if (fundsObserved)
+        const orderId = readOrderId(input.order_id);
+        const order = orders.get(orderId);
+        if (order?.fundsObserved)
           return conflict(
             res,
             "Funds already observed",
@@ -209,9 +256,13 @@ export function createMockServer(options: { now?: () => number } = {}) {
           `AQH-${sequence++}-PMT`,
           now(),
           scenario.ttlMs,
-          scenario.orderAmount,
+          orderAmount(orderId),
+          orderId,
         );
-        if (current) payments.delete(current.payment_reference);
+        if (order?.current) {
+          payments.delete(order.current.payment_reference);
+          confirmationReachedAt.delete(order.current.payment_reference);
+        }
         return json(res, 201, save(p));
       }
       const match = /^\/api\/payments\/([^/]+)(\/requote)?$/.exec(path);
@@ -220,7 +271,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
       if (!original) return json(res, 404, { title: "Unknown payment" });
       const p = refresh(original);
       if (match[2] && req.method === "POST") {
-        if (p.status !== "expired" || fundsObserved)
+        if (p.status !== "expired" || orders.get(p.order_id)?.fundsObserved)
           return conflict(
             res,
             "Quote has not expired",
@@ -235,7 +286,8 @@ export function createMockServer(options: { now?: () => number } = {}) {
               p.payment_reference,
               now(),
               scenario.ttlMs,
-              scenario.orderAmount,
+              orderAmount(p.order_id),
+              p.order_id,
             ),
           ),
         );

@@ -1,17 +1,20 @@
 <script setup lang="ts">
 import { ref } from "vue";
 import { statuses } from "../domain/paymentModel";
+const props = defineProps<{ orderId: string }>();
 const emit = defineEmits<{ refresh: []; reset: [] }>();
 const state = ref("awaiting_payment"),
   fault = ref("none"),
   orderAmount = ref("149.90"),
   message = ref("");
-async function command(path: string, body: unknown) {
+async function command(path: string, body: Record<string, unknown>) {
   try {
     const response = await fetch("/api/demo/" + path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(
+        path === "scenario" ? { ...body, order_id: props.orderId } : body,
+      ),
     });
     if (!response.ok) {
       if (response.status === 400) {

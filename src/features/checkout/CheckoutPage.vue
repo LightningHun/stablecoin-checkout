@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref, shallowRef, watch } from "vue";
 import { usePaymentController } from "./application/usePaymentController";
+import { createPaymentClient } from "./infrastructure/paymentClient";
 import type { RestoreResult } from "./application/usePaymentController";
 import {
   loadReference,
@@ -16,9 +17,14 @@ import RecoveryPanel from "./components/RecoveryPanel.vue";
 import NetworkBadge from "./components/NetworkBadge.vue";
 import DemoControls from "./components/DemoControls.vue";
 import TransactionLink from "./components/TransactionLink.vue";
-const storedReference = loadReference();
+const params = new URLSearchParams(location.search);
+const orderId = params.get("order") ?? "ORD-88213";
+const validOrder = /^ORD-[0-9]{5}$/.test(orderId);
+const storedReference = validOrder ? loadReference(orderId) : null;
 const restorePending = ref(storedReference !== null);
-const controller = usePaymentController();
+const controller = usePaymentController({
+  client: createPaymentClient("/api", orderId),
+});
 const restoringPayment = computed(
   () => restorePending.value || controller.restoring.value,
 );
@@ -42,17 +48,14 @@ const {
 const selecting = ref(true),
   motionReady = ref(false),
   focusTarget = ref<HTMLElement | null>(null);
-const showDemo = new URLSearchParams(location.search).has("demo");
+const showDemo = params.has("demo");
 function resetDemo() {
   resetting = true;
   controller.dispose();
-  clearReference();
+  clearReference(orderId);
   window.location.reload();
 }
-const locale =
-  new URLSearchParams(location.search).get("locale") ||
-  navigator.language ||
-  "en-IE";
+const locale = params.get("locale") || navigator.language || "en-IE";
 const merchant = computed(
   () =>
     payment.value?.merchant.name ??
@@ -135,7 +138,7 @@ function select(pair: Pair) {
 }
 function persistReference() {
   if (!resetting && payment.value && !controller.referenceMissing.value)
-    saveReference(payment.value.payment_reference);
+    saveReference(payment.value.payment_reference, orderId);
 }
 function finishRestore(outcome: RestoreResult | void) {
   if (resetting) return;
@@ -144,7 +147,7 @@ function finishRestore(outcome: RestoreResult | void) {
     restorePending.value = false;
     persistReference();
   } else if (outcome === "not-found") {
-    clearReference();
+    clearReference(orderId);
     selecting.value = true;
     restorePending.value = false;
   }
@@ -161,12 +164,14 @@ async function requote() {
   persistReference();
 }
 watch(controller.referenceMissing, (missing) => {
-  if (missing) clearReference();
+  if (missing) clearReference(orderId);
 });
 onMounted(() => {
+  if (!validOrder) return;
   pageRefresh = (async () => {
     const initialized = controller.initialize();
-    if (storedReference) finishRestore(await controller.restore(storedReference));
+    if (storedReference)
+      finishRestore(await controller.restore(storedReference));
     else await initialized;
   })();
 });
@@ -179,11 +184,12 @@ onMounted(() => {
       }}</span
       ><span>{{ merchant }}</span>
     </div>
-    <span class="order-reference mono"
-      >Order {{ payment?.order_id ?? "ORD-88213" }}</span
+    <span v-if="validOrder" class="order-reference mono"
+      >Order {{ orderId }}</span
     >
   </header>
-  <div v-if="error" class="connection-banner" role="alert">
+  <p v-if="!validOrder" class="checkout">This checkout link is not valid.</p>
+  <div v-if="validOrder && error" class="connection-banner" role="alert">
     <span
       ><strong>Can't reach a verified payment update.</strong> {{ error }}
       <span v-if="payment"
@@ -199,6 +205,7 @@ onMounted(() => {
     </button>
   </div>
   <main
+    v-if="validOrder"
     class="checkout"
     :class="{ 'motion-ready': motionReady }"
     data-testid="checkout"
@@ -379,10 +386,15 @@ onMounted(() => {
     </section>
     <footer class="checkout-footer">
       <span>{{
-        payment ? "Reference " + payment.payment_reference : "Order ORD-88213"
+        payment ? "Reference " + payment.payment_reference : "Order " + orderId
       }}</span
       ><span>Demo checkout · no real funds</span>
     </footer>
-    <DemoControls v-if="showDemo" @refresh="retry" @reset="resetDemo" />
+    <DemoControls
+      v-if="showDemo"
+      :order-id="orderId"
+      @refresh="retry"
+      @reset="resetDemo"
+    />
   </main>
 </template>

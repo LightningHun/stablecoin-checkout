@@ -49,6 +49,7 @@ export function makePayment(
   now: number,
   ttlMs = 900000,
   orderAmount = "149.90",
+  orderId = "ORD-88213",
 ): Payment {
   const currency = catalogue.find((c) => c.code === pair.currency);
   const network = currency?.networks.find((n) => n.id === pair.network);
@@ -62,7 +63,7 @@ export function makePayment(
     baseOrderCents;
   return {
     payment_reference: reference,
-    order_id: "ORD-88213",
+    order_id: orderId,
     status: "awaiting_payment",
     merchant: { name: "Payment Project", logo_url: null },
     order: { currency: "EUR", amount: orderAmount },

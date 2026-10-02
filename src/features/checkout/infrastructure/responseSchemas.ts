@@ -13,7 +13,7 @@ const network = z.object({
   avg_confirmation_seconds: count.positive(),
 });
 const orderInfoSchema = z.object({
-  order_id: z.literal("ORD-88213"),
+  order_id: z.string().regex(/^ORD-[0-9]{5}$/),
   currency: z.literal("EUR"),
   amount: decimal.refine((value) => {
     try {
@@ -149,7 +149,7 @@ const quote = z.object({
 });
 const base = {
   payment_reference: z.string().min(1),
-  order_id: z.literal("ORD-88213"),
+  order_id: z.string().regex(/^ORD-[0-9]{5}$/),
   merchant: z.object({
     name: z.string().min(1),
     logo_url: z.string().nullable(),

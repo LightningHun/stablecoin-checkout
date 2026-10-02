@@ -27,7 +27,26 @@ export class ApiError extends Error {
     super(message);
   }
 }
-export function createPaymentClient(base = "/api"): PaymentClient {
+export function createPaymentClient(
+  base = "/api",
+  orderId = "ORD-88213",
+): PaymentClient {
+  // Keep the legacy default URL for consumers that stub the plain catalogue.
+  const cataloguePath =
+    orderId === "ORD-88213"
+      ? "/currencies"
+      : "/currencies?order_id=" + encodeURIComponent(orderId);
+  function parseOrderPayment(value: unknown): Payment {
+    const payment = parsePayment(value);
+    if (payment.order_id !== orderId) throw Error("Unexpected payment order");
+    return payment;
+  }
+  function parseCatalogue(value: unknown): CatalogueInfo {
+    const catalogue = catalogueSchema.parse(value);
+    if (catalogue.order && catalogue.order.order_id !== orderId)
+      throw Error("Unexpected catalogue order");
+    return catalogue;
+  }
   async function request<T>(
     path: string,
     signal: AbortSignal,
@@ -78,26 +97,25 @@ export function createPaymentClient(base = "/api"): PaymentClient {
     }
   }
   return {
-    catalogue: (signal) =>
-      request("/currencies", signal, (v) => catalogueSchema.parse(v)),
+    catalogue: (signal) => request(cataloguePath, signal, parseCatalogue),
     currencies: (signal) =>
-      request(
-        "/currencies",
-        signal,
-        (v) => catalogueSchema.parse(v).currencies,
-      ),
+      request(cataloguePath, signal, (v) => parseCatalogue(v).currencies),
     create: (pair, signal) =>
-      request("/payments", signal, parsePayment, {
-        order_id: "ORD-88213",
+      request("/payments", signal, parseOrderPayment, {
+        order_id: orderId,
         ...pair,
       }),
     status: (ref, signal) =>
-      request("/payments/" + encodeURIComponent(ref), signal, parsePayment),
+      request(
+        "/payments/" + encodeURIComponent(ref),
+        signal,
+        parseOrderPayment,
+      ),
     requote: (ref, pair, signal) =>
       request(
         "/payments/" + encodeURIComponent(ref) + "/requote",
         signal,
-        parsePayment,
+        parseOrderPayment,
         pair,
       ),
   };
