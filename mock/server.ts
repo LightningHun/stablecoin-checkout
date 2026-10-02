@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { catalogue } from "./catalogue";
 import { makePayment, withStatus } from "./fixtures";
-import { defaultScenario } from "./scenarios";
+import { defaultScenario, normalizeOrderAmount } from "./scenarios";
 import {
   hasFunds,
   statuses,
@@ -100,7 +100,10 @@ export function createMockServer(options: { now?: () => number } = {}) {
     try {
       if (path === "/api/demo/reset" && req.method === "POST") {
         const input = await body(req);
-        scenario = defaultScenario();
+        const nextScenario = defaultScenario();
+        if ("orderAmount" in input)
+          nextScenario.orderAmount = normalizeOrderAmount(input.orderAmount);
+        scenario = nextScenario;
         payments.clear();
         confirmationReachedAt.clear();
         fundsObserved = false;
@@ -128,6 +131,9 @@ export function createMockServer(options: { now?: () => number } = {}) {
       }
       if (path === "/api/demo/scenario" && req.method === "POST") {
         const input = await body(req);
+        // Validate before changing clocks, payment state, or any scenario fields.
+        if ("orderAmount" in input)
+          scenario.orderAmount = normalizeOrderAmount(input.orderAmount);
         if (typeof input.advanceMs === "number") {
           if (frozen !== null) frozen += input.advanceMs;
           else offset += input.advanceMs;
@@ -157,7 +163,15 @@ export function createMockServer(options: { now?: () => number } = {}) {
           now: new Date(now()).toISOString(),
         });
       if (path === "/api/currencies" && req.method === "GET")
-        return json(res, 200, { currencies: catalogue });
+        return json(res, 200, {
+          currencies: catalogue,
+          order: {
+            order_id: "ORD-88213",
+            currency: "EUR",
+            amount: scenario.orderAmount,
+          },
+          merchant: { name: "Payment Project", logo_url: null },
+        });
       if (!path.startsWith("/api/payments"))
         return json(res, 404, { title: "Not found" });
       const isGet = req.method === "GET";
@@ -195,6 +209,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
           `AQH-${sequence++}-PMT`,
           now(),
           scenario.ttlMs,
+          scenario.orderAmount,
         );
         if (current) payments.delete(current.payment_reference);
         return json(res, 201, save(p));
@@ -220,6 +235,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
               p.payment_reference,
               now(),
               scenario.ttlMs,
+              scenario.orderAmount,
             ),
           ),
         );

@@ -4,6 +4,7 @@ import { statuses } from "../domain/paymentModel";
 const emit = defineEmits<{ refresh: []; reset: [] }>();
 const state = ref("awaiting_payment"),
   fault = ref("none"),
+  orderAmount = ref("149.90"),
   message = ref("");
 async function command(path: string, body: unknown) {
   try {
@@ -12,7 +13,21 @@ async function command(path: string, body: unknown) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
     });
-    if (!response.ok) throw Error("Control failed");
+    if (!response.ok) {
+      if (response.status === 400) {
+        const problem: unknown = await response.json();
+        if (
+          problem &&
+          typeof problem === "object" &&
+          "title" in problem &&
+          typeof problem.title === "string"
+        ) {
+          message.value = problem.title;
+          return;
+        }
+      }
+      throw Error("Control failed");
+    }
     message.value = "Demo updated";
     emit("refresh");
   } catch {
@@ -28,6 +43,25 @@ async function reset() {
   <details class="demo-controls" data-testid="demo-controls">
     <summary>Demo controls · no real funds</summary>
     <p>Evaluator tools. Reset before exploring another completed payment.</p>
+    <label>
+      Order amount (EUR)
+      <input
+        v-model="orderAmount"
+        type="text"
+        inputmode="decimal"
+        data-testid="demo-order-amount"
+      />
+    </label>
+    <button
+      class="secondary"
+      data-testid="demo-apply-amount"
+      @click="command('scenario', { orderAmount })"
+    >
+      Apply amount
+    </button>
+    <p class="small muted">
+      Applies to the next quote. Use Change or Reset demo to re-quote.
+    </p>
     <label
       >Payment state<select v-model="state" data-testid="demo-state">
         <option v-for="s in statuses" :key="s">{{ s }}</option>
@@ -38,7 +72,7 @@ async function reset() {
       @click="command('scenario', { status: state })"
     >
       Apply state
-</button
+    </button
     ><label
       >Connection<select v-model="fault" data-testid="demo-fault">
         <option value="none">Healthy</option>
@@ -52,13 +86,13 @@ async function reset() {
       @click="command('scenario', { fault })"
     >
       Apply connection
-</button
+    </button
     ><button
       class="secondary"
       @click="command('scenario', { advanceMs: 900000 })"
     >
       Advance 15 minutes
-</button
+    </button
     ><button class="secondary" data-testid="demo-reset" @click="reset">
       Reset demo
     </button>

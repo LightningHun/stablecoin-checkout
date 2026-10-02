@@ -48,27 +48,33 @@ export function makePayment(
   reference: string,
   now: number,
   ttlMs = 900000,
+  orderAmount = "149.90",
 ): Payment {
   const currency = catalogue.find((c) => c.code === pair.currency);
   const network = currency?.networks.find((n) => n.id === pair.network);
   const seed = quoteSeeds[pair.currency + "/" + pair.network];
   if (!currency || !network || !seed) throw new Error("Unsupported pair");
+  const baseOrderCents = parseUnits("149.90", 2);
+  // Scale the literal demo principal, rounding half up in token smallest units.
+  const principal =
+    (parseUnits(seed.amount, currency.decimals) * parseUnits(orderAmount, 2) +
+      baseOrderCents / 2n) /
+    baseOrderCents;
   return {
     payment_reference: reference,
     order_id: "ORD-88213",
     status: "awaiting_payment",
     merchant: { name: "Payment Project", logo_url: null },
-    order: { currency: "EUR", amount: "149.90" },
+    order: { currency: "EUR", amount: orderAmount },
     quote: {
       crypto_currency: pair.currency,
       network: network.id,
       network_name: network.name,
       exchange_rate: seed.rate,
-      crypto_amount: seed.amount,
+      crypto_amount: formatUnits(principal, currency.decimals),
       network_fee: network.network_fee,
       total_due: formatUnits(
-        parseUnits(seed.amount, currency.decimals) +
-          parseUnits(network.network_fee, currency.decimals),
+        principal + parseUnits(network.network_fee, currency.decimals),
         currency.decimals,
       ),
       crypto_address: seed.address,
@@ -87,7 +93,7 @@ export function withStatus(
   const decimals = quote.crypto_currency === "ETH" ? 18 : 6;
   const total = parseUnits(quote.total_due, decimals);
   const received =
-    quote.crypto_currency === "ETH"
+    quote.crypto_currency === "ETH" || total <= parseUnits("120.00", decimals)
       ? formatUnits(total / 2n, decimals)
       : "120.00";
   const excess = quote.crypto_currency === "ETH" ? "0.01" : "16.31";

@@ -23,9 +23,12 @@ const restoringPayment = computed(
   () => restorePending.value || controller.restoring.value,
 );
 let resetting = false;
+let pageRefresh = Promise.resolve();
 const {
   payment,
   currencies,
+  order,
+  merchant: catalogueMerchant,
   health,
   error,
   busy,
@@ -50,7 +53,10 @@ const locale =
   navigator.language ||
   "en-IE";
 const merchant = computed(
-  () => payment.value?.merchant.name ?? "Payment Project",
+  () =>
+    payment.value?.merchant.name ??
+    catalogueMerchant.value?.name ??
+    "Payment Project",
 );
 const selectionVisible = computed(
   () => !restoringPayment.value && selecting.value && canChange.value,
@@ -115,8 +121,12 @@ function finishRestore(outcome: RestoreResult | void) {
     restorePending.value = false;
   }
 }
-async function retry() {
-  finishRestore(await controller.retry());
+function retry() {
+  // Keep demo catalogue refreshes behind startup and earlier refreshes.
+  pageRefresh = pageRefresh.then(async () => {
+    if (!resetting) finishRestore(await controller.retry());
+  });
+  return pageRefresh;
 }
 async function requote() {
   await controller.requote();
@@ -125,10 +135,12 @@ async function requote() {
 watch(controller.referenceMissing, (missing) => {
   if (missing) clearReference();
 });
-onMounted(async () => {
-  const initialized = controller.initialize();
-  if (storedReference) finishRestore(await controller.restore(storedReference));
-  else await initialized;
+onMounted(() => {
+  pageRefresh = (async () => {
+    const initialized = controller.initialize();
+    if (storedReference) finishRestore(await controller.restore(storedReference));
+    else await initialized;
+  })();
 });
 </script>
 <template>
@@ -160,7 +172,7 @@ onMounted(async () => {
   </div>
   <main class="checkout" data-testid="checkout">
     <OrderSummary
-      :amount="payment?.order.amount ?? '149.90'"
+      :amount="payment?.order.amount ?? order?.amount ?? '149.90'"
       :locale="locale"
     />
     <section

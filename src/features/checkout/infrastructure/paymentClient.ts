@@ -1,5 +1,6 @@
 import type { Currency, Pair, Payment } from "../domain/paymentModel";
 import { catalogueSchema, parsePayment } from "./responseSchemas";
+import type { CatalogueInfo } from "./responseSchemas";
 export interface ApiResult<T> {
   data: T;
   serverTime: string;
@@ -7,6 +8,7 @@ export interface ApiResult<T> {
   end: number;
 }
 export interface PaymentClient {
+  catalogue?(signal: AbortSignal): Promise<ApiResult<CatalogueInfo>>;
   currencies(signal: AbortSignal): Promise<ApiResult<Currency[]>>;
   create(pair: Pair, signal: AbortSignal): Promise<ApiResult<Payment>>;
   status(reference: string, signal: AbortSignal): Promise<ApiResult<Payment>>;
@@ -76,6 +78,8 @@ export function createPaymentClient(base = "/api"): PaymentClient {
     }
   }
   return {
+    catalogue: (signal) =>
+      request("/currencies", signal, (v) => catalogueSchema.parse(v)),
     currencies: (signal) =>
       request(
         "/currencies",

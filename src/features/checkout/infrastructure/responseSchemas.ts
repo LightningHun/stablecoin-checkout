@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { parseUnits } from "../domain/money";
-import type { Payment } from "../domain/paymentModel";
+import type { Currency, Payment } from "../domain/paymentModel";
 const decimal = z.string().regex(/^(0|[1-9]\d*)(\.\d+)?$/);
 const date = z.string().datetime();
 const count = z.number().int().nonnegative();
@@ -12,6 +12,23 @@ const network = z.object({
   required_confirmations: count.positive(),
   avg_confirmation_seconds: count.positive(),
 });
+const orderInfoSchema = z.object({
+  order_id: z.literal("ORD-88213"),
+  currency: z.literal("EUR"),
+  amount: decimal.refine((value) => {
+    try {
+      return parseUnits(value, 2) > 0n;
+    } catch {
+      return false;
+    }
+  }, "Invalid order amount"),
+});
+const merchantInfoSchema = z.object({
+  name: z.string().min(1),
+  logo_url: z.string().nullable(),
+});
+export type OrderInfo = z.infer<typeof orderInfoSchema>;
+export type MerchantInfo = z.infer<typeof merchantInfoSchema>;
 export const catalogueSchema = z
   .object({
     currencies: z
@@ -24,6 +41,8 @@ export const catalogueSchema = z
         }),
       )
       .min(1),
+    order: orderInfoSchema.optional(),
+    merchant: merchantInfoSchema.optional(),
   })
   .superRefine(({ currencies }, ctx) => {
     const keys = currencies.flatMap((c) =>
@@ -57,6 +76,11 @@ export const catalogueSchema = z
       }
     }
   });
+export interface CatalogueInfo {
+  currencies: Currency[];
+  order?: OrderInfo;
+  merchant?: MerchantInfo;
+}
 // Fixed supported pairs are part of this mock contract, not provider discovery.
 const pairRules: Record<
   string,

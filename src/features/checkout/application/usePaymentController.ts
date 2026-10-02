@@ -10,6 +10,10 @@ import { quoteAvailability } from "../domain/quotePolicy";
 import { ApiError, createPaymentClient } from "../infrastructure/paymentClient";
 import type { ApiResult, PaymentClient } from "../infrastructure/paymentClient";
 import { ClockService } from "../infrastructure/ClockService";
+import type {
+  OrderInfo,
+  MerchantInfo,
+} from "../infrastructure/responseSchemas";
 export type RestoreResult = "restored" | "not-found" | "unavailable";
 export interface ControllerOptions {
   client?: PaymentClient;
@@ -23,7 +27,9 @@ export function usePaymentController(options: ControllerOptions = {}) {
   const pollMs = options.pollMs ?? 2000,
     timeoutMs = options.timeoutMs ?? 10000;
   const payment = shallowRef<Payment | null>(null),
-    currencies = shallowRef<Currency[]>([]);
+    currencies = shallowRef<Currency[]>([]),
+    order = shallowRef<OrderInfo | null>(null),
+    merchant = shallowRef<MerchantInfo | null>(null);
   const health = ref<RequestHealth>("loading"),
     error = ref(""),
     busy = ref(false),
@@ -194,10 +200,20 @@ export function usePaymentController(options: ControllerOptions = {}) {
     const gen = generation.value;
     const work = (async () => {
       try {
-        const result = await request((s) => client.currencies(s));
+        const result = await request<{
+          currencies: Currency[];
+          order?: OrderInfo;
+          merchant?: MerchantInfo;
+        }>(async (s) => {
+          if (client.catalogue) return client.catalogue(s);
+          const legacy = await client.currencies(s);
+          return { ...legacy, data: { currencies: legacy.data } };
+        });
         if (disposed || gen !== generation.value) return;
         sample(result);
-        currencies.value = result.data;
+        currencies.value = result.data.currencies;
+        order.value = result.data.order ?? null;
+        merchant.value = result.data.merchant ?? null;
         protocolBlocked.value = false;
         health.value = "fresh";
         error.value = "";
@@ -419,6 +435,8 @@ export function usePaymentController(options: ControllerOptions = {}) {
   return {
     payment,
     currencies,
+    order,
+    merchant,
     health,
     error,
     busy,
