@@ -14,7 +14,10 @@ test('T03/T04 replacement QR independently decodes to the accepted Ethereum addr
     crypto_address: address,
   } })
   await page.getByRole('button', { name: 'Change', exact: true }).click()
-  await page.getByRole('radio', { name: /Ethereum/ }).click()
+  await page.getByRole('radio', { name: /Ethereum/ }).check()
+  await expect(page.getByTestId('continue')).toBeVisible()
+  await expect(page.getByTestId('transfer-address')).toHaveCount(0)
+  await page.getByTestId('continue').click()
   await expect(page.getByTestId('transfer-address')).toHaveText(address)
   await expect(page.getByTestId('transfer-amount')).toContainText('167.19')
   const png = PNG.sync.read(await page.getByTestId('transfer-qr').screenshot())

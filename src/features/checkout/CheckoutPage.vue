@@ -94,14 +94,9 @@ async function start() {
   await nextTick();
   focusTarget.value?.focus();
 }
-async function select(pair: Pair) {
-  if (payment.value) {
-    selecting.value = false;
-    await controller.select(pair);
-    persistReference();
-    await nextTick();
-    focusTarget.value?.focus();
-  } else await controller.select(pair);
+function select(pair: Pair) {
+  if (!canChange.value) return;
+  draft.value = pair;
 }
 function persistReference() {
   if (!resetting && payment.value && !controller.referenceMissing.value)

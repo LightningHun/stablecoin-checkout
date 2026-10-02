@@ -61,8 +61,11 @@ test('T03 accepted replacement never mixes token network amount QR or clipboard'
     } }) })
   })
   await page.getByRole('button', { name: 'Change', exact: true }).click()
-  // Replacement removes the radio immediately; click avoids checking a detached element afterward.
-  await page.getByRole('radio', { name: /Ethereum/ }).click()
+  await page.getByRole('radio', { name: /Ethereum/ }).check()
+  await expect(page.getByTestId('continue')).toBeVisible()
+  expect(createCount).toBe(0)
+  await noTransferAction(page)
+  await page.getByTestId('continue').click()
   await expect.poll(() => createCount).toBe(1)
   await noTransferAction(page)
   await expect(page.getByText(sourceAddress, { exact: true })).toHaveCount(0)
