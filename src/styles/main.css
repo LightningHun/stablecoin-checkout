@@ -937,3 +937,205 @@ legend {
     grid-column: 1/-1;
   }
 }
+
+/* One-shot paid reveal. The only outgoing content is an inert confirmation ghost. */
+.payment-progress {
+  position: relative;
+}
+/* An initially paid snapshot remains static, including earlier generic entrances. */
+.checkout .payment-progress[data-status="paid"] .confirmation-icon,
+.checkout .payment-progress[data-status="paid"] .receipt,
+.checkout .payment-progress[data-status="paid"] > p {
+  animation: none;
+}
+.paid-reveal > .step-marker::before {
+  content: "3";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  opacity: 0;
+  animation: paid-digit-hide var(--paid-check-delay) steps(1, end) both;
+}
+.paid-reveal > .step-marker > .paid-step-glyph {
+  animation: paid-check-in var(--paid-check-duration) var(--paid-ease-out)
+    var(--paid-check-delay) both;
+}
+.paid-confirmation-ghost {
+  position: absolute;
+  inset: 0 0 auto;
+  pointer-events: none;
+  animation: paid-ghost-out var(--paid-ghost-duration) var(--paid-ease-out)
+    var(--paid-ghost-delay) both;
+}
+.paid-ghost-heading {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+.paid-ghost-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: #fff;
+}
+.paid-ghost-count {
+  font-size: 13px;
+  color: #444;
+}
+.paid-ghost-bars {
+  display: flex;
+  gap: 4px;
+  margin: 16px 0;
+}
+.paid-ghost-bars > span {
+  position: relative;
+  height: 4px;
+  border-radius: 4px;
+  flex: 1;
+  background: var(--line);
+}
+.paid-ghost-bars > .paid-ghost-complete {
+  background: var(--ink);
+}
+.paid-ghost-bars > span:not(.paid-ghost-complete)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--ink);
+  transform-origin: left;
+  animation: paid-bar-fill var(--paid-bar-duration) var(--paid-ease-out) both;
+}
+.checkout
+  .payment-progress.paid-reveal-content
+  > .progress-heading
+  > .confirmation-icon.large {
+  position: relative;
+  animation: paid-mark-in var(--paid-mark-duration) var(--paid-ease-mark)
+    var(--paid-mark-delay) both;
+}
+.paid-reveal-content .confirmation-icon.large::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border: 1px solid var(--ink);
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  animation: paid-ring-out var(--paid-ring-duration) var(--paid-ease-out)
+    var(--paid-ring-delay) both;
+}
+.checkout .payment-progress.paid-reveal-content > .progress-heading > strong {
+  animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
+    var(--paid-title-delay) both;
+}
+.checkout .payment-progress.paid-reveal-content > .receipt,
+.checkout .payment-progress.paid-reveal-content > p.small.muted {
+  animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
+    var(--paid-details-delay) both;
+}
+.checkout .payment-progress.paid-reveal-content > .copy-control > button {
+  animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
+    var(--paid-button-delay) both;
+}
+@keyframes paid-bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+  99.99%,
+  to {
+    transform: none;
+  }
+}
+@keyframes paid-digit-hide {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes paid-check-in {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+  to {
+    clip-path: inset(0);
+  }
+}
+@keyframes paid-ghost-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@keyframes paid-mark-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  99.99%,
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes paid-ring-out {
+  from {
+    opacity: 0;
+    transform: scale(1);
+  }
+  0.01% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  99.98% {
+    opacity: 0;
+    transform: scale(2.6);
+  }
+  99.99%,
+  to {
+    opacity: 0;
+    transform: none;
+  }
+}
+@keyframes paid-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  99.99%,
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@media (max-width: 600px) {
+  .paid-ghost-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .paid-ghost-count {
+    grid-column: 1 / -1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .paid-reveal *,
+  .paid-reveal *::before,
+  .paid-reveal *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .paid-confirmation-ghost,
+  .paid-reveal > .step-marker::before,
+  .paid-reveal-content .confirmation-icon.large::after {
+    display: none;
+  }
+}

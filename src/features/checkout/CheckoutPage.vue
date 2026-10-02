@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onMounted, ref, shallowRef, watch } from "vue";
 import { usePaymentController } from "./application/usePaymentController";
 import type { RestoreResult } from "./application/usePaymentController";
 import {
@@ -7,7 +7,7 @@ import {
   saveReference,
   clearReference,
 } from "./infrastructure/paymentStorage";
-import type { Pair } from "./domain/paymentModel";
+import type { Pair, Payment } from "./domain/paymentModel";
 import OrderSummary from "./components/OrderSummary.vue";
 import AssetNetworkSelector from "./components/AssetNetworkSelector.vue";
 import QuoteDetails from "./components/QuoteDetails.vue";
@@ -94,6 +94,31 @@ const activeSend = computed(
     availability.value === "usable" ||
     availability.value === "local-deadline-reached" ||
     payment.value?.status === "expired",
+);
+// Track snapshots actually rendered by PaymentProgress, excluding create/restore work.
+// A post-render watcher retains the previous displayed snapshot for the CSS ghost.
+const paidReveal = shallowRef<{ active: boolean; previous: Payment } | null>(
+  null,
+);
+watch(
+  [() => (selectionVisible.value ? null : payment.value), busy],
+  ([current, isBusy], [previous, wasBusy]) => {
+    if (
+      paidReveal.value ||
+      isBusy ||
+      wasBusy ||
+      !previous ||
+      current?.status !== "paid" ||
+      !["awaiting_payment", "detected", "confirming", "underpaid"].includes(
+        previous.status,
+      ) ||
+      previous.payment_reference !== current.payment_reference ||
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
+    paidReveal.value = { active: true, previous };
+  },
+  { flush: "post" },
 );
 async function start() {
   motionReady.value = true;
@@ -325,17 +350,20 @@ onMounted(() => {
         active: funds || result,
         inactive: !funds && !result,
         done: result,
+        'paid-reveal': paidReveal?.active,
       }"
     >
-      <span class="step-marker" aria-hidden="true">{{
-        result
-          ? payment?.status === "failed"
-            ? "×"
-            : "✓"
-          : payment?.status === "underpaid"
-            ? "!"
-            : "3"
-      }}</span>
+      <span class="step-marker" aria-hidden="true">
+        <span class="paid-step-glyph">{{
+          result
+            ? payment?.status === "failed"
+              ? "×"
+              : "✓"
+            : payment?.status === "underpaid"
+              ? "!"
+              : "3"
+        }}</span>
+      </span>
       <div class="step-heading">
         <h2>Confirmation</h2>
         <span v-if="payment?.status === 'failed'" class="action-label outline"
@@ -346,6 +374,7 @@ onMounted(() => {
         :payment="selectionVisible ? null : payment"
         :health="health"
         :last-checked="lastChecked"
+        :reveal="paidReveal"
       />
     </section>
     <footer class="checkout-footer">

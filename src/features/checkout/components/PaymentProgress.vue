@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 import { parseUnits, formatUnits } from "../domain/money";
 import type { Payment, RequestHealth } from "../domain/paymentModel";
 import CopyButton from "./CopyButton.vue";
@@ -8,7 +8,37 @@ const props = defineProps<{
   payment: Payment | null;
   health: RequestHealth;
   lastChecked: number | null;
+  reveal?: { active: boolean; previous: Payment } | null;
 }>();
+const ghostRemoved = ref(false);
+const revealActive = computed(
+  () =>
+    props.reveal?.active &&
+    props.payment?.status === "paid" &&
+    props.reveal.previous.payment_reference ===
+      props.payment.payment_reference &&
+    ["awaiting_payment", "detected", "confirming", "underpaid"].includes(
+      props.reveal.previous.status,
+    ) &&
+    !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
+);
+const ghost = computed(() => {
+  const previous = props.reveal?.previous;
+  return revealActive.value &&
+    !ghostRemoved.value &&
+    previous &&
+    (previous.status === "detected" || previous.status === "confirming")
+    ? previous
+    : null;
+});
+function finishGhost(event: AnimationEvent) {
+  // Segment animations bubble too; only the overlay's fade removes it.
+  if (
+    event.target === event.currentTarget &&
+    event.animationName === "paid-ghost-out"
+  )
+    ghostRemoved.value = true;
+}
 const partialPercent = computed(() => {
   const p = props.payment;
   if (!p || p.status !== "underpaid") return "0%";
@@ -49,9 +79,41 @@ function title() {
 <template>
   <div
     class="payment-progress"
+    :class="{ 'paid-reveal-content': revealActive }"
     data-testid="payment-status"
     :data-status="payment?.status ?? 'selection'"
   >
+    <div
+      v-if="ghost"
+      class="paid-confirmation-ghost"
+      aria-hidden="true"
+      @animationend="finishGhost"
+    >
+      <div class="paid-ghost-heading">
+        <span class="paid-ghost-icon">✓</span>
+        <strong>{{
+          ghost.status === "detected"
+            ? "Your money arrived"
+            : "Confirming your transfer"
+        }}</strong>
+        <span class="mono paid-ghost-count"
+          >{{ ghost.required_confirmations }} of
+          {{ ghost.required_confirmations }} confirmations</span
+        >
+      </div>
+      <div class="paid-ghost-bars">
+        <span
+          v-for="n in ghost.required_confirmations"
+          :key="n"
+          :class="{ 'paid-ghost-complete': n <= ghost.confirmations }"
+        ></span>
+      </div>
+      <p>
+        {{ ghost.quote.network_name }} is confirming the transfer. Nothing to do
+        on your side.
+      </p>
+      <p>♙ Your rate is locked in — this quote no longer expires.</p>
+    </div>
     <div class="progress-heading">
       <span
         v-if="
