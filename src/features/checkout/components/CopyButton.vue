@@ -1,14 +1,38 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { onScopeDispose, ref, watch } from "vue";
 const props = defineProps<{ value: string; label: string; testid?: string }>();
 const feedback = ref(""),
   fallback = ref(false);
+let resetTimer: ReturnType<typeof setTimeout> | undefined;
+let generation = 0;
+function cancelFeedback() {
+  generation += 1;
+  if (resetTimer !== undefined) {
+    clearTimeout(resetTimer);
+    resetTimer = undefined;
+  }
+}
+function resetFeedback() {
+  cancelFeedback();
+  feedback.value = "";
+  fallback.value = false;
+}
+watch(() => props.value, resetFeedback, { flush: "sync" });
+onScopeDispose(cancelFeedback);
+
 async function copy() {
+  resetFeedback();
+  const request = generation;
   try {
     await navigator.clipboard.writeText(props.value);
+    if (request !== generation) return;
     feedback.value = "Copied";
-    fallback.value = false;
+    resetTimer = setTimeout(() => {
+      feedback.value = "";
+      resetTimer = undefined;
+    }, 3000);
   } catch {
+    if (request !== generation) return;
     fallback.value = true;
     feedback.value = "Copy unavailable. Select and copy the value below.";
   }
