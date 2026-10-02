@@ -47,7 +47,7 @@ function changeCurrency(code: CurrencyCode) {
   if (c)
     emit("select", {
       currency: code,
-      network: code === "USDC" ? "polygon" : c.networks[0]!.id,
+      network: c.networks[0]!.id,
     });
 }
 </script>
