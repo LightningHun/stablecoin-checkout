@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import QRCode from "qrcode";
+import * as QRCode from "./paymentQr";
 import type { Payment } from "../domain/paymentModel";
 import { transferAmount } from "../domain/quotePolicy";
 import NetworkBadge from "./NetworkBadge.vue";
@@ -14,18 +14,18 @@ const address = computed(() =>
     ? props.payment.crypto_address
     : quote.value.crypto_address,
 );
+const addressGroups = computed(() => address.value.match(/.{1,4}/g) ?? []);
 watch(
-  address,
-  async (value, _, cleanup) => {
+  [address, () => quote.value.crypto_currency],
+  async ([value, currency], _, cleanup) => {
     let valid = true;
     cleanup(() => {
       valid = false;
     });
     qr.value = "";
     const image = await QRCode.toDataURL(value, {
-      width: 200,
-      margin: 2,
-      errorCorrectionLevel: "M",
+      width: 400,
+      currency,
     });
     if (valid) qr.value = image;
   },
@@ -100,10 +100,16 @@ const countdown = computed(() => {
           <NetworkBadge :network="quote.network" />
           {{ quote.network_name }} address
         </div>
-        <p data-testid="transfer-address" class="address mono">{{ address }}</p>
+        <p data-testid="transfer-address" class="address mono">
+          <span
+            v-for="(group, index) in addressGroups"
+            :key="index"
+            class="address-group"
+            >{{ group }}</span
+          >
+        </p>
         <p class="small muted">
-          Compare every character with your wallet, not just the ends. QR
-          contains the address only; check amount and network.
+          Compare every character with your wallet, not just the ends.
         </p>
         <CopyButton
           :value="address"

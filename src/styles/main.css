@@ -365,7 +365,7 @@ legend {
   width: 160px;
   height: 160px;
   flex: none;
-  image-rendering: pixelated;
+  image-rendering: auto;
 }
 .address-info {
   min-width: 0;
@@ -390,6 +390,14 @@ legend {
   font-size: 14px;
   line-height: 1.8;
   margin: 8px 0;
+}
+/* Visual grouping only: copied and encoded addresses contain no spaces. */
+.address-group {
+  display: inline-block;
+  white-space: nowrap;
+}
+.address-group:not(:last-child) {
+  margin-right: 1ch;
 }
 .address-info p.small {
   margin: 8px 0;
