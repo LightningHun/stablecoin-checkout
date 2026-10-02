@@ -91,7 +91,15 @@ export function withStatus(
       ? formatUnits(total / 2n, decimals)
       : "120.00";
   const excess = quote.crypto_currency === "ETH" ? "0.01" : "16.31";
-  const tx_hash = "9d1f4c8a2be7...";
+  // Synthetic full identifiers for hover/explorer demos; these are not on-chain payments.
+  const hexHash =
+    "9d1f4c8a2be7a684d203a78f6b51c904e8f2d76519a0c3be62f41795a8d36c20";
+  const tx_hash =
+    quote.network === "solana"
+      ? "cB5S93YMJGZggvjc58ioc7My7pHt387wECNfFGZExpXCEN9xND2ACbZDKu88a16dEX9v1t1E5PAdGJTiR1fntGB"
+      : quote.network === "tron"
+        ? hexHash
+        : "0x" + hexHash;
   const full = {
     amount_received: quote.total_due,
     tx_hash,

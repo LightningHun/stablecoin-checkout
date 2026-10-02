@@ -3,6 +3,7 @@ import { computed } from "vue";
 import { parseUnits, formatUnits } from "../domain/money";
 import type { Payment, RequestHealth } from "../domain/paymentModel";
 import CopyButton from "./CopyButton.vue";
+import TransactionLink from "./TransactionLink.vue";
 const props = defineProps<{
   payment: Payment | null;
   health: RequestHealth;
@@ -160,7 +161,12 @@ function title() {
         </div>
         <div v-if="'tx_hash' in payment">
           <dt>Transaction</dt>
-          <dd class="mono">{{ payment.tx_hash }}</dd>
+          <dd class="mono">
+            <TransactionLink
+              :hash="payment.tx_hash"
+              :network="payment.quote.network"
+            />
+          </dd>
         </div>
         <div v-if="payment.status === 'detected'">
           <dt>Detected</dt>

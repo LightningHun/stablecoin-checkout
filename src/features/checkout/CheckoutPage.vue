@@ -15,6 +15,7 @@ import PaymentProgress from "./components/PaymentProgress.vue";
 import RecoveryPanel from "./components/RecoveryPanel.vue";
 import NetworkBadge from "./components/NetworkBadge.vue";
 import DemoControls from "./components/DemoControls.vue";
+import TransactionLink from "./components/TransactionLink.vue";
 const storedReference = loadReference();
 const restorePending = ref(storedReference !== null);
 const controller = usePaymentController();
@@ -281,7 +282,11 @@ onMounted(async () => {
             {{ payment.quote.crypto_currency }}</span
           >
           received</span
-        ><span class="mono transaction">{{ payment.tx_hash }}</span>
+        ><TransactionLink
+          class="transaction"
+          :hash="payment.tx_hash"
+          :network="payment.quote.network"
+        />
       </div>
       <p v-else-if="payment?.status === 'failed'" class="muted">
         Transfer details were not supplied. Keep your payment reference.
