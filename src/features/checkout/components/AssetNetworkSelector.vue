@@ -140,7 +140,7 @@ function changeCurrency(code: CurrencyCode) {
   .continue-label {
     display: block;
     width: max-content;
-    margin-inline: auto;
+    margin-inline: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
