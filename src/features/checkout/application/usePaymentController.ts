@@ -10,6 +10,7 @@ import { quoteAvailability } from "../domain/quotePolicy";
 import { ApiError, createPaymentClient } from "../infrastructure/paymentClient";
 import type { ApiResult, PaymentClient } from "../infrastructure/paymentClient";
 import { ClockService } from "../infrastructure/ClockService";
+export type RestoreResult = "restored" | "not-found" | "unavailable";
 export interface ControllerOptions {
   client?: PaymentClient;
   clock?: ClockService;
@@ -27,7 +28,9 @@ export function usePaymentController(options: ControllerOptions = {}) {
     error = ref(""),
     busy = ref(false),
     protocolBlocked = ref(false),
-    uncertain = ref(false);
+    uncertain = ref(false),
+    restoring = ref(false),
+    referenceMissing = ref(false);
   const draft = shallowRef<Pair>({ currency: "USDT", network: "tron" });
   const clockUncertain = ref(false);
   const tick = ref(0),
@@ -40,6 +43,8 @@ export function usePaymentController(options: ControllerOptions = {}) {
     failures = 0,
     pendingPair: Pair | null = null,
     localExpired = false;
+  let restoreReference: string | null = null,
+    restoreActive: Promise<RestoreResult> | null = null;
   const remaining = computed(() => {
     void tick.value;
     return payment.value ? clock.remaining(payment.value.quote.expires_at) : 0;
@@ -66,6 +71,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
   const canChange = computed(
     () =>
       !busy.value &&
+      !restoring.value &&
       !uncertain.value &&
       !protocolBlocked.value &&
       (!payment.value ||
@@ -91,6 +97,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     );
   }
   function markError(cause: unknown) {
+    referenceMissing.value = cause instanceof ApiError && cause.status === 404;
     health.value = payment.value ? "stale" : "unavailable";
     error.value =
       cause instanceof Error ? cause.message : "Connection unavailable";
@@ -148,6 +155,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
       );
     sample(result);
     payment.value = Object.freeze(next);
+    referenceMissing.value = false;
     health.value = "fresh";
     error.value = "";
     protocolBlocked.value = false;
@@ -201,8 +209,67 @@ export function usePaymentController(options: ControllerOptions = {}) {
     await work;
     if (active === work) active = null;
   }
+  function restore(reference: string): Promise<RestoreResult> {
+    if (disposed || uncertain.value) return Promise.resolve("unavailable");
+    if (restoreActive) return restoreActive;
+    restoring.value = true;
+    restoreReference = reference;
+    busy.value = true;
+    clearPoll();
+    const previous = active;
+    const task = (async (): Promise<RestoreResult> => {
+      // Let catalogue loading finish in the same single-flight slot first.
+      if (previous) await previous;
+      if (disposed) return "unavailable";
+      const gen = ++generation.value;
+      let outcome: RestoreResult = "unavailable";
+      const work = (async () => {
+        try {
+          const result = await request((signal) =>
+            client.status(reference, signal),
+          );
+          if (accept(result, gen, true, reference)) {
+            draft.value = {
+              currency: result.data.quote.crypto_currency,
+              network: result.data.quote.network,
+            };
+            localExpired = false;
+            outcome = "restored";
+          }
+        } catch (cause) {
+          if (disposed || gen !== generation.value) return;
+          if (cause instanceof ApiError && cause.status === 404) {
+            payment.value = null;
+            referenceMissing.value = true;
+            protocolBlocked.value = false;
+            health.value = "fresh";
+            error.value = "";
+            failures = 0;
+            localExpired = false;
+            outcome = "not-found";
+          } else markError(cause);
+        }
+      })();
+      active = work;
+      await work;
+      if (active === work) active = null;
+      if (disposed || gen !== generation.value) return "unavailable";
+      busy.value = false;
+      if (outcome !== "unavailable") {
+        restoring.value = false;
+        restoreReference = null;
+      }
+      schedule();
+      return outcome;
+    })();
+    restoreActive = task;
+    void task.finally(() => {
+      if (restoreActive === task) restoreActive = null;
+    });
+    return task;
+  }
   async function mutate(pair: Pair, requote = false) {
-    if (disposed || busy.value || uncertain.value) return;
+    if (disposed || busy.value || uncertain.value || restoring.value) return;
     if (!requote && !canChange.value) return;
     busy.value = true;
     draft.value = pair;
@@ -301,6 +368,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
   }
   function retry() {
     if (uncertain.value) return Promise.resolve();
+    if (restoreReference) return restore(restoreReference);
     return payment.value ? poll(true) : initialize();
   }
   function resume() {
@@ -361,7 +429,10 @@ export function usePaymentController(options: ControllerOptions = {}) {
     lastChecked,
     generation,
     uncertain,
+    restoring,
+    referenceMissing,
     initialize,
+    restore,
     create,
     select,
     requote,

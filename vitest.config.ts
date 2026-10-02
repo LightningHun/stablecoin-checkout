@@ -6,6 +6,7 @@ export default defineConfig({
   test: {
     include: ['tests/{unit,component,contract}/**/*.test.ts'],
     environment: 'jsdom',
+    setupFiles: ['./scripts/test-storage-setup.ts'],
     restoreMocks: true,
     clearMocks: true,
     testTimeout: 10000,

@@ -1,6 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onMounted, ref } from "vue";
+import { computed, nextTick, onMounted, ref, watch } from "vue";
 import { usePaymentController } from "./application/usePaymentController";
+import type { RestoreResult } from "./application/usePaymentController";
+import {
+  loadReference,
+  saveReference,
+  clearReference,
+} from "./infrastructure/paymentStorage";
 import type { Pair } from "./domain/paymentModel";
 import OrderSummary from "./components/OrderSummary.vue";
 import AssetNetworkSelector from "./components/AssetNetworkSelector.vue";
@@ -9,7 +15,13 @@ import PaymentProgress from "./components/PaymentProgress.vue";
 import RecoveryPanel from "./components/RecoveryPanel.vue";
 import NetworkBadge from "./components/NetworkBadge.vue";
 import DemoControls from "./components/DemoControls.vue";
+const storedReference = loadReference();
+const restorePending = ref(storedReference !== null);
 const controller = usePaymentController();
+const restoringPayment = computed(
+  () => restorePending.value || controller.restoring.value,
+);
+let resetting = false;
 const {
   payment,
   currencies,
@@ -26,7 +38,12 @@ const {
 const selecting = ref(true),
   focusTarget = ref<HTMLElement | null>(null);
 const showDemo = new URLSearchParams(location.search).has("demo");
-const reload = () => window.location.reload();
+function resetDemo() {
+  resetting = true;
+  controller.dispose();
+  clearReference();
+  window.location.reload();
+}
 const locale =
   new URLSearchParams(location.search).get("locale") ||
   navigator.language ||
@@ -34,7 +51,9 @@ const locale =
 const merchant = computed(
   () => payment.value?.merchant.name ?? "Payment Project",
 );
-const selectionVisible = computed(() => selecting.value && canChange.value);
+const selectionVisible = computed(
+  () => !restoringPayment.value && selecting.value && canChange.value,
+);
 const selectedNetwork = computed(() =>
   currencies.value
     .find((c) => c.code === draft.value.currency)
@@ -71,6 +90,7 @@ const activeSend = computed(
 async function start() {
   selecting.value = false;
   await controller.create();
+  persistReference();
   await nextTick();
   focusTarget.value?.focus();
 }
@@ -78,11 +98,42 @@ async function select(pair: Pair) {
   if (payment.value) {
     selecting.value = false;
     await controller.select(pair);
+    persistReference();
     await nextTick();
     focusTarget.value?.focus();
   } else await controller.select(pair);
 }
-onMounted(() => void controller.initialize());
+function persistReference() {
+  if (!resetting && payment.value && !controller.referenceMissing.value)
+    saveReference(payment.value.payment_reference);
+}
+function finishRestore(outcome: RestoreResult | void) {
+  if (resetting) return;
+  if (outcome === "restored") {
+    selecting.value = false;
+    restorePending.value = false;
+    persistReference();
+  } else if (outcome === "not-found") {
+    clearReference();
+    selecting.value = true;
+    restorePending.value = false;
+  }
+}
+async function retry() {
+  finishRestore(await controller.retry());
+}
+async function requote() {
+  await controller.requote();
+  persistReference();
+}
+watch(controller.referenceMissing, (missing) => {
+  if (missing) clearReference();
+});
+onMounted(async () => {
+  const initialized = controller.initialize();
+  if (storedReference) finishRestore(await controller.restore(storedReference));
+  else await initialized;
+});
 </script>
 <template>
   <header class="merchant-header">
@@ -106,7 +157,7 @@ onMounted(() => void controller.initialize());
       v-if="!uncertain"
       data-testid="retry"
       :disabled="busy"
-      @click="controller.retry"
+      @click="retry"
     >
       Retry now
     </button>
@@ -118,10 +169,13 @@ onMounted(() => void controller.initialize());
     />
     <section
       class="step"
-      :class="{ done: !selectionVisible, active: selectionVisible }"
+      :class="{
+        done: !selectionVisible && !restoringPayment,
+        active: selectionVisible || restoringPayment,
+      }"
     >
       <span class="step-marker" aria-hidden="true">{{
-        selectionVisible ? "1" : "✓"
+        selectionVisible || restoringPayment ? "1" : "✓"
       }}</span>
       <div class="step-heading">
         <h2>Pay with</h2>
@@ -134,8 +188,11 @@ onMounted(() => void controller.initialize());
           Change
         </button>
       </div>
+      <p v-if="restoringPayment" class="muted">
+        Checking for an existing payment…
+      </p>
       <AssetNetworkSelector
-        v-if="selectionVisible"
+        v-else-if="selectionVisible"
         :currencies="currencies"
         :pair="draft"
         :disabled="busy || health === 'loading'"
@@ -171,7 +228,10 @@ onMounted(() => void controller.initialize());
           >Action needed</span
         >
       </div>
-      <p v-if="selectionVisible" class="muted">
+      <p v-if="restoringPayment" class="muted">
+        Checking for an existing payment…
+      </p>
+      <p v-else-if="selectionVisible" class="muted">
         Amount, address and QR code appear after you choose a network.
       </p>
       <div v-else-if="busy" class="loading-quote" data-testid="quote-loading">
@@ -210,7 +270,7 @@ onMounted(() => void controller.initialize());
         v-else-if="payment?.status === 'expired'"
         :payment="payment"
         :busy="busy"
-        @requote="controller.requote"
+        @requote="requote"
       />
       <p v-else-if="payment?.status === 'awaiting_payment'" role="status">
         Quote time ended or transfer details are unavailable. Checking payment
@@ -270,6 +330,6 @@ onMounted(() => void controller.initialize());
       }}</span
       ><span>Demo checkout · no real funds</span>
     </footer>
-    <DemoControls v-if="showDemo" @refresh="controller.retry" @reset="reload" />
+    <DemoControls v-if="showDemo" @refresh="retry" @reset="resetDemo" />
   </main>
 </template>

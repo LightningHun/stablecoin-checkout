@@ -2,7 +2,7 @@
 
 Use Node 22.12 or newer (verified on 22.19.0), npm 10.9.3. Run `npm ci`, then `npm run dev`. The script starts Vite at http://127.0.0.1:5173 and the HTTP mock at http://127.0.0.1:8787; Vite proxies `/api`. Stop with Ctrl-C. Do not run dev and preview together on the default mock port.
 
-For the built application: `npm run build`, then `npm run preview`. Preview serves http://127.0.0.1:4173 and starts the same mock. Set MOCK_PORT to another local port when concurrent isolated verification requires it. No persistence: stopping the mock clears the order. The demo sends no real funds.
+For the built application: `npm run build`, then `npm run preview`. Preview serves http://127.0.0.1:4173 and starts the same mock. Set MOCK_PORT to another local port when concurrent isolated verification requires it. The browser stores only the payment reference and restores the screen from a fresh API response when reopened. The mock still keeps payments only in memory: restarting it or resetting the demo removes them; an unknown saved reference is cleared and checkout starts fresh. Reset demo also clears the browser reference. The demo sends no real funds.
 
 Open http://127.0.0.1:5173/?demo=1 to show evaluator controls below the shopper page. Continue creates a quote. Expand Demo controls, choose a Payment state and Apply state; all eight API states are supported. Connection controls choose Healthy, HTTP 500, Disconnect or Slow (5 seconds), then Apply connection. Advance 15 minutes exercises expiry. Reset demo returns to the initial order; reset before exploring a different terminal lifecycle. These controls intentionally bypass provider-like progression and are a local evaluation surface only.
 

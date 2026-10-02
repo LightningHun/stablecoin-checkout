@@ -5,6 +5,7 @@ import { independentCatalogue, noTransferAction, startQuote, stubApi } from './f
 test('T10 every terminal state stops automatic polling', async ({ page }) => {
   for (const state of ['paid', 'overpaid', 'failed', 'expired'] as const) {
     const api = await stubApi(page)
+    await page.evaluate(() => localStorage.clear()).catch(() => {})
     await startQuote(page)
     api.setState(state)
     await page.clock.runFor(2200)
