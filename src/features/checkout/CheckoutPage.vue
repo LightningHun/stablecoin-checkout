@@ -40,6 +40,7 @@ const {
   uncertain,
 } = controller;
 const selecting = ref(true),
+  motionReady = ref(false),
   focusTarget = ref<HTMLElement | null>(null);
 const showDemo = new URLSearchParams(location.search).has("demo");
 function resetDemo() {
@@ -95,6 +96,7 @@ const activeSend = computed(
     payment.value?.status === "expired",
 );
 async function start() {
+  motionReady.value = true;
   selecting.value = false;
   await controller.create();
   persistReference();
@@ -103,6 +105,7 @@ async function start() {
 }
 function select(pair: Pair) {
   if (!canChange.value) return;
+  motionReady.value = true;
   draft.value = pair;
 }
 function persistReference() {
@@ -170,7 +173,11 @@ onMounted(() => {
       Retry now
     </button>
   </div>
-  <main class="checkout" data-testid="checkout">
+  <main
+    class="checkout"
+    :class="{ 'motion-ready': motionReady }"
+    data-testid="checkout"
+  >
     <OrderSummary
       :amount="payment?.order.amount ?? order?.amount ?? '149.90'"
       :locale="locale"
@@ -201,6 +208,7 @@ onMounted(() => {
       </p>
       <AssetNetworkSelector
         v-else-if="selectionVisible"
+        :class="{ 'motion-enter': payment }"
         :currencies="currencies"
         :pair="draft"
         :disabled="busy || health === 'loading'"
@@ -239,7 +247,11 @@ onMounted(() => {
       <p v-if="restoringPayment" class="muted">
         Checking for an existing payment…
       </p>
-      <p v-else-if="selectionVisible" class="muted">
+      <p
+        v-else-if="selectionVisible"
+        class="muted"
+        :class="{ 'motion-enter': payment }"
+      >
         Amount, address and QR code appear after you choose a network.
       </p>
       <div v-else-if="busy" class="loading-quote" data-testid="quote-loading">

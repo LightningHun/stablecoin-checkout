@@ -803,6 +803,66 @@ legend {
     margin-left: 0;
   }
 }
+/* Motion starts with checkout interaction; removals remain immediate. */
+.checkout.motion-ready .currency-segments label,
+.checkout.motion-ready .network-option,
+.checkout.motion-ready .step-marker {
+  transition:
+    background-color var(--motion-fast) var(--ease-out),
+    color var(--motion-fast) var(--ease-out),
+    border-color var(--motion-fast) var(--ease-out),
+    box-shadow var(--motion-fast) var(--ease-out);
+}
+.checkout.motion-ready .step {
+  transition: border-left-color var(--motion-fast) var(--ease-out);
+}
+.checkout.motion-ready .motion-enter,
+.checkout.motion-ready .network-option,
+.checkout.motion-ready .received-summary,
+.checkout.motion-ready .payment-progress > p,
+.checkout.motion-ready .confirmation-icon,
+.checkout.motion-ready .confirmations,
+.checkout.motion-ready .confirmation-bars,
+.checkout.motion-ready .receipt {
+  animation: checkout-enter var(--motion-medium) var(--ease-out);
+}
+/* Address panels and QR images stay opaque, including their ancestors. */
+.checkout.motion-ready .loading-quote,
+.checkout.motion-ready .quote-details {
+  animation: checkout-settle var(--motion-medium) var(--ease-out);
+}
+/* Pulse the placeholders only while the send step is fetching its quote. */
+.checkout.motion-ready .loading-quote .skeleton {
+  animation: quote-skeleton-pulse var(--motion-skeleton) var(--ease-in-out)
+    infinite;
+}
+@keyframes quote-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+@keyframes checkout-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes checkout-settle {
+  from {
+    transform: translateY(4px);
+  }
+  to {
+    transform: none;
+  }
+}
 @media (prefers-reduced-motion: reduce) {
   * {
     scroll-behavior: auto !important;

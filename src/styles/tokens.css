@@ -10,6 +10,11 @@
   --solana: #07805f;
   --column: 560px;
   --gap: 24px;
+  --motion-fast: 150ms;
+  --motion-medium: 220ms;
+  --motion-skeleton: 1400ms;
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.6, 1);
   --font: -apple-system, BlinkMacSystemFont, Arial, Helvetica, sans-serif;
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
