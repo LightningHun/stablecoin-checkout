@@ -38,9 +38,6 @@ const details = computed(() =>
     `Link: ${window.location.href}`,
   ].join("\n"),
 );
-const externalHelp = computed(() =>
-  props.helpUrl ? new URL(props.helpUrl).protocol === "https:" : false,
-);
 function goBack() {
   window.history.back();
 }
@@ -107,23 +104,9 @@ onMounted(() => heading.value?.focus());
             <dd>{{ opened }}</dd>
           </div>
         </dl>
-        <p class="small muted">
-          {{
-            helpUrl
-              ? "Share these details with the shop or with the Help link below and they can trace the link."
-              : "Share these details with the shop and they can trace the link."
-          }}
-        </p>
       </section>
     </main>
     <footer class="checkout-footer invalid-link-footer">
-      <a
-        v-if="helpUrl"
-        :href="helpUrl"
-        :target="externalHelp ? '_blank' : undefined"
-        :rel="externalHelp ? 'noopener noreferrer' : undefined"
-        >Help</a
-      >
       <span>Demo checkout · no real funds</span>
     </footer>
   </div>

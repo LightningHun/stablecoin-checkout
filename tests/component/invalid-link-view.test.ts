@@ -82,19 +82,11 @@ describe("invalid checkout link view", () => {
     null,
     "mailto:help@payment-project.example",
     "https://payment-project.example/help",
-  ])("renders Help appropriately for %s", (helpUrl) => {
+  ])("omits Help and sharing guidance regardless of helpUrl %s", (helpUrl) => {
     const wrapper = mount(InvalidLinkView, { props: { ...props, helpUrl } });
-    expect(wrapper.find("a").exists()).toBe(helpUrl !== null);
-    if (helpUrl) expect(wrapper.get("a").attributes("href")).toBe(helpUrl);
-    if (helpUrl?.startsWith("https:")) {
-      expect(wrapper.get("a").attributes("target")).toBe("_blank");
-      expect(wrapper.get("a").attributes("rel")).toBe("noopener noreferrer");
-    }
-    expect(wrapper.get(".invalid-link-support > p").text()).toBe(
-      helpUrl
-        ? "Share these details with the shop or with the Help link below and they can trace the link."
-        : "Share these details with the shop and they can trace the link.",
-    );
+    expect(wrapper.find(".invalid-link-footer a").exists()).toBe(false);
+    expect(wrapper.find(".invalid-link-support > p").exists()).toBe(false);
+    expect(wrapper.text()).not.toContain("Share these details");
     wrapper.unmount();
   });
 });
