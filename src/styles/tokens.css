@@ -30,6 +30,14 @@
   --motion-skeleton: 1400ms;
   --ease-out: cubic-bezier(0.2, 0, 0, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.6, 1);
+  --copy-press-duration: 80ms;
+  --copy-fill-duration: 180ms;
+  --copy-icon-duration: 220ms;
+  --copy-label-duration: 180ms;
+  --copy-width-duration: 180ms;
+  --copy-fallback-duration: 150ms;
+  --copy-ease-out: ease-out;
+  --copy-ease-icon: cubic-bezier(0.2, 0.7, 0.2, 1);
   --font: -apple-system, BlinkMacSystemFont, Arial, Helvetica, sans-serif;
   --mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
