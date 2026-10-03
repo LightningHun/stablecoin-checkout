@@ -65,7 +65,7 @@ describe('mock clock confirmation progression', () => {
       payment_reference: payment.payment_reference,
       order_id: 'ORD-88213',
       status: 'paid',
-      merchant: { name: 'Payment Project', logo_url: null },
+      merchant: { name: 'nordwind audio', logo_url: null },
       order: { currency: 'EUR', amount: '149.90' },
       quote: {
         crypto_currency: 'USDT', network: 'ethereum', network_name: 'Ethereum (ERC-20)',

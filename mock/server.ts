@@ -1,6 +1,7 @@
 import { createServer } from "node:http";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { MOCK_LINK_SECRET } from "./config";
+import { orderIdSchema } from "../src/features/checkout/infrastructure/responseSchemas";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { catalogue } from "./catalogue";
 import { makePayment, withStatus } from "./fixtures";
@@ -32,6 +33,8 @@ export function createMockServer(options: { now?: () => number } = {}) {
   });
   const payments = new Map<string, Payment>();
   const confirmationReachedAt = new Map<string, number>();
+  const bootstrapReferences = new Set<string>();
+  let bootstrapSequence = 1;
   let frozen: number | null = null,
     offset = 0;
   const now = () => frozen ?? (options.now?.() ?? Date.now()) + offset;
@@ -72,7 +75,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
   function readOrderId(value: unknown = "ORD-88213"): string {
     if (
       typeof value !== "string" ||
-      !/^ORD-[0-9]{5}$/.test(value) ||
+      !orderIdSchema.safeParse(value).success ||
       !orders.has(value)
     )
       throw Error("Unknown order");
@@ -158,6 +161,8 @@ export function createMockServer(options: { now?: () => number } = {}) {
           nextScenario.orderAmount = normalizeOrderAmount(input.orderAmount);
         scenario = nextScenario;
         payments.clear();
+        bootstrapReferences.clear();
+        bootstrapSequence = 1;
         confirmationReachedAt.clear();
         orders.clear();
         orders.set("ORD-88213", { current: null, fundsObserved: false });
@@ -189,15 +194,22 @@ export function createMockServer(options: { now?: () => number } = {}) {
         const input = await body(req);
         const amount =
           "amount" in input ? normalizeOrderAmount(input.amount) : "149.90";
-        if (orderSequence > 99999) throw Error("Demo order registry is full");
-        const order_id = `ORD-${orderSequence++}`;
+        let order_id: string;
+        if ("order_id" in input) order_id = orderIdSchema.parse(input.order_id);
+        else {
+          while (orderSequence <= 99999 && orders.has(`ORD-${orderSequence}`))
+            orderSequence++;
+          if (orderSequence > 99999) throw Error("Demo order registry is full");
+          order_id = `ORD-${orderSequence++}`;
+        }
+        if (orders.has(order_id)) throw Error("Order already exists");
         orders.set(order_id, { current: null, fundsObserved: false });
         orderAmounts.set(order_id, amount);
         const sig = signature(order_id);
         return json(res, 201, {
           order_id,
           sig,
-          checkout_url: `/?order=${order_id}&sig=${sig}`,
+          checkout_url: `/?order=${encodeURIComponent(order_id)}&sig=${sig}`,
         });
       }
       if (path === "/api/demo/scenario" && req.method === "POST") {
@@ -261,13 +273,13 @@ export function createMockServer(options: { now?: () => number } = {}) {
         const orderId = url.searchParams.get("order_id");
         const sig = url.searchParams.get("sig");
         let reason: string | null = null;
-        if (orderId === null || !/^ORD-[0-9]{5}$/.test(orderId))
+        if (!orderIdSchema.safeParse(orderId).success)
           reason = "malformed_order";
-        else if (!orders.has(orderId)) reason = "unknown_order";
+        else if (!orders.has(orderId!)) reason = "unknown_order";
         else if (sig !== null) {
           if (
             !/^[0-9a-f]{16}$/.test(sig) ||
-            !timingSafeEqual(Buffer.from(sig), Buffer.from(signature(orderId)))
+            !timingSafeEqual(Buffer.from(sig), Buffer.from(signature(orderId!)))
           )
             reason = "invalid_signature";
         } else if (scenario.requireSignature) reason = "missing_signature";
@@ -287,18 +299,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
         );
       }
       if (path === "/api/currencies" && req.method === "GET") {
-        const orderId = readOrderId(
-          url.searchParams.get("order_id") ?? undefined,
-        );
-        return json(res, 200, {
-          currencies: catalogue,
-          order: {
-            order_id: orderId,
-            currency: "EUR",
-            amount: orderAmount(orderId),
-          },
-          merchant: { name: "Payment Project", logo_url: null },
-        });
+        return json(res, 200, { currencies: catalogue });
       }
       if (!path.startsWith("/api/payments"))
         return json(res, 404, { title: "Not found" });
@@ -322,6 +323,28 @@ export function createMockServer(options: { now?: () => number } = {}) {
       if (path === "/api/payments" && req.method === "POST") {
         const orderId = readOrderId(input.order_id);
         const order = orders.get(orderId);
+        if ("purpose" in input && input.purpose !== "bootstrap")
+          throw Error("Unsupported payment purpose");
+        if (input.purpose === "bootstrap") {
+          const createdAt = now();
+          const expired = withStatus(
+            makePayment(
+              input as unknown as Pair,
+              `BOOT-${bootstrapSequence++}-PMT`,
+              createdAt,
+              0,
+              orderAmount(orderId),
+              orderId,
+            ),
+            "expired",
+            createdAt,
+          );
+          // Keep the expired record readable without touching order.current,
+          // the observed-funds latch, or the real payment reference sequence.
+          payments.set(expired.payment_reference, expired);
+          bootstrapReferences.add(expired.payment_reference);
+          return json(res, 201, expired);
+        }
         if (order?.fundsObserved)
           return conflict(
             res,
@@ -346,6 +369,12 @@ export function createMockServer(options: { now?: () => number } = {}) {
       if (!match) return json(res, 404, { title: "Not found" });
       const original = payments.get(match[1]!);
       if (!original) return json(res, 404, { title: "Unknown payment" });
+      if (match[2] && bootstrapReferences.has(original.payment_reference))
+        return conflict(
+          res,
+          "Initial information only",
+          "Create a new payment to receive transfer instructions.",
+        );
       const p = refresh(original);
       if (match[2] && req.method === "POST") {
         if (p.status !== "expired" || orders.get(p.order_id)?.fundsObserved)

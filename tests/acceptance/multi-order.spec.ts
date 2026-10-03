@@ -1,4 +1,15 @@
-import { test, expect, type Page } from "@playwright/test";
+import {
+  test,
+  expect,
+  type APIRequestContext,
+  type Page,
+} from "@playwright/test";
+
+async function registerSecondOrder(request: APIRequestContext) {
+  const response = await request.post("/api/demo/orders", { data: {} });
+  expect(response.status()).toBe(201);
+  expect(await response.json()).toMatchObject({ order_id: "ORD-88214" });
+}
 
 // Use the real HTTP mock: the shared stub fixture deliberately models one payment.
 test.beforeEach(async ({ request }) => {
@@ -9,6 +20,7 @@ test.beforeEach(async ({ request }) => {
       })
     ).status(),
   ).toBe(200);
+  await registerSecondOrder(request);
 });
 
 async function start(page: Page, order: string) {
@@ -141,27 +153,52 @@ test("another tab for the same order restores the same payment without creating 
   expect(creates).toEqual([]);
 });
 
-for (const order of ["bad", "", "ORD-1", "XYZ-88213"]) {
-  test(`invalid order ${JSON.stringify(order)} renders no controls and sends no API requests`, async ({
+for (const [order, reason] of [
+  ["bad", "unknown_order"],
+  ["", "malformed_order"],
+  ["ORD-1", "unknown_order"],
+  ["XYZ-88213", "unknown_order"],
+  ["ORD-99999", "unknown_order"],
+] as const) {
+  test(`invalid order ${JSON.stringify(order)} renders no transfer controls and only validates the link`, async ({
     page,
   }) => {
-    const apiRequests: string[] = [];
+    const apiRequests: Array<{
+      method: string;
+      path: string;
+      order: string | null;
+      signature: string | null;
+    }> = [];
     page.on("request", (request) => {
-      if (new URL(request.url()).pathname.startsWith("/api/"))
-        apiRequests.push(request.url());
+      const url = new URL(request.url());
+      if (url.pathname.startsWith("/api/"))
+        apiRequests.push({
+          method: request.method(),
+          path: url.pathname,
+          order: url.searchParams.get("order_id"),
+          signature: url.searchParams.get("sig"),
+        });
     });
     await page.clock.install();
     await page.goto(`/?order=${order}&demo=1`);
     await expect(page.locator("header")).toBeVisible();
     await expect(
-      page.getByText("This checkout link is not valid.", { exact: true }),
+      page.getByRole("heading", {
+        name: "This payment link isn’t valid",
+        exact: true,
+      }),
     ).toBeVisible();
+    await expect(page.locator(".receipt dd .mono")).toHaveText(reason);
     await expect(page.getByTestId("checkout")).toHaveCount(0);
-    await expect(page.getByRole("button")).toHaveCount(0);
+    await expect(page.getByTestId("continue")).toHaveCount(0);
+    await expect(page.getByTestId("copy-address")).toHaveCount(0);
+    await expect(page.getByTestId("transfer-qr")).toHaveCount(0);
     await expect(page.getByRole("radio")).toHaveCount(0);
     await expect(page.getByTestId("demo-controls")).toHaveCount(0);
     await page.clock.runFor(5000);
-    expect(apiRequests).toEqual([]);
+    expect(apiRequests).toEqual([
+      { method: "GET", path: "/api/checkout/link", order, signature: null },
+    ]);
   });
 }
 
@@ -181,21 +218,39 @@ test("catalogue bootstrap and demo amount controls target the page's order", asy
   const updated = page.waitForResponse((response) => {
     const url = new URL(response.url());
     return (
-      url.pathname === "/api/currencies" &&
-      url.searchParams.get("order_id") === "ORD-88214"
+      url.pathname === "/api/demo/scenario" &&
+      response.request().postDataJSON().order_id === "ORD-88214"
+    );
+  });
+  const refreshed = page.waitForResponse((response) => {
+    return (
+      new URL(response.url()).pathname === "/api/payments" &&
+      response.request().method() === "POST" &&
+      response.request().postDataJSON().purpose === "bootstrap"
     );
   });
   await page.getByTestId("demo-apply-amount").click();
   expect((await updated).status()).toBe(200);
-  await expect(page.getByTestId("fiat-total")).toHaveText("€250.00");
+  const bootstrap = await refreshed;
+  expect(bootstrap.status()).toBe(201);
+  expect(bootstrap.request().postDataJSON()).toEqual({
+    order_id: "ORD-88214",
+    currency: "USDT",
+    network: "tron",
+    purpose: "bootstrap",
+  });
+  await expect(page.getByTestId("fiat-total")).toHaveText("250.00 EUR");
   const first = await context.newPage();
   await first.goto("/?order=ORD-88213");
   await expect(first.getByTestId("continue")).toBeEnabled();
-  await expect(first.getByTestId("fiat-total")).toHaveText("€149.90");
+  await expect(first.getByTestId("fiat-total")).toHaveText("149.90 EUR");
   await page.getByTestId("continue").click();
   await expect(page.getByTestId("transfer-amount")).toHaveText(
     /272\.330887\s*USDT/,
   );
+  await expect(page.getByTestId("fiat-total")).toHaveText("250.00 EUR");
+  await first.getByTestId("continue").click();
+  await expect(first.getByTestId("fiat-total")).toHaveText("149.90 EUR");
 });
 
 test("Reset demo clears all server orders and each tab clears only its own saved reference", async ({
@@ -212,9 +267,17 @@ test("Reset demo clears all server orders and each tab clears only its own saved
   await expect(page.getByTestId("continue")).toBeVisible();
   expect(await stored(page, "ORD-88213")).toBeNull();
   expect(await stored(page, "ORD-88214")).toBe("AQH-100307-PMT");
-  expect(
-    await (await request.get("/api/demo?order_id=ORD-88214")).json(),
-  ).toMatchObject({ payment: null, orders: [] });
+  expect((await request.get("/api/demo?order_id=ORD-88214")).status()).toBe(
+    400,
+  );
+  expect(await (await request.get("/api/demo")).json()).toMatchObject({
+    payment: null,
+    orders: [{ order_id: "ORD-88213", payment_reference: null }],
+  });
+  await second.reload();
+  await expect(second.getByTestId("invalid-link")).toBeVisible();
+  expect(await stored(second, "ORD-88214")).toBe("AQH-100307-PMT");
+  await registerSecondOrder(request);
   await second.reload();
   await expect(second.getByTestId("continue")).toBeVisible();
   expect(await stored(second, "ORD-88214")).toBeNull();

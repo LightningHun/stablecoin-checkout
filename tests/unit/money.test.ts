@@ -23,7 +23,7 @@ describe('T01/T05 exact decimal-string money', () => {
     expect(() => parseUnits(value, scale)).toThrow()
   })
   it('formats the exact fiat value for both required locales', () => {
-    expect(formatFiat('149.90', 'en-IE')).toBe('€149.90')
-    expect(formatFiat('149.90', 'de-DE').replace(/\u00a0/g, ' ')).toBe('149,90 €')
+    expect(formatFiat('149.90', 'en-IE', 'EUR')).toBe('149.90 EUR')
+    expect(formatFiat('149.90', 'de-DE', 'EUR').replace(/\u00a0/g, ' ')).toBe('149,90 EUR')
   })
 })

@@ -278,6 +278,9 @@ legend {
   white-space: nowrap;
   color: #444;
 }
+.selector > .continue-button {
+  margin-top: 16px;
+}
 .selector p {
   font-size: 13px;
   margin: 8px 0 16px;

@@ -51,6 +51,10 @@ beforeEach(async () => {
   expect(
     (await request("/api/demo/reset", { now: time, freeze: true })).status,
   ).toBe(200);
+  // Payment creation and demo controls must use a registered order fixture.
+  const registered = await request("/api/demo/orders", {});
+  expect(registered.status).toBe(201);
+  expect(await registered.json()).toMatchObject({ order_id: "ORD-88214" });
 });
 afterAll(async () => {
   server.closeAllConnections();
@@ -187,8 +191,8 @@ describe("independent order HTTP state", () => {
     });
   });
 
-  it.each(["ORD-1", "XYZ-88213", "", null, 88213])(
-    "rejects malformed order %j",
+  it.each(["ORD-1", "XYZ-88213", "ORD-99999", "", null, 88213])(
+    "rejects invalid or unregistered order %j without creating a payment",
     async (order_id) => {
       const response = await request("/api/payments", {
         order_id,
@@ -198,7 +202,20 @@ describe("independent order HTTP state", () => {
       expect(response.status).toBe(400);
       expect(await response.json()).toEqual({ title: "Unknown order" });
       expect(await (await request("/api/demo")).json()).toMatchObject({
-        orders: [],
+        orders: [
+          {
+            order_id: "ORD-88213",
+            payment_reference: null,
+            status: null,
+            fundsObserved: false,
+          },
+          {
+            order_id: "ORD-88214",
+            payment_reference: null,
+            status: null,
+            fundsObserved: false,
+          },
+        ],
       });
     },
   );
@@ -252,14 +269,29 @@ describe("independent order HTTP state", () => {
   it("configures amounts per order without creating orders or changing existing snapshots", async () => {
     await scenario({ order_id: "ORD-88214", orderAmount: "250" });
     expect(await (await request("/api/demo")).json()).toMatchObject({
-      orders: [],
+      orders: [
+        {
+          order_id: "ORD-88213",
+          payment_reference: null,
+          status: null,
+          fundsObserved: false,
+        },
+        {
+          order_id: "ORD-88214",
+          payment_reference: null,
+          status: null,
+          fundsObserved: false,
+        },
+      ],
       scenario: { orderAmount: "149.90" },
     });
-    expect(
-      await (await request("/api/currencies?order_id=ORD-88214")).json(),
-    ).toMatchObject({
-      order: { order_id: "ORD-88214", currency: "EUR", amount: "250.00" },
-    });
+    const catalogueResponse = await request(
+      "/api/currencies?order_id=ORD-88214",
+    );
+    expect(catalogueResponse.status).toBe(200);
+    const catalogue = await catalogueResponse.json();
+    expect(Object.keys(catalogue)).toEqual(["currencies"]);
+    expect(catalogue.currencies).toHaveLength(3);
     expect(await create()).toMatchObject({
       order: { amount: "149.90" },
       quote: { total_due: "163.69" },
@@ -293,14 +325,14 @@ describe("independent order HTTP state", () => {
     });
   });
 
-  it("keeps fault injection global and validates orders after injected faults", async () => {
+  it("keeps fault injection global while rejecting unknown payment orders before faults", async () => {
     await create();
     await create("ORD-88214");
     await scenario({ order_id: "ORD-88214", fault: "500" });
     expect((await request("/api/payments/AQH-100306-PMT")).status).toBe(500);
     expect((await request("/api/payments/AQH-100307-PMT")).status).toBe(500);
     expect((await request("/api/payments", { order_id: "bad" })).status).toBe(
-      500,
+      400,
     );
     await scenario({ fault: "none" });
     expect(await read("AQH-100307-PMT")).toMatchObject({
@@ -321,22 +353,33 @@ describe("independent order HTTP state", () => {
     expect((await request("/api/demo/reset", { freeze: true })).status).toBe(
       200,
     );
-    expect(
-      await (await request("/api/demo?order_id=ORD-88214")).json(),
-    ).toEqual({
+    expect(await (await request("/api/demo")).json()).toEqual({
       payment: null,
-      orders: [],
+      orders: [
+        {
+          order_id: "ORD-88213",
+          payment_reference: null,
+          status: null,
+          fundsObserved: false,
+        },
+      ],
+      requireSignature: false,
       now: "2026-08-14T08:37:10.842Z",
       scenario: {
         fault: "none",
         delayMs: 5000,
         ttlMs: 900000,
         orderAmount: "149.90",
+        requireSignature: false,
       },
       metrics: { gets: 0, posts: 0, activeGets: 0, maxActiveGets: 0 },
     });
     expect((await request("/api/payments/AQH-100306-PMT")).status).toBe(404);
     expect((await request("/api/payments/AQH-100307-PMT")).status).toBe(404);
+    expect((await request("/api/demo?order_id=ORD-88214")).status).toBe(400);
+    const registered = await request("/api/demo/orders", {});
+    expect(registered.status).toBe(201);
+    expect(await registered.json()).toMatchObject({ order_id: "ORD-88214" });
     expect(await create("ORD-88214")).toMatchObject({
       payment_reference: "AQH-100306-PMT",
       order: { amount: "149.90" },

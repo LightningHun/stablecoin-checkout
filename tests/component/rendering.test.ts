@@ -34,7 +34,7 @@ describe('T11–T13 Vue presentation and T09 real mount disposal', () => {
   })
   it('T09 repeated real Vue mounting disposes the sole controller owner', async () => {
     vi.useFakeTimers()
-    const empty = { data: [], serverTime: new Date(fixedNow).toISOString(), start: 0, end: 0 }
+    const empty = { data: [{ code: 'USDT', name: 'Tether', decimals: 6, networks: [{ id: 'tron', name: 'Tron (TRC-20)', network_fee: '1.00', required_confirmations: 1, avg_confirmation_seconds: 60 }] }], serverTime: new Date(fixedNow).toISOString(), start: 0, end: 0 }
     const client: PaymentClient = { currencies: vi.fn(async () => empty), create: vi.fn(), status: vi.fn(), requote: vi.fn() }
     const Host = defineComponent({ setup() { const controller = usePaymentController({ client }); onMounted(controller.initialize); return () => h('div', controller.health.value) } })
     try {

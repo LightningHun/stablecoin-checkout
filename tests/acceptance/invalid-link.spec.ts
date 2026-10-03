@@ -55,7 +55,7 @@ test("unknown order validates once, copies support details and returns with Go b
 });
 
 for (const [url, reason] of [
-  ["/?order=abc", "malformed_order"],
+  ["/?order=abc", "unknown_order"],
   ["/?order=ORD-88213&sig=0000000000000000", "invalid_signature"],
   ["/?sig=0000000000000000", "malformed_order"],
 ] as const) {
@@ -99,10 +99,11 @@ test("demo-issued signed link opens its registered checkout", async ({
   });
   await page.goto(issued.checkout_url);
   await expect(page.getByTestId("continue")).toBeEnabled();
-  await expect(page.getByRole("heading", { level: 1 })).toHaveText("€250.00");
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("250.00 EUR");
   await expect(page.locator("header")).toContainText("Order ORD-88214");
   await page.getByTestId("continue").click();
   await expect(page.getByTestId("transfer-amount")).toContainText("272.33");
+  await expect(page.getByTestId("fiat-total")).toHaveText("250.00 EUR");
 });
 
 test("an unparseable stub verdict stays uncertain and Retry repeats validation only", async ({

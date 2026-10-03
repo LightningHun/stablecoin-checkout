@@ -73,7 +73,7 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-it("loads optional order and merchant metadata with one catalogue request", async () => {
+it("ignores legacy catalogue order and merchant metadata until a payment arrives", async () => {
   const client = {
     ...legacyClient(),
     catalogue: vi.fn<NonNullable<PaymentClient["catalogue"]>>(async () =>
@@ -90,15 +90,8 @@ it("loads optional order and merchant metadata with one catalogue request", asyn
   expect(client.catalogue).toHaveBeenCalledTimes(1);
   expect(client.currencies).not.toHaveBeenCalled();
   expect(controller.currencies.value).toEqual(currencies);
-  expect(controller.order.value).toEqual({
-    order_id: "ORD-88213",
-    currency: "EUR",
-    amount: "250.00",
-  });
-  expect(controller.merchant.value).toEqual({
-    name: "Configured merchant",
-    logo_url: null,
-  });
+  expect(controller.order.value).toBeNull();
+  expect(controller.merchant.value).toBeNull();
   expect(controller.payment.value).toBeNull();
   expect(controller.health.value).toBe("fresh");
   expect(client.create).not.toHaveBeenCalled();

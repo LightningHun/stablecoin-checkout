@@ -82,7 +82,7 @@ async function createOrderLink() {
       typeof result !== "object" ||
       !("checkout_url" in result) ||
       typeof result.checkout_url !== "string" ||
-      !/^\/\?order=ORD-[0-9]{5}&sig=[0-9a-f]{16}$/.test(result.checkout_url)
+      !/^\/\?order=[^&]+&sig=[0-9a-f]{16}$/.test(result.checkout_url)
     )
       throw Error("Order link unavailable");
     checkoutUrl.value = result.checkout_url;
@@ -135,7 +135,7 @@ async function reset() {
       @click="command('scenario', { status: state })"
     >
       Apply state
-    </button
+</button
     ><label
       >Connection<select v-model="fault" data-testid="demo-fault">
         <option value="none">Healthy</option>
@@ -149,13 +149,13 @@ async function reset() {
       @click="command('scenario', { fault })"
     >
       Apply connection
-    </button
+</button
     ><button
       class="secondary"
       @click="command('scenario', { advanceMs: 900000 })"
     >
       Advance 15 minutes
-    </button
+</button
     ><button class="secondary" data-testid="demo-reset" @click="reset">
       Reset demo
     </button>

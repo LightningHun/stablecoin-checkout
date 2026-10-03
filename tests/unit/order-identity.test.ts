@@ -32,8 +32,12 @@ const payment = {
 };
 function respond(order_id: string) {
   const fetch = vi.fn(
-    async () =>
-      new Response(JSON.stringify({ ...payment, order_id }), {
+    async (url: string) =>
+      new Response(JSON.stringify(url.endsWith('/currencies') ? { currencies: [{
+        code: 'USDT', name: 'Tether', decimals: 6, networks: [{
+          id: 'tron', name: 'Tron (TRC-20)', network_fee: '1.00', required_confirmations: 1, avg_confirmation_seconds: 60,
+        }],
+      }] } : { ...payment, order_id }), {
         status: 200,
         headers: {
           "content-type": "application/json",
@@ -73,7 +77,7 @@ describe("payment order identity at the client boundary", () => {
     },
   );
 
-  it.each(["ORD-88213", "ORD-88214"])(
+  it.each(["ORD-88213", "ORD-88214", "invoice_2026-0042"])(
     "accepts a matching %s create and sends the bound identity",
     async (orderId) => {
       const fetch = respond(orderId);
@@ -118,7 +122,7 @@ describe("payment order identity at the client boundary", () => {
     );
   });
 
-  it.each(["SOME-OTHER-ORDER", "ORD-1", "XYZ-88213", "ORD-882140", ""])(
+  it.each(["", " ", "bad\norder", "x".repeat(257)])(
     "rejects invalid schema order %s",
     (order_id) => {
       expect(() => parsePayment({ ...payment, order_id })).toThrow();

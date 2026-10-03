@@ -192,10 +192,8 @@ const quotesAt250 = [
 ] as const;
 
 describe("configurable mock order amount HTTP contract", () => {
-  it("exposes the default order and merchant without changing the currency catalogue", async () => {
+  it("exposes currencies only while keeping order amounts on payment responses", async () => {
     expect(await currencies()).toEqual({
-      order: { order_id: "ORD-88213", currency: "EUR", amount: "149.90" },
-      merchant: { name: "Payment Project", logo_url: null },
       currencies: expectedCurrencies,
     });
     expect(await demo()).toMatchObject({ scenario: { orderAmount: "149.90" } });
@@ -207,7 +205,7 @@ describe("configurable mock order amount HTTP contract", () => {
       expect(await create(currency, network)).toMatchObject({
         order_id: "ORD-88213",
         status: "awaiting_payment",
-        merchant: { name: "Payment Project", logo_url: null },
+        merchant: { name: "nordwind audio", logo_url: null },
         order: { currency: "EUR", amount: "149.90" },
         quote: {
           crypto_currency: currency,
@@ -242,8 +240,6 @@ describe("configurable mock order amount HTTP contract", () => {
         },
       });
       expect(await currencies()).toEqual({
-        order: { order_id: "ORD-88213", currency: "EUR", amount: "250.00" },
-        merchant: { name: "Payment Project", logo_url: null },
         currencies: expectedCurrencies,
       });
     },
@@ -264,7 +260,7 @@ describe("configurable mock order amount HTTP contract", () => {
       expect(await demo()).toMatchObject({
         scenario: { orderAmount: expected },
       });
-      expect(await currencies()).toMatchObject({ order: { amount: expected } });
+      expect(await currencies()).toEqual({ currencies: expectedCurrencies });
       expect(await create()).toMatchObject({ order: { amount: expected } });
     });
 
@@ -416,7 +412,7 @@ describe("configurable mock order amount HTTP contract", () => {
     const original = await create();
     await control("/api/demo/scenario", { orderAmount: "250" });
     expect(await read(original.payment_reference)).toEqual(original);
-    expect(await currencies()).toMatchObject({ order: { amount: "250.00" } });
+    expect(await currencies()).toEqual({ currencies: expectedCurrencies });
     const replacement = await create("USDC", "polygon");
     expect(replacement).toMatchObject({
       order: { amount: "250.00" },
@@ -451,7 +447,7 @@ describe("configurable mock order amount HTTP contract", () => {
     expect(
       (await request(`/api/payments/${original.payment_reference}`)).status,
     ).toBe(404);
-    expect(await currencies()).toMatchObject({ order: { amount: "149.90" } });
+    expect(await currencies()).toEqual({ currencies: expectedCurrencies });
     expect(await create()).toMatchObject({
       payment_reference: "AQH-100306-PMT",
       order: { amount: "149.90" },

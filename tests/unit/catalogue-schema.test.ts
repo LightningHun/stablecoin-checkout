@@ -12,7 +12,7 @@ const catalogue = {
       .map((row) => ({
         id: row[2],
         name: row[3],
-        network_fee: row[4],
+        network_fee: String(row[4]),
         required_confirmations: row[5],
         avg_confirmation_seconds: row[6],
       })),
@@ -21,51 +21,42 @@ const catalogue = {
 const order = { order_id: "ORD-88213", currency: "EUR", amount: "250.00" };
 const merchant = { name: "Configured merchant", logo_url: null };
 
-describe("optional catalogue order and merchant metadata", () => {
-  it("retains compatibility with a currencies-only catalogue", () => {
+describe("API catalogue without order and merchant metadata", () => {
+  it("accepts the currencies-only catalogue", () => {
     expect(catalogueSchema.parse(catalogue)).toEqual(catalogue);
   });
-
-  it.each([
-    { order },
-    { merchant },
-    { order, merchant },
-    {
-      order: { ...order, amount: "0.01" },
-      merchant: { ...merchant, logo_url: "https://merchant.example/logo.png" },
-    },
-  ])("preserves independently optional valid metadata %#", (metadata) => {
-    const body = { ...catalogue, ...metadata };
-    expect(catalogueSchema.parse(body)).toEqual(body);
-  });
-
-  it.each(["100.123", "0", "0.00", "-1", "1e2"])(
-    "rejects invalid EUR amount %s",
-    (amount) => {
-      expect(
-        catalogueSchema.safeParse({ ...catalogue, order: { ...order, amount } })
-          .success,
-      ).toBe(false);
+  it.each([{ order }, { merchant }, { order, merchant }])(
+    "does not expose unrelated legacy metadata %#",
+    (metadata) => {
+      expect(catalogueSchema.parse({ ...catalogue, ...metadata })).toEqual(
+        catalogue,
+      );
     },
   );
-
-  it.each([
-    { order: { ...order, order_id: "ORD-OTHER" } },
-    { order: { ...order, currency: "USD" } },
-    { merchant: { ...merchant, name: "" } },
-  ])("rejects malformed optional identity metadata %#", (metadata) => {
-    expect(
-      catalogueSchema.safeParse({ ...catalogue, ...metadata }).success,
-    ).toBe(false);
+  it.each(["-1", "1e2", "NaN", "1.0000001"])(
+    "rejects malformed or overprecision network fee %s",
+    (fee) => {
+      const input = structuredClone(catalogue);
+      input.currencies[0]!.networks[0]!.network_fee = fee;
+      expect(catalogueSchema.safeParse(input).success).toBe(false);
+    },
+  );
+  it.each([-1, 1.5, 256])("rejects unusable decimals %s", (decimals) => {
+    const input = structuredClone(catalogue);
+    input.currencies[0]!.decimals = decimals;
+    expect(catalogueSchema.safeParse(input).success).toBe(false);
   });
-
-  it("still rejects an incomplete two-currency catalogue with valid metadata", () => {
+  it("accepts a server catalogue with fewer currencies", () => {
+    const input = { currencies: catalogue.currencies.slice(0, 2) };
+    expect(catalogueSchema.parse(input)).toEqual(input);
+  });
+  it("rejects an empty catalogue", () => {
+    expect(catalogueSchema.safeParse({ currencies: [] }).success).toBe(false);
+  });
+  it("rejects duplicate currencies", () => {
     expect(
       catalogueSchema.safeParse({
-        ...catalogue,
-        currencies: catalogue.currencies.slice(0, 2),
-        order,
-        merchant,
+        currencies: [catalogue.currencies[0], catalogue.currencies[0]],
       }).success,
     ).toBe(false);
   });

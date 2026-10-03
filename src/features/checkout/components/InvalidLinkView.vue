@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
 import CopyButton from "./CopyButton.vue";
+import MerchantBrand from "./MerchantBrand.vue";
 
 const props = defineProps<{
   reason: string;
@@ -46,10 +47,7 @@ onMounted(() => heading.value?.focus());
 <template>
   <div class="invalid-link-layout">
     <header class="merchant-header">
-      <div class="merchant">
-        <span class="merchant-mark" aria-hidden="true">P</span
-        ><span>Payment Project</span>
-      </div>
+      <MerchantBrand />
     </header>
     <main class="invalid-link-view" data-testid="invalid-link">
       <svg

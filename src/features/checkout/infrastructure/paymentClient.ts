@@ -2,6 +2,7 @@ import type { Currency, Pair, Payment } from "../domain/paymentModel";
 import {
   catalogueSchema,
   parsePayment,
+  parseBootstrapPayment,
   checkoutLinkSchema,
 } from "./responseSchemas";
 import type { CatalogueInfo, CheckoutLinkVerdict } from "./responseSchemas";
@@ -19,6 +20,7 @@ export interface PaymentClient {
   ): Promise<ApiResult<CheckoutLinkVerdict>>;
   catalogue?(signal: AbortSignal): Promise<ApiResult<CatalogueInfo>>;
   currencies(signal: AbortSignal): Promise<ApiResult<Currency[]>>;
+  bootstrap?(pair: Pair, signal: AbortSignal): Promise<ApiResult<Payment>>;
   create(pair: Pair, signal: AbortSignal): Promise<ApiResult<Payment>>;
   status(reference: string, signal: AbortSignal): Promise<ApiResult<Payment>>;
   requote(
@@ -40,21 +42,17 @@ export function createPaymentClient(
   base = "/api",
   orderId = "ORD-88213",
 ): PaymentClient {
-  // Keep the legacy default URL for consumers that stub the plain catalogue.
-  const cataloguePath =
-    orderId === "ORD-88213"
-      ? "/currencies"
-      : "/currencies?order_id=" + encodeURIComponent(orderId);
+  let catalogue: CatalogueInfo | null = null;
   function parseOrderPayment(value: unknown): Payment {
-    const payment = parsePayment(value);
+    if (!catalogue) throw Error("Missing currency metadata");
+    const payment = parsePayment(value, catalogue.currencies);
     if (payment.order_id !== orderId) throw Error("Unexpected payment order");
     return payment;
   }
   function parseCatalogue(value: unknown): CatalogueInfo {
-    const catalogue = catalogueSchema.parse(value);
-    if (catalogue.order && catalogue.order.order_id !== orderId)
-      throw Error("Unexpected catalogue order");
-    return catalogue;
+    const parsed = catalogueSchema.parse(value);
+    catalogue = parsed;
+    return parsed;
   }
   async function request<T>(
     path: string,
@@ -93,9 +91,15 @@ export function createPaymentClient(
       );
     }
     try {
-      const serverTime = response.headers.get("x-server-time");
-      if (!serverTime || !Number.isFinite(Date.parse(serverTime)))
-        throw Error("Missing server time");
+      // Correct device-clock skew when possible, without requiring a custom header.
+      const serverTime =
+        [
+          response.headers.get("x-server-time"),
+          response.headers.get("date"),
+        ].find(
+          (value): value is string =>
+            value !== null && Number.isFinite(Date.parse(value)),
+        ) ?? new Date(Date.now()).toISOString();
       return { data: parse(value), serverTime, start, end: performance.now() };
     } catch {
       throw new ApiError(
@@ -104,6 +108,15 @@ export function createPaymentClient(
         true,
       );
     }
+  }
+  async function paymentRequest(
+    path: string,
+    signal: AbortSignal,
+    input?: unknown,
+  ) {
+    // Restoration must get token precision from the API too.
+    if (!catalogue) await request("/currencies", signal, parseCatalogue);
+    return request(path, signal, parseOrderPayment, input);
   }
   return {
     validateLink: (order, signature, signal) => {
@@ -120,25 +133,40 @@ export function createPaymentClient(
         return verdict;
       });
     },
-    catalogue: (signal) => request(cataloguePath, signal, parseCatalogue),
+    catalogue: (signal) => request("/currencies", signal, parseCatalogue),
     currencies: (signal) =>
-      request(cataloguePath, signal, (v) => parseCatalogue(v).currencies),
+      request("/currencies", signal, (v) => parseCatalogue(v).currencies),
+    bootstrap: async (pair, signal) => {
+      if (!catalogue) await request("/currencies", signal, parseCatalogue);
+      const result = await request(
+        "/payments",
+        signal,
+        (value) =>
+          parseBootstrapPayment(value, catalogue!.currencies, orderId, pair),
+        { order_id: orderId, ...pair, purpose: "bootstrap" },
+      );
+      if (
+        result.data.status !== "expired" ||
+        Date.parse(result.data.expired_at) > Date.parse(result.serverTime)
+      )
+        throw new ApiError(
+          "The payment server returned invalid data. Transfer controls are paused.",
+          0,
+          true,
+        );
+      return result;
+    },
     create: (pair, signal) =>
-      request("/payments", signal, parseOrderPayment, {
+      paymentRequest("/payments", signal, {
         order_id: orderId,
         ...pair,
       }),
     status: (ref, signal) =>
-      request(
-        "/payments/" + encodeURIComponent(ref),
-        signal,
-        parseOrderPayment,
-      ),
+      paymentRequest("/payments/" + encodeURIComponent(ref), signal),
     requote: (ref, pair, signal) =>
-      request(
+      paymentRequest(
         "/payments/" + encodeURIComponent(ref) + "/requote",
         signal,
-        parseOrderPayment,
         pair,
       ),
   };

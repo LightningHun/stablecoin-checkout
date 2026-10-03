@@ -83,7 +83,7 @@ const countdown = computed(() => {
     <p v-if="payment.status !== 'underpaid'" class="muted quote-fee">
       Amount {{ quote.crypto_amount }} + {{ quote.network_fee }}
       {{ quote.crypto_currency }} network fee · 1 {{ quote.crypto_currency }} =
-      €{{ quote.exchange_rate }}
+      {{ quote.exchange_rate }} {{ payment.order.currency }}
     </p>
     <div class="address-panel" data-testid="address-panel">
       <img

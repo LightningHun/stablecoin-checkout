@@ -22,11 +22,11 @@ async function applyAmount(page: Page, amount: string) {
   return response;
 }
 
-test("demo amount updates the initial summary, creates a coherent quote and resets to the source order", async ({
+test("demo amount loads before a quote, creates a coherent quote and resets to the API amount", async ({
   page,
 }) => {
   await page.goto("/?demo=1");
-  await expect(page.getByTestId("fiat-total")).toHaveText("€149.90");
+  await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
   await page
     .getByText("Demo controls · no real funds", { exact: true })
     .click();
@@ -44,7 +44,7 @@ test("demo amount updates the initial summary, creates a coherent quote and rese
   ).toBeVisible();
 
   expect((await applyAmount(page, "250")).status()).toBe(200);
-  await expect(page.getByTestId("fiat-total")).toHaveText("€250.00");
+  await expect(page.getByTestId("fiat-total")).toHaveText("250.00 EUR");
   await expect(page.getByTestId("transfer-amount")).toHaveCount(0);
   await page
     .getByRole("button", {
@@ -55,7 +55,7 @@ test("demo amount updates the initial summary, creates a coherent quote and rese
   await expect(page.getByTestId("transfer-amount")).toHaveText(
     /272\.330887\s*USDT/,
   );
-  await expect(page.getByTestId("fiat-total")).toHaveText("€250.00");
+  await expect(page.getByTestId("fiat-total")).toHaveText("250.00 EUR");
 
   await page.getByTestId("demo-state").selectOption("underpaid");
   await page.getByTestId("demo-apply-state").click();
@@ -68,7 +68,7 @@ test("demo amount updates the initial summary, creates a coherent quote and rese
   await expect(
     page.getByRole("button", { name: /Continue with/ }),
   ).toBeVisible();
-  await expect(page.getByTestId("fiat-total")).toHaveText("€149.90");
+  await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
   await expect(page.getByTestId("transfer-amount")).toHaveCount(0);
 });
 
@@ -88,7 +88,7 @@ test("an active quote keeps its amount until Change selection is submitted with 
   await expect(
     page.getByTestId("demo-controls").getByRole("status"),
   ).toContainText("Demo updated");
-  await expect(page.getByTestId("fiat-total")).toHaveText("€149.90");
+  await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
   await expect(page.getByTestId("transfer-amount")).toHaveText(
     /163\.69\s*USDT/,
   );
@@ -103,9 +103,9 @@ test("an active quote keeps its amount until Change selection is submitted with 
       exact: true,
     }),
   ).toBeVisible();
-  await expect(page.getByTestId("fiat-total")).toHaveText("€149.90");
+  await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
   const beforeContinue = await (await request.get("/api/demo")).json();
-  expect(beforeContinue.metrics.posts).toBe(1);
+  expect(beforeContinue.metrics.posts).toBe(2);
   expect(beforeContinue.payment.order.amount).toBe("149.90");
   expect(beforeContinue.payment.quote.network).toBe("tron");
 
@@ -115,7 +115,7 @@ test("an active quote keeps its amount until Change selection is submitted with 
       exact: true,
     })
     .click();
-  await expect(page.getByTestId("fiat-total")).toHaveText("€80.00");
+  await expect(page.getByTestId("fiat-total")).toHaveText("80.00 EUR");
   await expect(page.getByTestId("transfer-amount")).toHaveText(
     /91\.325884\s*USDT/,
   );
@@ -123,11 +123,11 @@ test("an active quote keeps its amount until Change selection is submitted with 
     "USDT on Ethereum (ERC-20)",
   );
   const afterContinue = await (await request.get("/api/demo")).json();
-  expect(afterContinue.metrics.posts).toBe(2);
+  expect(afterContinue.metrics.posts).toBe(3);
   expect(afterContinue.payment.order.amount).toBe("80.00");
 });
 
-test("configured EUR amount retains German locale formatting before a quote", async ({
+test("configured EUR amount retains German locale formatting before Continue", async ({
   page,
 }) => {
   await page.goto("/?demo=1&locale=de-DE");
@@ -135,11 +135,13 @@ test("configured EUR amount retains German locale formatting before a quote", as
     .getByText("Demo controls · no real funds", { exact: true })
     .click();
   expect((await applyAmount(page, "250")).status()).toBe(200);
-  await expect(page.getByTestId("fiat-total")).toHaveText("250,00\u00a0€");
+  await expect(page.getByTestId("fiat-total")).toHaveText("250,00 EUR");
+  await page.getByTestId("continue").click();
+  await expect(page.getByTestId("fiat-total")).toHaveText("250,00 EUR");
   expect(await page.getByTestId("fiat-total").textContent()).toBe(
-    "250,00\u00a0€",
+    "250,00 EUR",
   );
-  await expect(page.getByTestId("transfer-amount")).toHaveCount(0);
+  await expect(page.getByTestId("transfer-amount")).toHaveText(/272\.330887\s*USDT/);
 });
 
 for (const amount of ["100.123", "0"]) {
@@ -147,7 +149,7 @@ for (const amount of ["100.123", "0"]) {
     page,
   }) => {
     await page.goto("/?demo=1");
-    await expect(page.getByTestId("fiat-total")).toHaveText("€149.90");
+    await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
     await page
       .getByText("Demo controls · no real funds", { exact: true })
       .click();
@@ -159,7 +161,7 @@ for (const amount of ["100.123", "0"]) {
     await expect(
       page.getByTestId("demo-controls").getByRole("status"),
     ).toContainText("Invalid order amount");
-    await expect(page.getByTestId("fiat-total")).toHaveText("€149.90");
+    await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
     await expect(page.getByTestId("transfer-amount")).toHaveCount(0);
   });
 }

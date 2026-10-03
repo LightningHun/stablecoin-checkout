@@ -3,11 +3,12 @@ export function parseUnits(value: string, scale: number): bigint {
   if (
     !Number.isInteger(scale) ||
     scale < 0 ||
-    scale > 18 ||
+    scale > 255 ||
     !/^(0|[1-9]\d*)(\.\d+)?$/.test(value)
   )
     throw new Error("Invalid decimal");
-  const [whole, fraction = ""] = value.split(".");
+  const [whole, rawFraction = ""] = value.split(".");
+  const fraction = rawFraction.replace(/0+$/, "");
   if (fraction.length > scale) throw new Error("Excess precision");
   return (
     BigInt(whole!) * 10n ** BigInt(scale) +
@@ -34,18 +35,36 @@ export const addMoney = (a: string, b: string, scale: number) =>
   formatUnits(parseUnits(a, scale) + parseUnits(b, scale), scale);
 export const subtractMoney = (a: string, b: string, scale: number) =>
   formatUnits(parseUnits(a, scale) - parseUnits(b, scale), scale);
-export function formatFiat(value: string, locale = "en-IE"): string {
-  const units = parseUnits(value, 2);
-  const parts = new Intl.NumberFormat(locale, {
-    style: "currency",
-    currency: "EUR",
-    minimumFractionDigits: 2,
-  }).formatToParts(units / 100n);
-  return parts
-    .map((part) =>
-      part.type === "fraction"
-        ? (units % 100n).toString().padStart(2, "0")
-        : part.value,
-    )
+export function decimalScale(value: string): number {
+  return (value.split(".")[1] ?? "").replace(/0+$/, "").length;
+}
+/** Compare decimal strings exactly, independently of display padding. */
+export function compareDecimal(a: string, b: string): number {
+  const scale = Math.max(decimalScale(a), decimalScale(b));
+  const left = parseUnits(a, scale),
+    right = parseUnits(b, scale);
+  return left < right ? -1 : left > right ? 1 : 0;
+}
+export function formatFiat(
+  value: string,
+  locale = "en-IE",
+  currency = "",
+): string {
+  // Localize without converting monetary values to Number or assuming two decimals.
+  parseUnits(value, decimalScale(value));
+  const [whole, fraction = ""] = value.split(".");
+  const formatter = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
+  const separator =
+    new Intl.NumberFormat(locale)
+      .formatToParts(1.1)
+      .find((part) => part.type === "decimal")?.value ?? ".";
+  const digits = new Intl.NumberFormat(locale, { useGrouping: false });
+  const localizedFraction = [...fraction]
+    .map((digit) => digits.format(BigInt(digit)))
     .join("");
+  return (
+    formatter.format(BigInt(whole!)) +
+    (fraction ? separator + localizedFraction : "") +
+    (currency ? " " + currency : "")
+  );
 }

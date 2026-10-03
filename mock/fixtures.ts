@@ -65,7 +65,7 @@ export function makePayment(
     payment_reference: reference,
     order_id: orderId,
     status: "awaiting_payment",
-    merchant: { name: "Payment Project", logo_url: null },
+    merchant: { name: "nordwind audio", logo_url: null },
     order: { currency: "EUR", amount: orderAmount },
     quote: {
       crypto_currency: pair.currency,
@@ -91,7 +91,10 @@ export function withStatus(
 ): Payment {
   const { payment_reference, order_id, merchant, order, quote } = payment;
   const base = { payment_reference, order_id, merchant, order, quote };
-  const decimals = quote.crypto_currency === "ETH" ? 18 : 6;
+  const decimals = catalogue.find(
+    (currency) => currency.code === quote.crypto_currency,
+  )?.decimals;
+  if (decimals === undefined) throw Error("Unknown currency precision");
   const total = parseUnits(quote.total_due, decimals);
   const received =
     quote.crypto_currency === "ETH" || total <= parseUnits("120.00", decimals)
@@ -163,7 +166,7 @@ export function withStatus(
         settled_at: new Date(now).toISOString(),
       };
     case "expired":
-      return { ...base, status, expired_at: new Date(now).toISOString() };
+      return { ...base, status, expired_at: quote.expires_at };
     case "failed":
       return { ...base, status, reason: "settlement_rejected" };
   }

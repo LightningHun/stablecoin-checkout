@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { fixedNow, paymentSnapshot, sourceAddress, sourceQuote } from '../fixtures/oracles'
-import { independentCatalogue, noTransferAction, startQuote, stubApi } from './fixtures'
+import { bootstrapSnapshot, independentCatalogue, noTransferAction, startQuote, stubApi } from './fixtures'
 
 test('T10 every terminal state stops automatic polling', async ({ page }) => {
   for (const state of ['paid', 'overpaid', 'failed', 'expired'] as const) {
@@ -34,6 +34,7 @@ test('T14 server-expired requote retains reference and double clicks coalesce', 
 test('T15 uncertain creation is not automatically retried', async ({ page }) => {
   const api = await stubApi(page)
   await page.route('**/api/payments', async route => {
+    if (route.request().postDataJSON().purpose === 'bootstrap') return route.fallback()
     api.requests.create += 1
     await route.abort('connectionfailed')
   })
@@ -52,8 +53,10 @@ test('T03 accepted replacement never mixes token network amount QR or clipboard'
   const newAddress = '0x2222222222222222222222222222222222222222'
   let resolveResponse: (() => void) | undefined
   let createCount = 0
+  const submittedBodies: unknown[] = []
   await page.route('**/api/payments', async route => {
     createCount += 1
+    submittedBodies.push(route.request().postDataJSON())
     const body = route.request().postDataJSON() as { currency: string; network: string }
     await new Promise<void>(resolve => { resolveResponse = resolve })
     await route.fulfill({ status: 201, headers: { 'content-type': 'application/json', 'x-server-time': new Date(fixedNow).toISOString() }, body: JSON.stringify({ ...paymentSnapshot(), payment_reference: 'AQH-200000-PMT', quote: { ...sourceQuote,
@@ -64,9 +67,16 @@ test('T03 accepted replacement never mixes token network amount QR or clipboard'
   await page.getByRole('radio', { name: /Ethereum/ }).check()
   await expect(page.getByTestId('continue')).toBeVisible()
   expect(createCount).toBe(0)
-  await noTransferAction(page)
+  expect(submittedBodies).toEqual([])
+  // Continue submits the draft; old transfer instructions must already be gone.
+  await expect(page.getByTestId('continue')).toBeEnabled()
+  for (const id of ['transfer-amount', 'transfer-address', 'transfer-qr', 'copy-amount', 'copy-address'])
+    await expect(page.getByTestId(id)).toHaveCount(0)
   await page.getByTestId('continue').click()
   await expect.poll(() => createCount).toBe(1)
+  expect(submittedBodies).toEqual([
+    { order_id: 'ORD-88213', currency: 'USDT', network: 'ethereum' },
+  ])
   await noTransferAction(page)
   await expect(page.getByText(sourceAddress, { exact: true })).toHaveCount(0)
   resolveResponse!()
@@ -75,6 +85,7 @@ test('T03 accepted replacement never mixes token network amount QR or clipboard'
   await expect(page.getByText(/Ethereum.*network only/)).toBeVisible()
   await page.getByRole('button', { name: 'Copy address', exact: true }).click()
   expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(newAddress)
+  expect(createCount).toBe(1)
 })
 
 test('T07 local zero hides instructions before server reconciliation completes', async ({ page }) => {
@@ -85,6 +96,7 @@ test('T07 local zero hides instructions before server reconciliation completes',
     const path = new URL(route.request().url()).pathname
     const headers = { 'content-type': 'application/json', 'x-server-time': new Date(fixedNow).toISOString() }
     if (path === '/api/currencies') return route.fulfill({ headers, json: independentCatalogue })
+    if (route.request().method() === 'POST' && route.request().postDataJSON().purpose === 'bootstrap') return route.fulfill({ status: 201, headers, json: bootstrapSnapshot() })
     if (route.request().method() === 'POST') return route.fulfill({ status: 201, headers, json: { ...paymentSnapshot(), quote: { ...sourceQuote, expires_at: new Date(fixedNow + 1000).toISOString() } } })
     gets += 1
     await new Promise<void>(resolve => { getResolve = resolve })

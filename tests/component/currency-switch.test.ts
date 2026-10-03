@@ -29,6 +29,7 @@ async function setup() {
   let created = 0
   const client = {
     currencies: vi.fn<PaymentClient['currencies']>(async () => sample(currencies)),
+    bootstrap: vi.fn(async () => sample({ ...paymentSnapshot('expired'), payment_reference: 'BOOT-test-PMT', expired_at: '2026-08-14T08:37:10.842Z', quote: { ...sourceQuote, expires_at: '2026-08-14T08:37:10.842Z' } } as Payment)),
     create: vi.fn<PaymentClient['create']>(async (pair: Pair) => {
       const row = catalogueRows.find(entry => entry[0] === pair.currency && entry[2] === pair.network)!
       const vector = pair.currency === 'USDT' && pair.network === 'tron'

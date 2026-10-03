@@ -1,140 +1,96 @@
 import { z } from "zod";
-import { parseUnits } from "../domain/money";
-import type { Currency, Payment } from "../domain/paymentModel";
-const decimal = z.string().regex(/^(0|[1-9]\d*)(\.\d+)?$/);
+import { compareDecimal, decimalScale, parseUnits } from "../domain/money";
+import type { Currency, Pair, Payment } from "../domain/paymentModel";
+const decimal = z
+  .string()
+  .max(512)
+  .regex(/^(0|[1-9]\d*)(\.\d+)?$/);
 const date = z.string().datetime();
-const count = z.number().int().nonnegative();
-const code = z.enum(["USDT", "USDC", "ETH"]);
+const count = z.number().int().nonnegative().safe();
+const code = z.string().trim().min(1).max(64);
+// Order IDs are opaque server values, not an ORD-specific frontend convention.
+export const orderIdSchema = z
+  .string()
+  .min(1)
+  .max(256)
+  .refine(
+    (value) => value.trim() === value && !/[\u0000-\u001f\u007f]/.test(value),
+    "Invalid order identity",
+  );
+const merchantInfoSchema = z.object({
+  name: z
+    .string()
+    .transform((name) => name.trim() || "Merchant")
+    .default("Merchant"),
+  logo_url: z.string().nullable().optional(),
+  icon_url: z.string().nullable().optional(),
+});
+export type MerchantInfo = z.infer<typeof merchantInfoSchema>;
 const network = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
+  id: code,
+  name: z.string().trim().min(1),
   network_fee: decimal,
   required_confirmations: count.positive(),
   avg_confirmation_seconds: count.positive(),
 });
-const orderInfoSchema = z.object({
-  order_id: z.string().regex(/^ORD-[0-9]{5}$/),
-  currency: z.literal("EUR"),
-  amount: decimal.refine((value) => {
-    try {
-      return parseUnits(value, 2) > 0n;
-    } catch {
-      return false;
-    }
-  }, "Invalid order amount"),
-});
-const merchantInfoSchema = z.object({
-  name: z.string().min(1),
-  logo_url: z.string().nullable(),
-});
-export type OrderInfo = z.infer<typeof orderInfoSchema>;
-export type MerchantInfo = z.infer<typeof merchantInfoSchema>;
 export const catalogueSchema = z
   .object({
     currencies: z
       .array(
         z.object({
           code,
-          name: z.string().min(1),
-          decimals: z.union([z.literal(6), z.literal(18)]),
+          name: z.string().trim().min(1),
+          decimals: count.max(255),
           networks: z.array(network).min(1),
         }),
       )
       .min(1),
-    order: orderInfoSchema.optional(),
-    merchant: merchantInfoSchema.optional(),
   })
   .superRefine(({ currencies }, ctx) => {
-    const keys = currencies.flatMap((c) =>
-      c.networks.map((n) => c.code + "/" + n.id),
-    );
-    const unique = new Set(keys);
     if (
-      currencies.length !== 3 ||
-      new Set(currencies.map((c) => c.code)).size !== 3 ||
-      keys.length !== 6 ||
-      unique.size !== 6
+      new Set(currencies.map((currency) => currency.code)).size !==
+      currencies.length
     )
-      ctx.addIssue({
-        code: "custom",
-        message: "Incomplete or duplicated catalogue",
-      });
-    for (const c of currencies) {
-      const scale = c.code === "ETH" ? 18 : 6;
-      if (c.decimals !== scale)
-        ctx.addIssue({ code: "custom", message: "Invalid currency scale" });
-      for (const n of c.networks) {
-        const rule = pairRules[c.code + "/" + n.id];
-        if (
-          !rule ||
-          n.name !== rule.name ||
-          n.required_confirmations !== rule.confirmations ||
-          n.avg_confirmation_seconds !== rule.seconds ||
-          n.network_fee !== rule.fee
-        )
-          ctx.addIssue({ code: "custom", message: "Invalid network metadata" });
+      ctx.addIssue({ code: "custom", message: "Duplicate currency" });
+    for (const currency of currencies) {
+      if (
+        new Set(currency.networks.map((entry) => entry.id)).size !==
+        currency.networks.length
+      )
+        ctx.addIssue({ code: "custom", message: "Duplicate network" });
+      for (const entry of currency.networks) {
+        try {
+          parseUnits(entry.network_fee, currency.decimals);
+        } catch {
+          ctx.addIssue({
+            code: "custom",
+            message: "Invalid network fee precision",
+          });
+        }
       }
     }
   });
 export interface CatalogueInfo {
   currencies: Currency[];
-  order?: OrderInfo;
-  merchant?: MerchantInfo;
 }
-// Fixed supported pairs are part of this mock contract, not provider discovery.
-const pairRules: Record<
-  string,
-  {
-    name: string;
-    confirmations: number;
-    fee: string;
-    seconds: number;
-    address: RegExp;
-  }
-> = {
-  "USDT/tron": {
-    name: "Tron (TRC-20)",
-    confirmations: 1,
-    fee: "1.00",
-    seconds: 60,
-    address: /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
-  },
-  "USDT/ethereum": {
-    name: "Ethereum (ERC-20)",
-    confirmations: 3,
-    fee: "4.50",
-    seconds: 180,
-    address: /^0x[0-9a-fA-F]{40}$/,
-  },
-  "USDC/ethereum": {
-    name: "Ethereum (ERC-20)",
-    confirmations: 3,
-    fee: "4.50",
-    seconds: 180,
-    address: /^0x[0-9a-fA-F]{40}$/,
-  },
-  "USDC/polygon": {
-    name: "Polygon",
-    confirmations: 6,
-    fee: "0.10",
-    seconds: 30,
-    address: /^0x[0-9a-fA-F]{40}$/,
-  },
-  "USDC/solana": {
-    name: "Solana",
-    confirmations: 1,
-    fee: "0.01",
-    seconds: 15,
-    address: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
-  },
-  "ETH/ethereum": {
-    name: "Ethereum",
-    confirmations: 3,
-    fee: "3.20",
-    seconds: 180,
-    address: /^0x[0-9a-fA-F]{40}$/,
-  },
+// Known-chain address checks remain; an unfamiliar server-listed chain has no
+// invented client address format beyond the nonempty/no-whitespace wire rule.
+const addressFormats: Record<string, RegExp> = {
+  tron: /^T[1-9A-HJ-NP-Za-km-z]{33}$/,
+  ethereum: /^0x[0-9a-fA-F]{40}$/,
+  polygon: /^0x[0-9a-fA-F]{40}$/,
+  solana: /^[1-9A-HJ-NP-Za-km-z]{32,44}$/,
 };
+function monetaryValues(p: Payment): string[] {
+  return [
+    p.quote.total_due,
+    p.quote.crypto_amount,
+    p.quote.network_fee,
+    ...("amount_received" in p ? [p.amount_received] : []),
+    ...(p.status === "underpaid" ? [p.amount_outstanding] : []),
+    ...(p.status === "overpaid" ? [p.amount_excess] : []),
+  ];
+}
 const quote = z.object({
   crypto_currency: code,
   network: z.string().min(1),
@@ -143,18 +99,15 @@ const quote = z.object({
   crypto_amount: decimal,
   network_fee: decimal,
   total_due: decimal,
-  crypto_address: z.string().min(20).regex(/^\S+$/),
+  crypto_address: z.string().min(1).max(1024).regex(/^\S+$/),
   required_confirmations: count.positive(),
   expires_at: date,
 });
 const base = {
   payment_reference: z.string().min(1),
-  order_id: z.string().regex(/^ORD-[0-9]{5}$/),
-  merchant: z.object({
-    name: z.string().min(1),
-    logo_url: z.string().nullable(),
-  }),
-  order: z.object({ currency: z.literal("EUR"), amount: decimal }),
+  order_id: orderIdSchema,
+  merchant: merchantInfoSchema.default({ name: "Merchant" }),
+  order: z.object({ currency: code, amount: decimal.default("0") }),
   quote,
 };
 const received = { amount_received: decimal, tx_hash: z.string().min(1) };
@@ -204,22 +157,19 @@ export const paymentSchema = z
     const reject = (message: string) =>
       ctx.addIssue({ code: "custom", message });
     try {
-      const scale = p.quote.crypto_currency === "ETH" ? 18 : 6;
-      const rule = pairRules[p.quote.crypto_currency + "/" + p.quote.network];
-      if (
-        !rule ||
-        p.quote.network_name !== rule.name ||
-        p.quote.required_confirmations !== rule.confirmations ||
-        !rule.address.test(p.quote.crypto_address) ||
-        parseUnits(p.quote.network_fee, scale) !== parseUnits(rule.fee, scale)
-      )
-        reject("Unsupported or inconsistent quote network");
+      // Validate semantic money relationships without assuming a token's scale.
+      // The production client also supplies catalogue metadata to parsePayment.
+      const scale = Math.max(...monetaryValues(p).map(decimalScale));
       const total = parseUnits(p.quote.total_due, scale);
-      for (const v of [p.quote.crypto_amount, p.quote.network_fee])
-        parseUnits(v, scale);
-      parseUnits(p.order.amount, 2);
-      if (total <= 0n || parseUnits(p.quote.exchange_rate, 18) <= 0n)
+      monetaryValues(p).forEach((value) => parseUnits(value, scale));
+      parseUnits(p.order.amount, decimalScale(p.order.amount));
+      if (total <= 0n || compareDecimal(p.quote.exchange_rate, "0") <= 0)
         reject("Nonpositive quote");
+      if (
+        addressFormats[p.quote.network] &&
+        !addressFormats[p.quote.network]!.test(p.quote.crypto_address)
+      )
+        reject("Invalid network address");
       if ("amount_received" in p && parseUnits(p.amount_received, scale) <= 0n)
         reject("Nonpositive received");
       if (
@@ -256,14 +206,62 @@ export const paymentSchema = z
       reject("Invalid monetary precision");
     }
   });
-export function parsePayment(input: unknown): Payment {
-  return paymentSchema.parse(input);
+export function parsePayment(
+  input: unknown,
+  currencies?: readonly Currency[],
+): Payment {
+  const payment = paymentSchema.parse(input);
+  if (currencies) {
+    const currency = currencies.find(
+      (entry) => entry.code === payment.quote.crypto_currency,
+    );
+    const network = currency?.networks.find(
+      (entry) => entry.id === payment.quote.network,
+    );
+    if (
+      !currency ||
+      !network ||
+      network.name !== payment.quote.network_name ||
+      network.required_confirmations !== payment.quote.required_confirmations ||
+      compareDecimal(network.network_fee, payment.quote.network_fee) !== 0
+    )
+      throw Error("Unsupported or inconsistent quote network");
+    monetaryValues(payment).forEach((value) =>
+      parseUnits(value, currency.decimals),
+    );
+  }
+  return payment;
+}
+
+// A bootstrap must contain real metadata, even when legacy Payment consumers
+// allow display fallbacks. Parse raw values before defaults can fill them in.
+const bootstrapMetadataSchema = z.object({
+  merchant: merchantInfoSchema.extend({ name: z.string().trim().min(1) }),
+  order: z.object({ currency: code, amount: decimal }),
+});
+export function parseBootstrapPayment(
+  input: unknown,
+  currencies: readonly Currency[],
+  orderId: string,
+  pair: Pair,
+): Payment {
+  bootstrapMetadataSchema.parse(input);
+  const payment = parsePayment(input, currencies);
+  if (
+    payment.order_id !== orderId ||
+    payment.quote.crypto_currency !== pair.currency ||
+    payment.quote.network !== pair.network ||
+    payment.status !== "expired" ||
+    Date.parse(payment.quote.expires_at) > Date.parse(payment.expired_at)
+  )
+    throw Error("Invalid initial payment information");
+  return payment;
 }
 
 export const checkoutLinkSchema = z.discriminatedUnion("valid", [
   z.object({
     valid: z.literal(true),
-    order_id: z.string().regex(/^ORD-[0-9]{5}$/),
+    order_id: orderIdSchema,
     checked_at: date,
   }),
   z.object({
@@ -279,16 +277,13 @@ export const checkoutLinkSchema = z.discriminatedUnion("valid", [
     help_url: z
       .string()
       .url()
-      .refine(
-        (value) => {
-          try {
-            return ["https:", "mailto:"].includes(new URL(value).protocol);
-          } catch {
-            return false;
-          }
-        },
-        "Unsafe help URL",
-      )
+      .refine((value) => {
+        try {
+          return ["https:", "mailto:"].includes(new URL(value).protocol);
+        } catch {
+          return false;
+        }
+      }, "Unsafe help URL")
       .optional(),
   }),
 ]);

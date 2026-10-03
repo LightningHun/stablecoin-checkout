@@ -7,13 +7,10 @@ import type {
   RequestHealth,
 } from "../domain/paymentModel";
 import { quoteAvailability } from "../domain/quotePolicy";
+import { compareDecimal } from "../domain/money";
 import { ApiError, createPaymentClient } from "../infrastructure/paymentClient";
 import type { ApiResult, PaymentClient } from "../infrastructure/paymentClient";
 import { ClockService } from "../infrastructure/ClockService";
-import type {
-  OrderInfo,
-  MerchantInfo,
-} from "../infrastructure/responseSchemas";
 export type RestoreResult = "restored" | "not-found" | "unavailable";
 export interface ControllerOptions {
   client?: PaymentClient;
@@ -27,9 +24,19 @@ export function usePaymentController(options: ControllerOptions = {}) {
   const pollMs = options.pollMs ?? 2000,
     timeoutMs = options.timeoutMs ?? 10000;
   const payment = shallowRef<Payment | null>(null),
-    currencies = shallowRef<Currency[]>([]),
-    order = shallowRef<OrderInfo | null>(null),
-    merchant = shallowRef<MerchantInfo | null>(null);
+    currencies = shallowRef<Currency[]>([]);
+  const initialInfo = shallowRef<Pick<Payment, "merchant" | "order"> | null>(
+    null,
+  );
+  const initializing = ref(false);
+  const order = computed(() =>
+    payment.value
+      ? { ...payment.value.order, order_id: payment.value.order_id }
+      : (initialInfo.value?.order ?? null),
+  );
+  const merchant = computed(
+    () => payment.value?.merchant ?? initialInfo.value?.merchant ?? null,
+  );
   const health = ref<RequestHealth>("loading"),
     error = ref(""),
     busy = ref(false),
@@ -37,7 +44,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     uncertain = ref(false),
     restoring = ref(false),
     referenceMissing = ref(false);
-  const draft = shallowRef<Pair>({ currency: "USDT", network: "tron" });
+  const draft = shallowRef<Pair>({ currency: "", network: "" });
   const clockUncertain = ref(false);
   const tick = ref(0),
     lastChecked = ref<number | null>(null),
@@ -77,6 +84,8 @@ export function usePaymentController(options: ControllerOptions = {}) {
   const canChange = computed(
     () =>
       !busy.value &&
+      !initializing.value &&
+      (!client.bootstrap || !!payment.value || !!initialInfo.value) &&
       !restoring.value &&
       !uncertain.value &&
       !protocolBlocked.value &&
@@ -136,7 +145,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     expected = replace ? undefined : payment.value?.payment_reference,
   ): boolean {
     if (disposed || gen !== generation.value) return false;
-    const next = acceptSnapshot(
+    let next = acceptSnapshot(
       replace ? null : payment.value,
       result.data,
       expected ?? result.data.payment_reference,
@@ -152,13 +161,24 @@ export function usePaymentController(options: ControllerOptions = {}) {
     if (
       !replace &&
       payment.value &&
-      JSON.stringify(next.quote) !== JSON.stringify(payment.value.quote)
+      (compareDecimal(
+        next.quote.network_fee,
+        payment.value.quote.network_fee,
+      ) !== 0 ||
+        JSON.stringify({
+          ...next.quote,
+          network_fee: payment.value.quote.network_fee,
+        }) !== JSON.stringify(payment.value.quote))
     )
       throw new ApiError(
         "Quote changed unexpectedly. Transfer controls are paused.",
         0,
         true,
       );
+    // A numerically equal fee spelling is not a new quote. Preserve the accepted
+    // representation so polling cannot churn transfer instructions.
+    if (!replace && payment.value)
+      next = { ...next, quote: payment.value.quote };
     sample(result);
     payment.value = Object.freeze(next);
     referenceMissing.value = false;
@@ -195,35 +215,82 @@ export function usePaymentController(options: ControllerOptions = {}) {
     });
     return work;
   }
-  async function initialize() {
+  async function initialize(
+    options: { restore?: boolean; reuseCatalogue?: boolean } = {},
+  ) {
     if (disposed || active) return;
     const gen = generation.value;
+    initializing.value = true;
+    if (!options.restore && !payment.value) initialInfo.value = null;
     const work = (async () => {
       try {
-        const result = await request<{
-          currencies: Currency[];
-          order?: OrderInfo;
-          merchant?: MerchantInfo;
-        }>(async (s) => {
-          if (client.catalogue) return client.catalogue(s);
-          const legacy = await client.currencies(s);
-          return { ...legacy, data: { currencies: legacy.data } };
-        });
+        if (!options.reuseCatalogue || !currencies.value.length) {
+          const result = await request<{
+            currencies: Currency[];
+          }>(async (s) => {
+            if (client.catalogue) return client.catalogue(s);
+            const legacy = await client.currencies(s);
+            return { ...legacy, data: { currencies: legacy.data } };
+          });
+          if (disposed || gen !== generation.value) return;
+          sample(result);
+          currencies.value = result.data.currencies;
+        }
+        const first = currencies.value[0];
+        const stillListed = currencies.value.some(
+          (currency) =>
+            currency.code === draft.value.currency &&
+            currency.networks.some(
+              (network) => network.id === draft.value.network,
+            ),
+        );
+        if (!payment.value && !stillListed && first?.networks[0])
+          draft.value = { currency: first.code, network: first.networks[0].id };
+        if (!first?.networks[0])
+          throw new ApiError("No payment networks are available.", 0, true);
+        if (
+          !options.restore &&
+          !restoring.value &&
+          !payment.value &&
+          client.bootstrap
+        ) {
+          const pair = { currency: first.code, network: first.networks[0].id };
+          const result = await request((s) => client.bootstrap!(pair, s));
+          if (
+            disposed ||
+            gen !== generation.value ||
+            restoring.value ||
+            payment.value
+          )
+            return;
+          if (
+            result.data.status !== "expired" ||
+            result.data.quote.crypto_currency !== pair.currency ||
+            result.data.quote.network !== pair.network ||
+            Date.parse(result.data.quote.expires_at) >
+              Date.parse(result.serverTime) ||
+            Date.parse(result.data.expired_at) > Date.parse(result.serverTime)
+          )
+            throw new ApiError("Invalid initial payment information.", 0, true);
+          sample(result);
+          initialInfo.value = {
+            merchant: result.data.merchant,
+            order: result.data.order,
+          };
+        }
         if (disposed || gen !== generation.value) return;
-        sample(result);
-        currencies.value = result.data.currencies;
-        order.value = result.data.order ?? null;
-        merchant.value = result.data.merchant ?? null;
         protocolBlocked.value = false;
         health.value = "fresh";
         error.value = "";
+        failures = 0;
       } catch (cause) {
-        if (!disposed) markError(cause);
+        if (!disposed && gen === generation.value) markError(cause);
       }
     })();
     active = work;
     await work;
     if (active === work) active = null;
+    initializing.value = false;
   }
   function restore(reference: string): Promise<RestoreResult> {
     if (disposed || uncertain.value) return Promise.resolve("unavailable");
@@ -237,6 +304,16 @@ export function usePaymentController(options: ControllerOptions = {}) {
       // Let catalogue loading finish in the same single-flight slot first.
       if (previous) await previous;
       if (disposed) return "unavailable";
+      // A failed bootstrap must not be hidden by the client's private metadata
+      // fetch: selector and progress need the same validated catalogue too.
+      if (!currencies.value.length) {
+        if (active === previous) active = null;
+        await initialize({ restore: true });
+        if (disposed || !currencies.value.length) {
+          busy.value = false;
+          return "unavailable";
+        }
+      }
       const gen = ++generation.value;
       let outcome: RestoreResult = "unavailable";
       const work = (async () => {
@@ -275,6 +352,8 @@ export function usePaymentController(options: ControllerOptions = {}) {
         restoring.value = false;
         restoreReference = null;
       }
+      if ((outcome as RestoreResult) === "not-found" && client.bootstrap)
+        await initialize({ reuseCatalogue: true });
       schedule();
       return outcome;
     })();
@@ -385,7 +464,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
   function retry() {
     if (uncertain.value) return Promise.resolve();
     if (restoreReference) return restore(restoreReference);
-    return payment.value ? poll(true) : initialize();
+    return payment.value ? poll(true) : initialize({ reuseCatalogue: true });
   }
   function resume() {
     tick.value++;
@@ -437,6 +516,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     currencies,
     order,
     merchant,
+    initializing,
     health,
     error,
     busy,

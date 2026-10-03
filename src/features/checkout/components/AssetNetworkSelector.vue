@@ -109,9 +109,6 @@ function changeCurrency(code: CurrencyCode) {
         >
       </div>
     </fieldset>
-    <p class="muted">
-      Fees are set by the network. Your wallet must support the one you choose.
-    </p>
     <button
       ref="continueButton"
       data-testid="continue"

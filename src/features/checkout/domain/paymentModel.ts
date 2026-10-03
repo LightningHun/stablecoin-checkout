@@ -1,4 +1,4 @@
-import { parseUnits } from "./money";
+import { compareDecimal } from "./money";
 export const statuses = [
   "awaiting_payment",
   "detected",
@@ -10,7 +10,7 @@ export const statuses = [
   "failed",
 ] as const;
 export type PaymentStatus = (typeof statuses)[number];
-export type CurrencyCode = "USDT" | "USDC" | "ETH";
+export type CurrencyCode = string;
 export interface Pair {
   currency: CurrencyCode;
   network: string;
@@ -43,8 +43,12 @@ export interface Quote {
 interface BasePayment {
   payment_reference: string;
   order_id: string;
-  merchant: { name: string; logo_url: string | null };
-  order: { currency: "EUR"; amount: string };
+  merchant: {
+    name: string;
+    logo_url?: string | null;
+    icon_url?: string | null;
+  };
+  order: { currency: string; amount: string };
   quote: Quote;
 }
 interface Received {
@@ -140,14 +144,7 @@ export function acceptSnapshot(
     previous &&
     "amount_received" in previous &&
     "amount_received" in incoming &&
-    parseUnits(
-      incoming.amount_received,
-      incoming.quote.crypto_currency === "ETH" ? 18 : 6,
-    ) <
-      parseUnits(
-        previous.amount_received,
-        previous.quote.crypto_currency === "ETH" ? 18 : 6,
-      )
+    compareDecimal(incoming.amount_received, previous.amount_received) < 0
   )
     return null;
   return incoming;

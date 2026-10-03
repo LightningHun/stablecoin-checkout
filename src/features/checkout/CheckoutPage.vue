@@ -21,6 +21,7 @@ import {
 } from "./infrastructure/paymentStorage";
 import type { Pair, Payment } from "./domain/paymentModel";
 import OrderSummary from "./components/OrderSummary.vue";
+import MerchantBrand from "./components/MerchantBrand.vue";
 import AssetNetworkSelector from "./components/AssetNetworkSelector.vue";
 import QuoteDetails from "./components/QuoteDetails.vue";
 import PaymentProgress from "./components/PaymentProgress.vue";
@@ -57,9 +58,6 @@ let pageRefresh = Promise.resolve();
 const payment = computed(() => controller.value?.payment.value ?? null);
 const currencies = computed(() => controller.value?.currencies.value ?? []);
 const order = computed(() => controller.value?.order.value ?? null);
-const catalogueMerchant = computed(
-  () => controller.value?.merchant.value ?? null,
-);
 const health = computed(() => controller.value?.health.value ?? "loading");
 const error = computed(
   () => linkError.value || controller.value?.error.value || "",
@@ -68,8 +66,7 @@ const busy = computed(
   () => validating.value || controller.value?.busy.value || false,
 );
 const draft = computed<Pair>({
-  get: () =>
-    controller.value?.draft.value ?? { currency: "USDT", network: "tron" },
+  get: () => controller.value?.draft.value ?? { currency: "", network: "" },
   set: (pair) => {
     if (controller.value) controller.value.draft.value = pair;
   },
@@ -95,11 +92,20 @@ function resetDemo() {
   window.location.reload();
 }
 const locale = params.get("locale") || navigator.language || "en-IE";
-const merchant = computed(
+const merchant = computed(() => controller.value?.merchant.value ?? null);
+const initialInfoPending = computed(() => !payment.value && !order.value);
+watch(
+  merchant,
+  (value) => {
+    document.title = value?.name || "Checkout";
+  },
+  { immediate: true },
+);
+const paymentDecimals = computed(
   () =>
-    payment.value?.merchant.name ??
-    catalogueMerchant.value?.name ??
-    "Payment Project",
+    currencies.value.find(
+      (currency) => currency.code === payment.value?.quote.crypto_currency,
+    )?.decimals,
 );
 const selectionVisible = computed(
   () => !restoringPayment.value && selecting.value && canChange.value,
@@ -217,7 +223,7 @@ async function startSession() {
   // Even reading persistence waits for a definitive valid link verdict.
   const storedReference = loadReference(orderId);
   restorePending.value = storedReference !== null;
-  const initialized = session.initialize();
+  const initialized = session.initialize({ restore: storedReference !== null });
   if (storedReference) finishRestore(await session.restore(storedReference));
   else await initialized;
 }
@@ -282,11 +288,15 @@ onScopeDispose(() => {
   />
   <template v-else>
     <header v-if="linkState === 'ready'" class="merchant-header">
-      <div class="merchant">
-        <span class="merchant-mark" aria-hidden="true">{{
-          merchant.slice(0, 1)
-        }}</span
-        ><span>{{ merchant }}</span>
+      <MerchantBrand v-if="merchant" :merchant="merchant" />
+      <div
+        v-else
+        class="merchant"
+        aria-busy="true"
+        aria-label="Loading merchant"
+      >
+        <span class="merchant-mark skeleton" aria-hidden="true"></span>
+        <span>Loading checkout details…</span>
       </div>
       <span class="order-reference mono">Order {{ orderId }}</span>
     </header>
@@ -312,18 +322,19 @@ onScopeDispose(() => {
       data-testid="checkout"
     >
       <OrderSummary
-        :amount="payment?.order.amount ?? order?.amount ?? '149.90'"
+        :amount="order?.amount"
+        :currency="order?.currency"
         :locale="locale"
       />
       <section
         class="step"
         :class="{
-          done: !selectionVisible && !restoringPayment,
-          active: selectionVisible || restoringPayment,
+          done: !selectionVisible && !restoringPayment && !initialInfoPending,
+          active: selectionVisible || restoringPayment || initialInfoPending,
         }"
       >
         <span class="step-marker" aria-hidden="true">{{
-          selectionVisible || restoringPayment ? "1" : "✓"
+          selectionVisible || restoringPayment || initialInfoPending ? "1" : "✓"
         }}</span>
         <div class="step-heading">
           <h2>Pay with</h2>
@@ -338,6 +349,13 @@ onScopeDispose(() => {
         </div>
         <p v-if="restoringPayment" class="muted">
           Checking for an existing payment…
+        </p>
+        <p v-else-if="initialInfoPending" class="muted">
+          {{
+            error
+              ? "Checkout details are unavailable."
+              : "Loading checkout details…"
+          }}
         </p>
         <AssetNetworkSelector
           v-else-if="selectionVisible"
@@ -379,6 +397,9 @@ onScopeDispose(() => {
         </div>
         <p v-if="restoringPayment" class="muted">
           Checking for an existing payment…
+        </p>
+        <p v-else-if="initialInfoPending" class="muted">
+          Amount, address and QR code appear after you choose a network.
         </p>
         <p
           v-else-if="selectionVisible"
@@ -481,6 +502,7 @@ onScopeDispose(() => {
           >
         </div>
         <PaymentProgress
+          :decimals="paymentDecimals"
           :payment="selectionVisible ? null : payment"
           :health="health"
           :last-checked="lastChecked"

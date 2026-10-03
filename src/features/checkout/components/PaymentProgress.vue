@@ -7,6 +7,7 @@ import TransactionLink from "./TransactionLink.vue";
 const props = defineProps<{
   payment: Payment | null;
   health: RequestHealth;
+  decimals?: number;
   lastChecked: number | null;
   reveal?: { active: boolean; previous: Payment } | null;
 }>();
@@ -41,8 +42,9 @@ function finishGhost(event: AnimationEvent) {
 }
 const partialPercent = computed(() => {
   const p = props.payment;
-  if (!p || p.status !== "underpaid") return "0%";
-  const scale = p.quote.crypto_currency === "ETH" ? 18 : 6;
+  if (!p || p.status !== "underpaid" || props.decimals === undefined)
+    return "0%";
+  const scale = props.decimals;
   return (
     formatUnits(
       (parseUnits(p.amount_received, scale) * 10000n) /

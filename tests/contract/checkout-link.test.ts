@@ -57,7 +57,7 @@ describe("checkout link HTTP verdicts and order registry", () => {
     });
   });
   it.each([
-    ["?order_id=abc", "malformed_order", "abc"],
+    ["?order_id=abc", "unknown_order", "abc"],
     ["?order_id=ORD-99999", "unknown_order", "ORD-99999"],
     [
       "?order_id=ORD-88213&sig=0000000000000000",
@@ -66,7 +66,7 @@ describe("checkout link HTTP verdicts and order registry", () => {
     ],
     ["?order_id=ORD-88213&sig=", "invalid_signature", "ORD-88213"],
     ["?order_id=ORD-99999&sig=bad", "unknown_order", "ORD-99999"],
-    ["?order_id=abc&sig=bad", "malformed_order", "abc"],
+    ["?order_id=abc&sig=bad", "unknown_order", "abc"],
     ["?sig=0000000000000000", "malformed_order", null],
     ["?order_id=", "malformed_order", ""],
   ])(
@@ -85,7 +85,7 @@ describe("checkout link HTTP verdicts and order registry", () => {
   );
   it("caps raw invalid order text to 64 characters", async () => {
     const response = await request(
-      "/api/checkout/link?order_id=" + "a".repeat(100),
+      "/api/checkout/link?order_id=" + "a".repeat(300),
     );
     expect(await response.json()).toEqual({
       valid: false,
@@ -115,9 +115,16 @@ describe("checkout link HTTP verdicts and order registry", () => {
       order_id: "ORD-88214",
       checked_at: "2026-10-03T10:41:00.000Z",
     });
-    expect(
-      await (await request("/api/currencies?order_id=ORD-88214")).json(),
-    ).toMatchObject({ order: { order_id: "ORD-88214", amount: "250.00" } });
+    const catalogue = await request("/api/currencies?order_id=ORD-88214");
+    expect(catalogue.status).toBe(200);
+    expect(Object.keys(await catalogue.json())).toEqual(["currencies"]);
+    const payment = await request("/api/payments", {
+      order_id: "ORD-88214", currency: "USDT", network: "tron",
+    });
+    expect(payment.status).toBe(201);
+    expect(await payment.json()).toMatchObject({
+      order_id: "ORD-88214", order: { amount: "250.00" },
+    });
     expect(await (await request("/api/demo/orders", {})).json()).toMatchObject({
       order_id: "ORD-88215",
     });
@@ -168,8 +175,12 @@ describe("checkout link HTTP verdicts and order registry", () => {
     ).toMatchObject({ valid: true });
   });
   it("does not register orders through catalogue, scenario or payment requests", async () => {
+    const catalogue = await request("/api/currencies?order_id=ORD-99999");
+    expect(catalogue.status).toBe(200);
+    expect(Object.keys(await catalogue.json())).toEqual(["currencies"]);
+    expect(await (await request("/api/checkout/link?order_id=ORD-99999")).json())
+      .toMatchObject({ valid: false, reason: "unknown_order" });
     for (const [path, input] of [
-      ["/api/currencies?order_id=ORD-99999", undefined],
       ["/api/demo/scenario", { order_id: "ORD-99999", orderAmount: "250" }],
       [
         "/api/payments",
