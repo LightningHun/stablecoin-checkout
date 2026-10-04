@@ -1,10 +1,9 @@
 import type { Currency, Pair, Payment } from "../domain/paymentModel";
-import {
-  catalogueSchema,
-  parsePayment,
-  checkoutLinkSchema,
-} from "./responseSchemas";
-import type { CatalogueInfo, CheckoutLinkVerdict } from "./responseSchemas";
+import { catalogueSchema } from "./catalogueSchema";
+import type { CatalogueInfo } from "./catalogueSchema";
+import { parsePayment } from "./paymentSchema";
+import { checkoutLinkSchema } from "./checkoutLinkSchema";
+import type { CheckoutLinkVerdict } from "./checkoutLinkSchema";
 export interface ApiResult<T> {
   data: T;
   serverTime: string;
