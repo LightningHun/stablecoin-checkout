@@ -105,6 +105,7 @@ legend {
   margin-bottom: 36px;
 }
 .order-summary h1 {
+  overflow-wrap: anywhere;
   font-size: 40px;
   letter-spacing: -1.8px;
   line-height: 1.3;
@@ -618,8 +619,55 @@ legend {
   color: #fff;
   display: flex;
   justify-content: center;
-  gap: 16px;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
   font-size: 13px;
+}
+.connection-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.connection-message > span {
+  overflow-wrap: anywhere;
+}
+.connection-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.connection-message .connection-icon {
+  margin-top: 2px;
+}
+.connection-retry-time {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.connection-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  flex: none;
+}
+.progress-heading:has(.connection-dot) {
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+}
+.connection-support > p:first-child {
+  margin-top: 8px;
+}
+.payment-progress[data-status="awaiting_payment"] .connection-support > p:first-child {
+  margin-left: 20px;
+}
+.connection-support .connection-contact {
+  margin-top: 24px;
+}
+.connection-support .copy-control {
+  margin-top: 12px;
 }
 .connection-banner button {
   background: none;
@@ -627,6 +675,9 @@ legend {
   color: #fff;
   text-decoration: underline;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 .loading-quote > p {
   font-size: 13px;
@@ -859,6 +910,44 @@ legend {
   }
   .notice p {
     margin-left: 0;
+  }
+}
+/* An expired partial-payment quote keeps its receipt, without transfer actions. */
+.confirmation-step.incomplete > .step-marker {
+  background: #fff;
+  border: 2px solid var(--ink);
+  color: var(--ink);
+}
+.underpaid-incomplete .incomplete-subtitle {
+  margin: 2px 0 16px 42px;
+  color: #444;
+}
+.underpaid-incomplete .receipt {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.underpaid-incomplete .receipt > div {
+  min-width: 0;
+}
+.checkout:has(.underpaid-incomplete) .checkout-footer > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.underpaid-incomplete .confirmation-icon.incomplete-warning {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+.incomplete-warning svg {
+  display: block;
+}
+@media (max-width: 600px) {
+  .underpaid-incomplete .receipt {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .confirmation-step.incomplete .step-heading {
+    height: auto;
+    min-height: 28px;
+    flex-wrap: wrap;
   }
 }
 /* Motion starts with checkout interaction; removals remain immediate. */

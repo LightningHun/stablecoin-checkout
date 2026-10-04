@@ -4,17 +4,16 @@ import { PNG } from 'pngjs'
 import { sourceAddress, paymentSnapshot } from '../fixtures/oracles'
 import { noHorizontalOverflow, noTransferAction, startQuote, stubApi } from './fixtures'
 
-test('T01 initial summary and draft selection do not invent a payment reference', async ({ page }) => {
+test('T01 initial summary retains merchant and order only and draft selection does not create another payment', async ({ page }) => {
   const api = await stubApi(page)
   await page.goto('/')
   await expect(page.getByText('Payment Project', { exact: true }).first()).toBeVisible()
   await expect(page.getByText(/ORD-88213/).first()).toBeVisible()
   await expect(page.getByTestId('fiat-total')).toHaveText('149.90 EUR')
-  await expect(page.getByText('AQH-100306-PMT')).toHaveCount(0)
-  expect(api.requests.bootstrap).toBe(1)
-  expect(api.requests.create).toBe(0)
+  expect(await page.evaluate(() => localStorage.getItem('stablecoin-checkout:payment-reference:ORD-88213'))).toBeNull()
+  expect(api.requests.create).toBe(1)
   await page.getByRole('radio', { name: 'USDC', exact: true }).check()
-  expect(api.requests.create).toBe(0)
+  expect(api.requests.create).toBe(1)
 })
 
 test('T04 address, clipboard and independently decoded QR agree', async ({ page, context }) => {
@@ -74,9 +73,11 @@ test('T12 underpaid sends only the outstanding amount and duplicate delivery is 
   await page.clock.runFor(2200)
   await expect(page.getByTestId('transfer-amount')).toHaveText(/43\.69\s*USDT/)
   await expect(page.getByTestId('transfer-address')).toHaveText(sourceAddress)
-  await expect(page.getByTestId('countdown')).toHaveCount(0)
+  await expect(page.getByTestId('countdown')).toBeVisible()
   await page.clock.fastForward(16 * 60 * 1000)
-  await expect(page.getByTestId('transfer-amount')).toHaveText(/43\.69\s*USDT/)
+  await noTransferAction(page)
+  await expect(page.getByTestId('incomplete-subtitle')).toContainText('the rate for the rest expired at')
+  await expect(page.getByTestId('payment-status')).toContainText('Payment incomplete')
   await expect(page.getByTestId('payment-status')).toContainText('120.00')
   await expect(page.getByTestId('payment-status')).not.toContainText('240.00')
 })
@@ -122,7 +123,7 @@ test('T15 transport failure keeps known funds instead of inventing payment faile
   await page.clock.runFor(2200)
   api.setFault('500')
   await page.clock.runFor(2200)
-  await expect(page.getByRole('alert')).toContainText(/HTTP 500/i)
+  await expect(page.getByRole('alert')).toContainText("Can't reach the payment server.")
   await expect(page.getByTestId('payment-status')).toContainText(/money arrived/i)
   await expect(page.getByTestId('payment-status')).not.toContainText(/payment failed/i)
   api.setFault('ok')

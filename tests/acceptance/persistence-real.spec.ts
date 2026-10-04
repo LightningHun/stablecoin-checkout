@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test('real mock restores underpaid after reload and Reset demo removes the saved checkout', async ({ page, request }) => {
+test('real backend restores a Continue-created underpaid payment and Reset demo returns to an unpersisted selector', async ({ page, request }) => {
   expect((await request.post('/api/demo/reset')).ok()).toBe(true)
   await page.goto('/?demo=1')
   await page.getByTestId('continue').click()
@@ -14,12 +14,13 @@ test('real mock restores underpaid after reload and Reset demo removes the saved
   await expect(page.getByTestId('transfer-address')).toHaveText('TQ5Nn8kLpVv3xJ7wYcR2bF9aH4dM6sGz1e')
   await expect(page.getByTestId('continue')).toHaveCount(0)
   await expect(page.getByTestId('payment-status')).toHaveAttribute('data-status', 'underpaid')
-  expect(await page.evaluate(() => localStorage.getItem('stablecoin-checkout:payment-reference:ORD-88213'))).toBe('AQH-100306-PMT')
+  expect(await page.evaluate(() => localStorage.getItem('stablecoin-checkout:payment-reference:ORD-88213'))).toBe('AQH-100307-PMT')
   await page.getByText('Demo controls · no real funds', { exact: true }).click()
   await page.getByTestId('demo-reset').click()
   await expect(page.getByTestId('continue')).toBeVisible()
   expect(await page.evaluate(() => localStorage.getItem('stablecoin-checkout:payment-reference:ORD-88213'))).toBeNull()
   await page.reload()
-  await expect(page.getByTestId('continue')).toBeVisible()
+  await expect(page.getByTestId('continue')).toBeEnabled()
   await expect(page.getByTestId('transfer-address')).toHaveCount(0)
+  expect(await page.evaluate(() => localStorage.getItem('stablecoin-checkout:payment-reference:ORD-88213'))).toBeNull()
 })

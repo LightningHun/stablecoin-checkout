@@ -62,13 +62,13 @@ test("two orders keep independent states and references through reload, close an
   await start(page, "ORD-88213");
   await start(second, "ORD-88214");
   await expect(page.locator(".checkout-footer")).toContainText(
-    "Reference AQH-100306-PMT",
-  );
-  await expect(second.locator(".checkout-footer")).toContainText(
     "Reference AQH-100307-PMT",
   );
-  expect(await stored(page, "ORD-88213")).toBe("AQH-100306-PMT");
-  expect(await stored(second, "ORD-88214")).toBe("AQH-100307-PMT");
+  await expect(second.locator(".checkout-footer")).toContainText(
+    "Reference AQH-100309-PMT",
+  );
+  expect(await stored(page, "ORD-88213")).toBe("AQH-100307-PMT");
+  expect(await stored(second, "ORD-88214")).toBe("AQH-100309-PMT");
 
   await applyState(page, "underpaid");
   await expect(page.getByTestId("transfer-amount")).toHaveText(/43\.69\s*USDT/);
@@ -83,7 +83,7 @@ test("two orders keep independent states and references through reload, close an
     payment: {
       order_id: "ORD-88214",
       status: "awaiting_payment",
-      payment_reference: "AQH-100307-PMT",
+      payment_reference: "AQH-100309-PMT",
     },
   });
 
@@ -100,7 +100,7 @@ test("two orders keep independent states and references through reload, close an
   );
   await expect(second.getByTestId("countdown")).toBeVisible();
   await expect(second.locator(".checkout-footer")).toContainText(
-    "Reference AQH-100307-PMT",
+    "Reference AQH-100309-PMT",
   );
 
   await page.close();
@@ -123,7 +123,7 @@ test("two orders keep independent states and references through reload, close an
     "awaiting_payment",
   );
   await expect(reopenedSecond.locator(".checkout-footer")).toContainText(
-    "Reference AQH-100307-PMT",
+    "Reference AQH-100309-PMT",
   );
   await expect(reopenedSecond.getByTestId("continue")).toHaveCount(0);
 });
@@ -148,7 +148,7 @@ test("another tab for the same order restores the same payment without creating 
     "awaiting_payment",
   );
   await expect(second.locator(".checkout-footer")).toContainText(
-    "Reference AQH-100306-PMT",
+    "Reference AQH-100307-PMT",
   );
   expect(creates).toEqual([]);
 });
@@ -202,58 +202,50 @@ for (const [order, reason] of [
   });
 }
 
-test("catalogue bootstrap and demo amount controls target the page's order", async ({
-  page,
-  context,
-}) => {
+test("initial information and demo amount controls target the page's order before a fresh Continue payment", async ({ page, context }) => {
+  const posts: unknown[] = [];
+  const reads: string[] = [];
+  page.on("request", (request) => {
+    if (request.method() === "POST" && new URL(request.url()).pathname === "/api/payments") posts.push(request.postDataJSON());
+    if (request.method() === "GET" && new URL(request.url()).pathname.startsWith("/api/payments/")) reads.push(new URL(request.url()).pathname);
+  });
   await page.goto("/?order=ORD-88214&demo=1");
   await expect(page.getByTestId("continue")).toBeEnabled();
-  await expect(page.locator(".checkout-footer")).toContainText(
-    "Order ORD-88214",
-  );
-  await page
-    .getByText("Demo controls · no real funds", { exact: true })
-    .click();
+  expect(posts).toEqual([{ order_id: "ORD-88214", currency: "USDT", network: "tron" }]);
+  await expect(page.locator("header")).toContainText("Order ORD-88214");
+  await expect(page.locator(".checkout-footer")).not.toContainText("Reference AQH");
+  expect(await stored(page, "ORD-88214")).toBeNull();
+  await page.getByText("Demo controls · no real funds", { exact: true }).click();
   await page.getByTestId("demo-order-amount").fill("250");
-  const updated = page.waitForResponse((response) => {
-    const url = new URL(response.url());
-    return (
-      url.pathname === "/api/demo/scenario" &&
-      response.request().postDataJSON().order_id === "ORD-88214"
-    );
-  });
-  const refreshed = page.waitForResponse((response) => {
-    return (
-      new URL(response.url()).pathname === "/api/payments" &&
-      response.request().method() === "POST" &&
-      response.request().postDataJSON().purpose === "bootstrap"
-    );
-  });
+  const updated = page.waitForResponse((response) =>
+    new URL(response.url()).pathname === "/api/demo/scenario" && response.request().postDataJSON().order_id === "ORD-88214",
+  );
   await page.getByTestId("demo-apply-amount").click();
   expect((await updated).status()).toBe(200);
-  const bootstrap = await refreshed;
-  expect(bootstrap.status()).toBe(201);
-  expect(bootstrap.request().postDataJSON()).toEqual({
-    order_id: "ORD-88214",
-    currency: "USDT",
-    network: "tron",
-    purpose: "bootstrap",
-  });
-  await expect(page.getByTestId("fiat-total")).toHaveText("250.00 EUR");
+  expect(reads).toEqual([]);
+  await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
+  expect(posts).toHaveLength(1);
   const first = await context.newPage();
   await first.goto("/?order=ORD-88213");
   await expect(first.getByTestId("continue")).toBeEnabled();
   await expect(first.getByTestId("fiat-total")).toHaveText("149.90 EUR");
+  await page.getByRole("radio", { name: "Ethereum (ERC-20)", exact: true }).check();
   await page.getByTestId("continue").click();
-  await expect(page.getByTestId("transfer-amount")).toHaveText(
-    /272\.330887\s*USDT/,
-  );
+  await expect(page.getByTestId("transfer-amount")).toHaveText(/275\.830887\s*USDT/);
   await expect(page.getByTestId("fiat-total")).toHaveText("250.00 EUR");
+  expect(posts).toEqual([
+    { order_id: "ORD-88214", currency: "USDT", network: "tron" },
+    { order_id: "ORD-88214", currency: "USDT", network: "ethereum" },
+  ]);
+  expect(await stored(page, "ORD-88214")).toBe("AQH-100308-PMT");
+  expect(await stored(first, "ORD-88213")).toBeNull();
   await first.getByTestId("continue").click();
   await expect(first.getByTestId("fiat-total")).toHaveText("149.90 EUR");
+  await expect(first.getByTestId("transfer-amount")).toHaveText(/163\.69\s*USDT/);
+  expect(await stored(first, "ORD-88213")).toBe("AQH-100309-PMT");
 });
 
-test("Reset demo clears all server orders and each tab clears only its own saved reference", async ({
+test("Reset demo clears server orders and opens its own selector without persisting the information payment", async ({
   page,
   context,
   request,
@@ -266,17 +258,17 @@ test("Reset demo clears all server orders and each tab clears only its own saved
   await page.getByTestId("demo-reset").click();
   await expect(page.getByTestId("continue")).toBeVisible();
   expect(await stored(page, "ORD-88213")).toBeNull();
-  expect(await stored(page, "ORD-88214")).toBe("AQH-100307-PMT");
+  expect(await stored(page, "ORD-88214")).toBe("AQH-100309-PMT");
   expect((await request.get("/api/demo?order_id=ORD-88214")).status()).toBe(
     400,
   );
   expect(await (await request.get("/api/demo")).json()).toMatchObject({
-    payment: null,
-    orders: [{ order_id: "ORD-88213", payment_reference: null }],
+    payment: { payment_reference: "AQH-100306-PMT", status: "awaiting_payment" },
+    orders: [{ order_id: "ORD-88213", payment_reference: "AQH-100306-PMT" }],
   });
   await second.reload();
   await expect(second.getByTestId("invalid-link")).toBeVisible();
-  expect(await stored(second, "ORD-88214")).toBe("AQH-100307-PMT");
+  expect(await stored(second, "ORD-88214")).toBe("AQH-100309-PMT");
   await registerSecondOrder(request);
   await second.reload();
   await expect(second.getByTestId("continue")).toBeVisible();
@@ -299,7 +291,7 @@ test("a missing reference clears only that order's storage key", async ({
   await second.goto("/?order=ORD-88214");
   await expect(second.getByTestId("continue")).toBeVisible();
   expect(await stored(second, "ORD-88214")).toBeNull();
-  expect(await stored(second, "ORD-88213")).toBe("AQH-100306-PMT");
+  expect(await stored(second, "ORD-88213")).toBe("AQH-100307-PMT");
 });
 
 test("a restored reference belonging to another order blocks transfer controls", async ({
@@ -310,7 +302,7 @@ test("a restored reference belonging to another order blocks transfer controls",
   await page.evaluate(() =>
     localStorage.setItem(
       "stablecoin-checkout:payment-reference:ORD-88214",
-      "AQH-100306-PMT",
+      "AQH-100307-PMT",
     ),
   );
   const second = await context.newPage();
@@ -322,5 +314,5 @@ test("a restored reference belonging to another order blocks transfer controls",
   await expect(second.getByTestId("transfer-qr")).toHaveCount(0);
   await expect(second.getByTestId("continue")).toHaveCount(0);
   await expect(second.locator("header")).toContainText("Order ORD-88214");
-  expect(await stored(second, "ORD-88214")).toBe("AQH-100306-PMT");
+  expect(await stored(second, "ORD-88214")).toBe("AQH-100307-PMT");
 });

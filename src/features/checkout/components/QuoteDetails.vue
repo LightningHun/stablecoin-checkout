@@ -32,7 +32,7 @@ watch(
   { immediate: true },
 );
 const countdown = computed(() => {
-  const seconds = Math.ceil(props.remaining / 1000);
+  const seconds = Math.max(0, Math.ceil(props.remaining / 1000));
   return (
     Math.floor(seconds / 60)
       .toString()
@@ -118,7 +118,10 @@ const countdown = computed(() => {
         />
       </div>
     </div>
-    <div v-if="payment.status === 'awaiting_payment'" class="deadline">
+    <div
+      v-if="payment.status === 'awaiting_payment' || payment.status === 'underpaid'"
+      class="deadline"
+    >
       <span
         >Rate locked ·
         <strong class="mono" data-testid="countdown">{{ countdown }}</strong>
@@ -134,9 +137,5 @@ const countdown = computed(() => {
       >
       <div class="time-rule"></div>
     </div>
-    <p v-else class="muted">
-      No countdown: your first transfer already arrived, so the original quote
-      no longer expires.
-    </p>
   </div>
 </template>

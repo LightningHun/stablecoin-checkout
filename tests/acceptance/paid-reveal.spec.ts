@@ -63,17 +63,18 @@ test("paid reveal completes in real time while the polling clock is frozen", asy
   await expectSettled(page);
 });
 
-test("an already paid create response has no reveal", async ({ page }) => {
-  await stubApi(page, "paid");
+test("restoring an already paid payment has no reveal", async ({ page }) => {
+  const api = await stubApi(page, "paid");
+  await page.addInitScript(() => localStorage.setItem(
+    "stablecoin-checkout:payment-reference:ORD-88213", "AQH-100306-PMT",
+  ));
   await page.goto("/");
-  await page.getByRole("button", { name: /Continue with/ }).click();
-  await expect(page.getByTestId("payment-status")).toHaveAttribute(
-    "data-status",
-    "paid",
-  );
+  await expect(page.getByTestId("payment-status")).toHaveAttribute("data-status", "paid");
   await expect(section(page)).not.toHaveClass(/paid-reveal/);
   await expect(ghost(page)).toHaveCount(0);
   await expectSettled(page);
+  expect(api.requests.create).toBe(0);
+  expect(api.requests.get).toBe(1);
 });
 
 test("reduced motion renders paid immediately with no reveal or ghost", async ({

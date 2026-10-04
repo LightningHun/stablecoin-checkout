@@ -9,12 +9,12 @@ import type { Payment } from '../../src/features/checkout/domain/paymentModel'
 import { fixedNow, paymentSnapshot, sourceAddress } from '../fixtures/oracles'
 
 describe('T11–T13 Vue presentation and T09 real mount disposal', () => {
-  it('T12 renders exact outstanding value and removes original countdown', async () => {
-    const wrapper = mount(QuoteDetails, { props: { payment: paymentSnapshot('underpaid') as Payment, remaining: 0 } })
+  it('T12 renders exact outstanding value and keeps the original countdown', async () => {
+    const wrapper = mount(QuoteDetails, { props: { payment: paymentSnapshot('underpaid') as Payment, remaining: 600000 } })
     await flushPromises()
     expect(wrapper.get('[data-testid="transfer-amount"]').text()).toMatch(/^43\.69\s*USDT$/)
     expect(wrapper.get('[data-testid="transfer-address"]').text()).toBe(sourceAddress)
-    expect(wrapper.find('[data-testid="countdown"]').exists()).toBe(false)
+    expect(wrapper.get('[data-testid="countdown"]').text()).toBe('10:00')
     wrapper.unmount()
   })
   it('T13 shows real excess facts and merchant assistance without a refund guarantee', () => {

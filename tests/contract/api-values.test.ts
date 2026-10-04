@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Server } from "node:http";
-import { createMockServer } from "../../mock/server";
+import { createMockServer } from "../../backend/server";
 
 // Independently specified wire expectations; no production fixture or money
 // helper supplies expected names, amounts, identities, or timestamps.

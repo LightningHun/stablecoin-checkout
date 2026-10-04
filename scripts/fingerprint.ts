@@ -5,6 +5,6 @@ const files=execFileSync('git',['ls-files','-z'],{encoding:'utf8'}).split('\0').
 const sha=(text:string|Buffer)=>createHash('sha256').update(text).digest('hex');
 const items=Object.fromEntries(files.map(file=>[file,sha(readFileSync(file))]));
 const subset=(prefixes:string[])=>sha(JSON.stringify(Object.entries(items).filter(([file])=>prefixes.some(prefix=>file.startsWith(prefix)))));
-const result={candidate:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),suite:subset(['tests/','vitest.config','playwright.config']),fixtures:subset(['mock/catalogue','mock/fixtures','tests/fixtures']),design:subset(['docs/DESIGN_SPEC','docs/reference/crypto-checkout-design.pdf']),application:subset(['src/','mock/','scripts/','package','tsconfig','vite.config','eslint']),files:items};
+const result={candidate:execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(),suite:subset(['tests/','vitest.config','playwright.config']),fixtures:subset(['backend/catalogue','backend/fixtures','tests/fixtures']),design:subset(['docs/DESIGN_SPEC','docs/reference/crypto-checkout-design.pdf']),application:subset(['src/','backend/','scripts/','package','tsconfig','vite.config','eslint']),files:items};
 mkdirSync('reports/manifests',{recursive:true});writeFileSync('reports/manifests/candidate.json',JSON.stringify(result,null,2));
 console.log(JSON.stringify({...result,files:undefined},null,2));

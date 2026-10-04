@@ -122,7 +122,7 @@ if (!selected.length || (selectedIds && selected.length !== new Set(selectedIds)
 const results: Array<Record<string, unknown>> = []
 const meta = {
   gate_id: 'G5', mode: preflight ? 'preflight-not-a-gate' : 'formal-execution-awaiting-review', verdict: 'pending',
-  candidate: { kind: 'git-commit', value: candidate, source: groupHash(file => /^(src|mock|scripts)\//.test(file)), suite: groupHash(file => /^tests\//.test(file)), fixture: groupHash(file => /^(mock|tests\/fixtures)\//.test(file)), design: groupHash(file => file === 'docs/DESIGN_SPEC.md' || file === 'docs/reference/crypto-checkout-design.pdf'), lockfile: sha(readFileSync(path.join(local, 'package-lock.json'))) },
+  candidate: { kind: 'git-commit', value: candidate, source: groupHash(file => /^(src|backend|scripts)\//.test(file)), suite: groupHash(file => /^tests\//.test(file)), fixture: groupHash(file => /^(backend|tests\/fixtures)\//.test(file)), design: groupHash(file => file === 'docs/DESIGN_SPEC.md' || file === 'docs/reference/crypto-checkout-design.pdf'), lockfile: sha(readFileSync(path.join(local, 'package-lock.json'))) },
   reviewer: { role: 'independent G5 auditor', session: '/root/g5_auditor', authoredProduction: false },
   runtime: { node: process.version, platform: process.platform, arch: process.arch },
   runner: { file: 'tests/audit/run.ts', sha256: sha(readFileSync(path.join(root, 'tests/audit/run.ts'))), catalogueSha256: sha(readFileSync(path.join(root, 'tests/audit/mutations.ts'))) },

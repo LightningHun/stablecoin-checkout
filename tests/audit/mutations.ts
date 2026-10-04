@@ -24,8 +24,8 @@ const patch = (before: string, after: string) => [{ before, after }]
 export const mutations: Mutation[] = [
   {
     id: 'M01', description: 'Allow the original deadline to expire a detected payment', requirements: ['R06', 'T08'], file: policy,
-    patches: patch('  if (payment.status === "underpaid") return "usable";', `  if (payment.status === "detected" && Date.parse(payment.quote.expires_at) <= now) return "local-deadline-reached";
-  if (payment.status === "underpaid") return "usable";`),
+    patches: patch('  if (!payment) return "unavailable";', `  if (!payment) return "unavailable";
+  if (payment.status === "detected" && Date.parse(payment.quote.expires_at) <= now) return "local-deadline-reached";`),
     runner: 'vitest', testFile: componentTests, testName: 'T08 funds in detected survive deadline and HTTP 500', expectedFailure: 'local-deadline-reached', category: 'mandatory',
   },
   {
@@ -100,7 +100,7 @@ export const mutations: Mutation[] = [
     runner: 'playwright', testFile: checkoutTests, testName: 'T15 transport failure keeps known funds instead of inventing payment failed', expectedFailure: 'money arrived', category: 'mandatory',
   },
   {
-    id: 'M12', description: 'Issue a new payment reference in the mock requote response', requirements: ['R10', 'R12', 'T14', 'T16'], file: 'mock/server.ts',
+    id: 'M12', description: 'Issue a new payment reference in the mock requote response', requirements: ['R10', 'R12', 'T14', 'T16'], file: 'backend/server.ts',
     patches: patch('              p.payment_reference,', '              `AQH-${sequence++}-PMT`,'),
     runner: 'vitest', testFile: 'tests/contract/http.test.ts', testName: 'T14 M12 server-confirmed expiry requotes with the same reference', expectedFailure: 'AQH-100306-PMT', category: 'mandatory',
   },
@@ -149,8 +149,8 @@ export const mutations: Mutation[] = [
   },
   {
     id: 'A07', description: 'Remove underpaid outstanding-transfer availability', requirements: ['R09', 'T12'], file: policy,
-    patches: patch('  if (payment.status === "underpaid") return "usable";', '  if (payment.status === "underpaid") return "unavailable";'),
-    runner: 'vitest', testFile: policyTests, testName: 'T08 underpaid never becomes expired by local time', expectedFailure: 'usable', category: 'targeted',
+    patches: patch('  if (payment.status !== "awaiting_payment" && payment.status !== "underpaid")', '  if (payment.status !== "awaiting_payment")'),
+    runner: 'vitest', testFile: 'tests/unit/underpaid-expiry.test.ts', testName: 'evaluates the original deadline at 899999 ms elapsed', expectedFailure: 'usable', category: 'targeted',
   },
   {
     id: 'A08', description: 'Accept callbacks after scope disposal and generation invalidation', requirements: ['R07', 'T09'], file: controller,

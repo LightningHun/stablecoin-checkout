@@ -40,8 +40,8 @@ describe('T08/T10/T11 independent payment policy', () => {
   it.each(['detected', 'confirming', 'underpaid'] as const)('T08 %s never becomes expired by local time', state => {
     const policy = quoteAvailability(snapshot(state), fixedNow + 1800000)
     expect(policy).not.toBe('server-expired')
-    expect(policy).not.toBe('local-deadline-reached')
-    if (state === 'underpaid') expect(policy).toBe('usable')
+    if (state === 'underpaid') expect(policy).toBe('local-deadline-reached')
+    else expect(policy).not.toBe('local-deadline-reached')
   })
   it('server expiry and blocked reconciliation remain distinct', () => {
     expect(quoteAvailability(snapshot('expired'), fixedNow)).toBe('server-expired')

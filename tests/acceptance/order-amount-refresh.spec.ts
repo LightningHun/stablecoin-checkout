@@ -11,7 +11,7 @@ test.beforeEach(async ({ request, page }) => {
   await page.clock.install({ time: new Date("2026-08-14T08:37:10.842Z") });
 });
 
-async function holdCatalogueResponse(page: Page, requestNumber: number, bootstrap = false) {
+async function holdCatalogueResponse(page: Page, requestNumber: number, payment = false) {
   let release!: () => void;
   const gate = new Promise<void>((resolve) => {
     release = resolve;
@@ -21,8 +21,7 @@ async function holdCatalogueResponse(page: Page, requestNumber: number, bootstra
     capture = resolve;
   });
   const requests = { count: 0, active: 0, maxActive: 0 };
-  await page.route(bootstrap ? "**/api/payments" : "**/api/currencies", async (route) => {
-    if (bootstrap && route.request().postDataJSON().purpose !== "bootstrap") return route.fallback();
+  await page.route(payment ? "**/api/payments/*" : "**/api/currencies", async (route) => {
     const index = ++requests.count;
     requests.active++;
     requests.maxActive = Math.max(requests.maxActive, requests.active);
@@ -84,31 +83,34 @@ test("applying an amount during initial catalogue loading refreshes after the st
   }
 });
 
-test("successive amount applies serialize bootstrap refreshes and show the latest amount before Continue", async ({
+test("successive amount applies share one pending live-payment read and retain that quote until replacement", async ({
   page,
 }) => {
-  const held = await holdCatalogueResponse(page, 2, true);
+  await page.clock.pauseAt(new Date("2026-08-14T08:37:10.842Z"));
+  const held = await holdCatalogueResponse(page, 1, true);
   try {
     await page.goto("/?demo=1");
     await expect(
       page.getByRole("button", { name: /Continue with/ }),
     ).toBeEnabled();
     await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
+    await page.getByTestId("continue").click();
+    await expect(page.getByTestId("transfer-amount")).toHaveText(/163\.69\s*USDT/);
     await page
       .getByText("Demo controls · no real funds", { exact: true })
       .click();
     await applyAmount(page, "250");
-    expect(await held.captured).toMatchObject({ status: "expired", order: { amount: "250.00" } });
+    await page.clock.runFor(2000);
+    expect(await held.captured).toMatchObject({ status: "awaiting_payment", order: { amount: "149.90" } });
     await applyAmount(page, "80");
     held.release();
 
-    await expect(page.getByTestId("fiat-total")).toHaveText("80.00 EUR");
-    await expect(
-      page.getByRole("button", { name: /Continue with/ }),
-    ).toBeEnabled();
-    await expect(page.getByTestId("transfer-amount")).toHaveCount(0);
-    expect(held.requests.count).toBe(3);
+    await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
+    await expect(page.getByTestId("transfer-amount")).toHaveText(/163\.69\s*USDT/);
+    expect(held.requests.count).toBe(1);
     expect(held.requests.maxActive).toBe(1);
+    await page.getByRole("button", { name: "Change", exact: true }).click();
+    await page.getByRole("radio", { name: "Ethereum (ERC-20)", exact: true }).check();
     await page.getByTestId("continue").click();
     await expect(page.getByTestId("fiat-total")).toHaveText("80.00 EUR");
   } finally {

@@ -33,8 +33,6 @@ export function createMockServer(options: { now?: () => number } = {}) {
   });
   const payments = new Map<string, Payment>();
   const confirmationReachedAt = new Map<string, number>();
-  const bootstrapReferences = new Set<string>();
-  let bootstrapSequence = 1;
   let frozen: number | null = null,
     offset = 0;
   const now = () => frozen ?? (options.now?.() ?? Date.now()) + offset;
@@ -150,7 +148,9 @@ export function createMockServer(options: { now?: () => number } = {}) {
       );
     return p;
   }
+  let resetRevision = 0;
   return createServer(async (req, res) => {
+    const requestRevision = resetRevision;
     const url = new URL(req.url ?? "/", "http://localhost");
     const path = url.pathname;
     try {
@@ -159,10 +159,9 @@ export function createMockServer(options: { now?: () => number } = {}) {
         const nextScenario = defaultScenario();
         if ("orderAmount" in input)
           nextScenario.orderAmount = normalizeOrderAmount(input.orderAmount);
+        resetRevision++;
         scenario = nextScenario;
         payments.clear();
-        bootstrapReferences.clear();
-        bootstrapSequence = 1;
         confirmationReachedAt.clear();
         orders.clear();
         orders.set("ORD-88213", { current: null, fundsObserved: false });
@@ -303,6 +302,25 @@ export function createMockServer(options: { now?: () => number } = {}) {
       }
       if (!path.startsWith("/api/payments"))
         return json(res, 404, { title: "Not found" });
+      const input = req.method === "POST" ? await body(req) : {};
+      if (path === "/api/payments" && req.method === "POST") {
+        // Creation accepts only the documented fields, before any side effects.
+        if (input === null || typeof input !== "object" || Array.isArray(input))
+          throw Error("Invalid payment request");
+        if (
+          Object.keys(input).some(
+            (key) => !["order_id", "currency", "network"].includes(key),
+          )
+        )
+          throw Error("Unsupported payment field");
+        if (typeof input.order_id !== "string") throw Error("Unknown order");
+        readOrderId(input.order_id);
+        const currency = catalogue.find(
+          (entry) => entry.code === input.currency,
+        );
+        if (!currency?.networks.some((network) => network.id === input.network))
+          throw Error("Unsupported pair");
+      }
       const isGet = req.method === "GET";
       if (isGet) {
         metrics.gets++;
@@ -315,36 +333,13 @@ export function createMockServer(options: { now?: () => number } = {}) {
           metrics.activeGets = Math.max(0, metrics.activeGets - 1);
         });
       } else metrics.posts++;
-      const input = req.method === "POST" ? await body(req) : {};
-      // Unknown orders never create payments, including while faults are injected.
-      if (path === "/api/payments" && req.method === "POST")
-        readOrderId(input.order_id);
       if (await injectFault(req, res)) return;
+      // A slow request from before a demo reset must never recreate old state.
+      if (requestRevision !== resetRevision)
+        return json(res, 409, { title: "Demo reset invalidated this request" });
       if (path === "/api/payments" && req.method === "POST") {
         const orderId = readOrderId(input.order_id);
         const order = orders.get(orderId);
-        if ("purpose" in input && input.purpose !== "bootstrap")
-          throw Error("Unsupported payment purpose");
-        if (input.purpose === "bootstrap") {
-          const createdAt = now();
-          const expired = withStatus(
-            makePayment(
-              input as unknown as Pair,
-              `BOOT-${bootstrapSequence++}-PMT`,
-              createdAt,
-              0,
-              orderAmount(orderId),
-              orderId,
-            ),
-            "expired",
-            createdAt,
-          );
-          // Keep the expired record readable without touching order.current,
-          // the observed-funds latch, or the real payment reference sequence.
-          payments.set(expired.payment_reference, expired);
-          bootstrapReferences.add(expired.payment_reference);
-          return json(res, 201, expired);
-        }
         if (order?.fundsObserved)
           return conflict(
             res,
@@ -353,12 +348,13 @@ export function createMockServer(options: { now?: () => number } = {}) {
           );
         const p = makePayment(
           input as unknown as Pair,
-          `AQH-${sequence++}-PMT`,
+          `AQH-${sequence}-PMT`,
           now(),
           scenario.ttlMs,
           orderAmount(orderId),
           orderId,
         );
+        sequence++;
         if (order?.current) {
           payments.delete(order.current.payment_reference);
           confirmationReachedAt.delete(order.current.payment_reference);
@@ -369,12 +365,6 @@ export function createMockServer(options: { now?: () => number } = {}) {
       if (!match) return json(res, 404, { title: "Not found" });
       const original = payments.get(match[1]!);
       if (!original) return json(res, 404, { title: "Unknown payment" });
-      if (match[2] && bootstrapReferences.has(original.payment_reference))
-        return conflict(
-          res,
-          "Initial information only",
-          "Create a new payment to receive transfer instructions.",
-        );
       const p = refresh(original);
       if (match[2] && req.method === "POST") {
         if (p.status !== "expired" || orders.get(p.order_id)?.fundsObserved)

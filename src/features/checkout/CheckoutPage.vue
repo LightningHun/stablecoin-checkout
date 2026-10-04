@@ -11,6 +11,7 @@ import {
 } from "vue";
 import { usePaymentController } from "./application/usePaymentController";
 import { createPaymentClient } from "./infrastructure/paymentClient";
+import { resetDemoServer } from "./infrastructure/demoReset";
 import type { CheckoutLinkVerdict } from "./infrastructure/responseSchemas";
 import InvalidLinkView from "./components/InvalidLinkView.vue";
 import type { RestoreResult } from "./application/usePaymentController";
@@ -18,6 +19,9 @@ import {
   loadReference,
   saveReference,
   clearReference,
+  hasPendingCreation,
+  markCreationPending,
+  clearPendingCreation,
 } from "./infrastructure/paymentStorage";
 import type { Pair, Payment } from "./domain/paymentModel";
 import OrderSummary from "./components/OrderSummary.vue";
@@ -78,6 +82,24 @@ const availability = computed(
 const canChange = computed(() => controller.value?.canChange.value ?? false);
 const lastChecked = computed(() => controller.value?.lastChecked.value ?? null);
 const uncertain = computed(() => controller.value?.uncertain.value ?? false);
+const connectionIssue = computed(
+  () => controller.value?.connectionIssue.value ?? false,
+);
+const requestPending = computed(
+  () => controller.value?.requestPending.value ?? false,
+);
+const retryInSeconds = computed(
+  () => controller.value?.retryInSeconds.value ?? null,
+);
+const automaticRetriesPaused = computed(
+  () => controller.value?.automaticRetriesPaused.value ?? false,
+);
+const manualRetryLimitReached = computed(
+  () => controller.value?.manualRetryLimitReached.value ?? false,
+);
+const manualRetryInSeconds = computed(
+  () => controller.value?.manualRetryInSeconds.value ?? 0,
+);
 const restoringPayment = computed(
   () => restorePending.value || controller.value?.restoring.value || false,
 );
@@ -85,15 +107,46 @@ const selecting = ref(true),
   motionReady = ref(false),
   focusTarget = ref<HTMLElement | null>(null);
 const showDemo = params.has("demo");
+const localDemoRecovery =
+  import.meta.env.DEV &&
+  ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname) &&
+  !requiresValidation;
+const recoveringDemo = ref(false);
+const recoveryError = ref("");
+async function recoverDemo() {
+  if (
+    !localDemoRecovery ||
+    !uncertain.value ||
+    payment.value ||
+    recoveringDemo.value
+  )
+    return;
+  recoveringDemo.value = true;
+  recoveryError.value = "";
+  try {
+    await resetDemoServer();
+    if (!disposed) resetDemo();
+  } catch {
+    recoveryError.value =
+      "Demo reset could not be confirmed. The checkout remains locked. Check the local server and try again.";
+  } finally {
+    recoveringDemo.value = false;
+  }
+}
 function resetDemo() {
+  if (disposed || resetting) return;
   resetting = true;
   controller.value?.dispose();
   clearReference(orderId);
+  clearPendingCreation(orderId);
   window.location.reload();
 }
 const locale = params.get("locale") || navigator.language || "en-IE";
 const merchant = computed(() => controller.value?.merchant.value ?? null);
-const initialInfoPending = computed(() => !payment.value && !order.value);
+const initialPaymentPending = computed(() => !payment.value && !order.value);
+const initialLoadFailed = computed(
+  () => initialPaymentPending.value && !!error.value && !busy.value,
+);
 watch(
   merchant,
   (value) => {
@@ -136,12 +189,16 @@ const result = computed(
     payment.value &&
     ["paid", "overpaid", "failed"].includes(payment.value.status),
 );
+const isUnderpaidQuoteExpired = computed(
+  () => payment.value?.status === "underpaid" && remaining.value === 0,
+);
 const activeSend = computed(
   () =>
-    busy.value ||
-    availability.value === "usable" ||
-    availability.value === "local-deadline-reached" ||
-    payment.value?.status === "expired",
+    !isUnderpaidQuoteExpired.value &&
+    (busy.value ||
+      availability.value === "usable" ||
+      availability.value === "local-deadline-reached" ||
+      payment.value?.status === "expired"),
 );
 // Track snapshots actually rendered by PaymentProgress, excluding create/restore work.
 // A post-render watcher retains the previous displayed snapshot for the CSS ghost.
@@ -169,9 +226,29 @@ watch(
   { flush: "post" },
 );
 async function start() {
+  if (disposed || resetting || !controller.value?.canChange.value) return;
   motionReady.value = true;
   selecting.value = false;
-  await controller.value?.create();
+  const current = payment.value;
+  if (
+    current?.status === "awaiting_payment" &&
+    current.quote.crypto_currency === draft.value.currency &&
+    current.quote.network === draft.value.network
+  ) {
+    // Reopening an already started payment keeps its accepted quote deadline.
+    await controller.value?.retry();
+  } else {
+    markCreationPending(orderId);
+    await controller.value?.create();
+    if (disposed || resetting) return;
+    if (!controller.value?.uncertain.value && !payment.value) {
+      clearPendingCreation(orderId);
+      selecting.value = true;
+    }
+    // A definite rejection cannot leave a false unresolved-creation marker.
+    if (controller.value?.error.value && !controller.value.uncertain.value)
+      clearPendingCreation(orderId);
+  }
   persistReference();
   await nextTick();
   focusTarget.value?.focus();
@@ -182,10 +259,16 @@ function select(pair: Pair) {
   draft.value = pair;
 }
 function persistReference() {
-  if (!resetting && payment.value && !controller.value?.referenceMissing.value)
-    saveReference(payment.value.payment_reference, orderId);
+  if (
+    !resetting &&
+    payment.value &&
+    !controller.value?.uncertain.value &&
+    !controller.value?.referenceMissing.value
+  )
+    if (saveReference(payment.value.payment_reference, orderId))
+      clearPendingCreation(orderId);
 }
-function finishRestore(outcome: RestoreResult | void) {
+async function finishRestore(outcome: RestoreResult | void) {
   if (resetting) return;
   if (outcome === "restored") {
     selecting.value = false;
@@ -193,15 +276,23 @@ function finishRestore(outcome: RestoreResult | void) {
     persistReference();
   } else if (outcome === "not-found") {
     clearReference(orderId);
+    clearPendingCreation(orderId);
     selecting.value = true;
     restorePending.value = false;
+    await loadCheckoutInformation();
   }
 }
 function retry() {
-  if (linkState.value === "unavailable") return bootstrap();
-  // Keep demo catalogue refreshes behind startup and earlier refreshes.
+  if (linkState.value === "unavailable") return initializePage();
+  if (resetting) return Promise.resolve();
+  // Real-payment clicks share the controller's active request instead of
+  // queuing another GET that could run after the first one has recovered.
+  if (payment.value) return controller.value?.retry();
+  // Serialize startup retries; a real POST with an unknown outcome stays locked.
   pageRefresh = pageRefresh.then(async () => {
-    if (!resetting) finishRestore(await controller.value?.retry());
+    if (resetting) return;
+    await finishRestore(await controller.value?.retry());
+    await loadCheckoutInformation();
   });
   return pageRefresh;
 }
@@ -215,19 +306,48 @@ watch(
     if (missing) clearReference(orderId);
   },
 );
+async function loadCheckoutInformation() {
+  const session = controller.value;
+  if (
+    disposed ||
+    resetting ||
+    !session ||
+    session.payment.value ||
+    session.order.value ||
+    restorePending.value ||
+    session.restoring.value ||
+    session.uncertain.value ||
+    !session.canChange.value ||
+    session.health.value !== "fresh"
+  )
+    return;
+  // Persist the intent before POST: reload must not retry a lost creation reply.
+  markCreationPending(orderId);
+  await session.loadCheckoutInformation();
+  if (disposed || resetting) return;
+  // A verified information response is intentionally not saved as a payment.
+  if (!session.uncertain.value) clearPendingCreation(orderId);
+}
 async function startSession() {
   if (disposed || controller.value) return;
-  const session = controllerScope.run(() => usePaymentController({ client }));
-  if (!session) return;
-  controller.value = session;
   // Even reading persistence waits for a definitive valid link verdict.
   const storedReference = loadReference(orderId);
-  restorePending.value = storedReference !== null;
-  const initialized = session.initialize({ restore: storedReference !== null });
-  if (storedReference) finishRestore(await session.restore(storedReference));
-  else await initialized;
+  const creationPending = hasPendingCreation(orderId);
+  const session = controllerScope.run(() =>
+    usePaymentController({
+      client,
+      creationPending,
+    }),
+  );
+  if (!session) return;
+  controller.value = session;
+  restorePending.value = storedReference !== null && !creationPending;
+  await session.initialize();
+  if (creationPending) return;
+  if (storedReference) await finishRestore(await session.restore(storedReference));
+  else await loadCheckoutInformation();
 }
-async function bootstrap() {
+async function initializePage() {
   if (disposed || validating.value) return;
   if (requiresValidation && linkState.value !== "ready") {
     validating.value = true;
@@ -268,7 +388,7 @@ async function bootstrap() {
   await startSession();
 }
 onMounted(() => {
-  pageRefresh = bootstrap();
+  pageRefresh = initializePage();
 });
 onScopeDispose(() => {
   disposed = true;
@@ -292,28 +412,118 @@ onScopeDispose(() => {
       <div
         v-else
         class="merchant"
-        aria-busy="true"
-        aria-label="Loading merchant"
+        :aria-busy="!initialLoadFailed"
+        :aria-label="
+          initialLoadFailed ? 'Merchant unavailable' : 'Loading merchant'
+        "
       >
-        <span class="merchant-mark skeleton" aria-hidden="true"></span>
-        <span>Loading checkout details…</span>
+        <span
+          v-if="!initialLoadFailed"
+          class="merchant-mark skeleton"
+          aria-hidden="true"
+        ></span>
+        <span>{{
+          initialLoadFailed
+            ? "Checkout details unavailable"
+            : "Loading checkout details…"
+        }}</span>
       </div>
       <span class="order-reference mono">Order {{ orderId }}</span>
     </header>
-    <div v-if="error" class="connection-banner" role="alert">
-      <span
+    <div v-if="error" class="connection-banner">
+      <template v-if="connectionIssue">
+        <div class="connection-message" role="alert">
+          <svg
+            class="connection-icon"
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.8"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M12 3.5l9.5 17H2.5L12 3.5z" />
+            <path d="M12 10v5" />
+            <circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none" />
+          </svg>
+          <span
+            ><strong>Can't reach the payment server.</strong> Showing the last
+            verified payment details.</span
+          >
+        </div>
+        <span
+          v-if="retryInSeconds !== null"
+          class="connection-retry-time"
+          data-testid="retry-countdown"
+          aria-live="off"
+          >Retrying in {{ retryInSeconds }} s.</span
+        >
+        <span
+          v-else-if="requestPending"
+          class="connection-retry-time"
+          data-testid="request-checking"
+          aria-live="off"
+          >Checking…</span
+        >
+        <span
+          v-else-if="automaticRetriesPaused"
+          data-testid="automatic-retries-paused"
+          >Automatic retries paused.</span
+        >
+      </template>
+      <span v-else role="alert"
         ><strong>Can't reach a verified payment update.</strong> {{ error }}
         <span v-if="payment"
           >Last known state: {{ payment.status.replaceAll("_", " ") }}.</span
         ></span
-      ><button
+      >
+      <button
         v-if="!uncertain"
         data-testid="retry"
-        :disabled="busy"
+        :disabled="
+          busy ||
+          requestPending ||
+          manualRetryLimitReached ||
+          manualRetryInSeconds > 0
+        "
+        :aria-describedby="
+          manualRetryLimitReached || manualRetryInSeconds > 0
+            ? 'manual-retry-guidance'
+            : undefined
+        "
         @click="retry"
       >
+        <svg
+          v-if="connectionIssue"
+          class="connection-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7" />
+        </svg>
         Retry now
       </button>
+      <span
+        v-if="manualRetryLimitReached"
+        id="manual-retry-guidance"
+        data-testid="manual-retry-limit"
+        >Manual retry limit reached.</span
+      >
+      <span
+        v-else-if="manualRetryInSeconds > 0"
+        id="manual-retry-guidance"
+        data-testid="manual-retry-cooldown"
+        aria-live="off"
+        >You can retry again in {{ manualRetryInSeconds }} s.</span
+      >
     </div>
     <main
       v-if="linkState === 'ready'"
@@ -323,18 +533,19 @@ onScopeDispose(() => {
     >
       <OrderSummary
         :amount="order?.amount"
+        :unavailable="initialLoadFailed"
         :currency="order?.currency"
         :locale="locale"
       />
       <section
         class="step"
         :class="{
-          done: !selectionVisible && !restoringPayment && !initialInfoPending,
-          active: selectionVisible || restoringPayment || initialInfoPending,
+          done: !selectionVisible && !restoringPayment && !initialPaymentPending,
+          active: selectionVisible || restoringPayment || initialPaymentPending,
         }"
       >
         <span class="step-marker" aria-hidden="true">{{
-          selectionVisible || restoringPayment || initialInfoPending ? "1" : "✓"
+          selectionVisible || restoringPayment || initialPaymentPending ? "1" : "✓"
         }}</span>
         <div class="step-heading">
           <h2>Pay with</h2>
@@ -350,13 +561,32 @@ onScopeDispose(() => {
         <p v-if="restoringPayment" class="muted">
           Checking for an existing payment…
         </p>
-        <p v-else-if="initialInfoPending" class="muted">
-          {{
-            error
-              ? "Checkout details are unavailable."
-              : "Loading checkout details…"
-          }}
-        </p>
+        <div v-else-if="initialPaymentPending || (!payment && uncertain)">
+          <p class="muted">
+            {{
+              error
+                ? order
+                  ? "The payment request could not be verified."
+                  : "Checkout details are unavailable."
+                : "Loading checkout details…"
+            }}
+          </p>
+          <template v-if="localDemoRecovery && uncertain">
+            <p class="muted">
+              This local demo is locked by an unfinished request. Reset all demo
+              orders and payment states to start again. No real funds are involved.
+            </p>
+            <button
+              class="secondary"
+              data-testid="demo-recover"
+              :disabled="recoveringDemo"
+              @click="recoverDemo"
+            >
+              {{ recoveringDemo ? "Resetting demo…" : "Reset demo checkout" }}
+            </button>
+            <p v-if="recoveryError" role="status">{{ recoveryError }}</p>
+          </template>
+        </div>
         <AssetNetworkSelector
           v-else-if="selectionVisible"
           :class="{ 'motion-enter': payment }"
@@ -389,7 +619,8 @@ onScopeDispose(() => {
           <h2>Send the exact amount</h2>
           <span
             v-if="
-              payment?.status === 'underpaid' || payment?.status === 'expired'
+              (payment?.status === 'underpaid' && !isUnderpaidQuoteExpired) ||
+              payment?.status === 'expired'
             "
             class="action-label"
             >Action needed</span
@@ -398,7 +629,7 @@ onScopeDispose(() => {
         <p v-if="restoringPayment" class="muted">
           Checking for an existing payment…
         </p>
-        <p v-else-if="initialInfoPending" class="muted">
+        <p v-else-if="initialPaymentPending" class="muted">
           Amount, address and QR code appear after you choose a network.
         </p>
         <p
@@ -448,6 +679,17 @@ onScopeDispose(() => {
           :busy="busy"
           @requote="requote"
         />
+        <p
+          v-else-if="
+            payment?.status === 'underpaid' && !isUnderpaidQuoteExpired
+          "
+          role="status"
+          data-testid="underpaid-quote-notice"
+        >
+          Transfer details are unavailable while we check your payment. Your
+          previous payment is still recorded. Do not send more until the quote
+          is verified.
+        </p>
         <p v-else-if="payment?.status === 'awaiting_payment'" role="status">
           Quote time ended or transfer details are unavailable. Checking payment
           status before you can continue. If already sent, do not send again.
@@ -482,22 +724,27 @@ onScopeDispose(() => {
           inactive: !funds && !result,
           done: result,
           'paid-reveal': paidReveal?.active,
+          incomplete: isUnderpaidQuoteExpired,
         }"
       >
         <span class="step-marker" aria-hidden="true">
           <span class="paid-step-glyph">{{
-            result
-              ? payment?.status === "failed"
-                ? "×"
-                : "✓"
-              : payment?.status === "underpaid"
-                ? "!"
-                : "3"
+            isUnderpaidQuoteExpired
+              ? "×"
+              : result
+                ? payment?.status === "failed"
+                  ? "×"
+                  : "✓"
+                : payment?.status === "underpaid"
+                  ? "!"
+                  : "3"
           }}</span>
         </span>
         <div class="step-heading">
           <h2>Confirmation</h2>
-          <span v-if="payment?.status === 'failed'" class="action-label outline"
+          <span
+            v-if="payment?.status === 'failed' || isUnderpaidQuoteExpired"
+            class="action-label outline"
             >Can't be fixed here</span
           >
         </div>
@@ -506,6 +753,10 @@ onScopeDispose(() => {
           :payment="selectionVisible ? null : payment"
           :health="health"
           :last-checked="lastChecked"
+          :connection-issue="connectionIssue"
+          :retry-scheduled="retryInSeconds !== null"
+          :can-send-remaining="availability === 'usable'"
+          :quote-expired="isUnderpaidQuoteExpired"
           :reveal="paidReveal"
         />
       </section>
@@ -520,7 +771,6 @@ onScopeDispose(() => {
       <DemoControls
         v-if="showDemo"
         :order-id="orderId"
-        @refresh="retry"
         @reset="resetDemo"
       />
     </main>

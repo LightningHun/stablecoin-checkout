@@ -1,6 +1,11 @@
 <script setup lang="ts">
 import { formatFiat } from "../domain/money";
-defineProps<{ amount?: string; locale: string; currency?: string }>();
+defineProps<{
+  amount?: string;
+  locale: string;
+  currency?: string;
+  unavailable?: boolean;
+}>();
 </script>
 <template>
   <section class="order-summary" aria-label="Order total">
@@ -8,6 +13,9 @@ defineProps<{ amount?: string; locale: string; currency?: string }>();
     <h1 v-if="amount !== undefined && currency" data-testid="fiat-total">
       {{ formatFiat(amount, locale, currency) }}
     </h1>
+    <p v-else-if="unavailable" class="muted" role="status">
+      Order total unavailable.
+    </p>
     <div
       v-else
       class="skeleton amount-skeleton"

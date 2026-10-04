@@ -17,7 +17,8 @@ for (const state of statuses) {
     await expect(page.getByTestId('payment-status')).toHaveAttribute('data-status', state)
     await page.getByTestId('demo-reset').click()
     await expect(page.getByRole('button', { name: /Continue with/ })).toBeVisible()
-    await expect(page.getByText(/AQH-100306-PMT/)).toHaveCount(0)
+    expect(await page.evaluate(() => localStorage.getItem('stablecoin-checkout:payment-reference:ORD-88213'))).toBeNull()
+    await expect(page.getByTestId('transfer-amount')).toHaveCount(0)
   })
 }
 

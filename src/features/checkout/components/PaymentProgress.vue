@@ -8,9 +8,18 @@ const props = defineProps<{
   payment: Payment | null;
   health: RequestHealth;
   decimals?: number;
+  canSendRemaining?: boolean;
+  quoteExpired?: boolean;
   lastChecked: number | null;
+  connectionIssue?: boolean;
+  retryScheduled?: boolean;
   reveal?: { active: boolean; previous: Payment } | null;
 }>();
+const expiredUnderpayment = computed(() =>
+  props.quoteExpired && props.payment?.status === "underpaid"
+    ? props.payment
+    : null,
+);
 const ghostRemoved = ref(false);
 const revealActive = computed(
   () =>
@@ -59,7 +68,9 @@ function title() {
   switch (p.status) {
     case "awaiting_payment":
       return props.health === "stale"
-        ? "Connection lost — reconnecting"
+        ? props.connectionIssue && props.retryScheduled
+          ? "Connection lost — reconnecting"
+          : "Connection lost"
         : "Waiting for your transfer";
     case "detected":
       return "Your money arrived";
@@ -68,7 +79,9 @@ function title() {
     case "paid":
       return "Paid";
     case "underpaid":
-      return `Received ${p.amount_received} of ${p.quote.total_due} ${p.quote.crypto_currency}`;
+      return expiredUnderpayment.value
+        ? "Payment incomplete"
+        : `Received ${p.amount_received} of ${p.quote.total_due} ${p.quote.crypto_currency}`;
     case "overpaid":
       return `Paid — with ${p.amount_excess} ${p.quote.crypto_currency} extra`;
     case "expired":
@@ -81,7 +94,10 @@ function title() {
 <template>
   <div
     class="payment-progress"
-    :class="{ 'paid-reveal-content': revealActive }"
+    :class="{
+      'paid-reveal-content': revealActive,
+      'underpaid-incomplete': expiredUnderpayment,
+    }"
     data-testid="payment-status"
     :data-status="payment?.status ?? 'selection'"
   >
@@ -118,6 +134,32 @@ function title() {
     </div>
     <div class="progress-heading">
       <span
+        v-if="expiredUnderpayment"
+        class="confirmation-icon large failed incomplete-warning"
+        aria-hidden="true"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.8"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M12 3.5l9.5 17H2.5L12 3.5z" />
+          <path d="M12 10v5" />
+          <circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none" />
+        </svg>
+      </span>
+      <span
+        v-if="connectionIssue && payment?.status === 'awaiting_payment'"
+        class="connection-dot"
+        aria-hidden="true"
+      ></span>
+      <span
         v-if="
           payment &&
           ['detected', 'confirming', 'paid', 'overpaid', 'failed'].includes(
@@ -136,7 +178,9 @@ function title() {
         role="status"
         :class="{
           result:
-            payment && ['paid', 'overpaid', 'failed'].includes(payment.status),
+            expiredUnderpayment ||
+            (payment &&
+              ['paid', 'overpaid', 'failed'].includes(payment.status)),
         }"
         >{{ title() }}</strong
       ><span
@@ -149,8 +193,29 @@ function title() {
         {{ payment.required_confirmations }} confirmations</span
       >
     </div>
+    <p
+      v-if="expiredUnderpayment"
+      class="incomplete-subtitle"
+      data-testid="incomplete-subtitle"
+    >
+      <span class="mono">{{ expiredUnderpayment.amount_received }}</span> of
+      <span class="mono"
+        >{{ expiredUnderpayment.quote.total_due }}
+        {{ expiredUnderpayment.quote.crypto_currency }}</span
+      >
+      received · the rate for the rest expired at
+      <time :datetime="expiredUnderpayment.quote.expires_at">{{
+        new Date(expiredUnderpayment.quote.expires_at).toLocaleTimeString(
+          "en-GB",
+          {
+            hour: "2-digit",
+            minute: "2-digit",
+          },
+        )
+      }}</time>
+    </p>
     <div
-      v-if="payment?.status === 'underpaid'"
+      v-if="payment?.status === 'underpaid' && !expiredUnderpayment"
       class="partial-progress"
       aria-hidden="true"
     >
@@ -173,17 +238,39 @@ function title() {
         </p>
         <p>♙ Your rate is locked in — this quote no longer expires.</p>
       </template>
-      <p v-if="payment.status === 'awaiting_payment'" class="muted">
+      <p
+        v-if="payment.status === 'awaiting_payment' && !connectionIssue"
+        class="muted"
+      >
         {{
           health === "stale"
             ? "Current server status is unknown. If you already sent funds, do not send again."
             : "This page updates by itself — no need to refresh. Wait here after sending the transfer."
         }}
       </p>
-      <p v-if="payment.status === 'underpaid'" class="muted">
-        Send only the outstanding {{ payment.amount_outstanding }}
-        {{ payment.quote.crypto_currency }}. Your previous payment is counted
-        once; completion needs server confirmation.
+      <p
+        v-if="expiredUnderpayment"
+        class="muted"
+        data-testid="incomplete-description"
+      >
+        The remaining {{ expiredUnderpayment.amount_outstanding }}
+        {{ expiredUnderpayment.quote.crypto_currency }} was not received before
+        the rate expired. Do not send anything more to this address. Your
+        previous payment is still recorded. Contact
+        {{ expiredUnderpayment.merchant.name }} with the details below for next
+        steps.
+      </p>
+      <p v-else-if="payment.status === 'underpaid'" class="muted">
+        <template v-if="canSendRemaining">
+          Send only the outstanding {{ payment.amount_outstanding }}
+          {{ payment.quote.crypto_currency }}. Your previous payment is counted
+          once; completion needs server confirmation.
+        </template>
+        <template v-else>
+          Outstanding balance: {{ payment.amount_outstanding }}
+          {{ payment.quote.crypto_currency }}. Your previous payment is still
+          recorded; completion needs server confirmation.
+        </template>
       </p>
       <p v-if="payment.status === 'overpaid'">
         The order needed {{ payment.quote.total_due }}
@@ -208,19 +295,28 @@ function title() {
           columns3:
             payment.status === 'detected' ||
             payment.status === 'confirming' ||
-            payment.status === 'underpaid',
+            (payment.status === 'underpaid' && !expiredUnderpayment),
         }"
       >
         <div v-if="'amount_received' in payment">
           <dt>
             {{
-              payment.status === "underpaid"
-                ? "First transfer"
-                : "Amount received"
+              expiredUnderpayment
+                ? "Received"
+                : payment.status === "underpaid"
+                  ? "First transfer"
+                  : "Amount received"
             }}
           </dt>
           <dd class="mono">
             {{ payment.amount_received }} {{ payment.quote.crypto_currency }}
+          </dd>
+        </div>
+        <div v-if="expiredUnderpayment">
+          <dt>Still owed</dt>
+          <dd class="mono">
+            {{ expiredUnderpayment.amount_outstanding }}
+            {{ expiredUnderpayment.quote.crypto_currency }}
           </dd>
         </div>
         <div v-if="'tx_hash' in payment">
@@ -231,6 +327,10 @@ function title() {
               :network="payment.quote.network"
             />
           </dd>
+        </div>
+        <div v-if="expiredUnderpayment">
+          <dt>Payment reference</dt>
+          <dd class="mono">{{ expiredUnderpayment.payment_reference }}</dd>
         </div>
         <div v-if="payment.status === 'detected'">
           <dt>Detected</dt>
@@ -260,7 +360,10 @@ function title() {
         </template>
       </dl>
       <CopyButton
-        v-if="['paid', 'overpaid', 'failed'].includes(payment.status)"
+        v-if="
+          expiredUnderpayment ||
+          ['paid', 'overpaid', 'failed'].includes(payment.status)
+        "
         :value="
           payment.status === 'failed'
             ? payment.payment_reference +
@@ -272,7 +375,29 @@ function title() {
         "
         :label="payment.status === 'failed' ? 'Copy details' : 'Copy reference'"
       />
-      <p v-if="health === 'stale' && lastChecked" class="small muted">
+      <div v-if="connectionIssue" class="connection-support">
+        <p class="muted">
+          <template v-if="lastChecked !== null">
+            Last checked
+            {{ new Date(lastChecked).toLocaleTimeString("en-GB") }}.
+          </template>
+          Current server status is unknown. If you already sent funds, do not
+          send again.
+        </p>
+        <p class="connection-contact">
+          If this keeps up, contact {{ payment.merchant.name }} and quote your
+          order ID.
+        </p>
+        <CopyButton
+          :value="payment.order_id"
+          label="Copy order ID"
+          testid="copy-order-id"
+        />
+      </div>
+      <p
+        v-else-if="health === 'stale' && lastChecked !== null"
+        class="small muted"
+      >
         Last checked {{ new Date(lastChecked).toLocaleTimeString("en-GB") }}.
         Showing the last verified payment facts.
       </p>

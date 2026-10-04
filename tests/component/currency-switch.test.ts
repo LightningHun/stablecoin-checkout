@@ -29,7 +29,6 @@ async function setup() {
   let created = 0
   const client = {
     currencies: vi.fn<PaymentClient['currencies']>(async () => sample(currencies)),
-    bootstrap: vi.fn(async () => sample({ ...paymentSnapshot('expired'), payment_reference: 'BOOT-test-PMT', expired_at: '2026-08-14T08:37:10.842Z', quote: { ...sourceQuote, expires_at: '2026-08-14T08:37:10.842Z' } } as Payment)),
     create: vi.fn<PaymentClient['create']>(async (pair: Pair) => {
       const row = catalogueRows.find(entry => entry[0] === pair.currency && entry[2] === pair.network)!
       const vector = pair.currency === 'USDT' && pair.network === 'tron'
@@ -95,7 +94,7 @@ describe('currency changes after reopening the checkout selector', () => {
       expect(page.get('[data-testid="continue"]').text()).toContain(`Continue with ${currency} on`)
       expect(page.find('[data-testid="quote-loading"]').exists()).toBe(false)
       expectNoTransferControls(page)
-      expect(client.create).toHaveBeenCalledTimes(1)
+      expect(client.create).toHaveBeenCalledTimes(2)
       expect(client.requote).not.toHaveBeenCalled()
     }
   })
@@ -104,11 +103,11 @@ describe('currency changes after reopening the checkout selector', () => {
     const { page, client } = await setup()
     await page.get('input[name="currency"][value="USDC"]').setValue(true)
     await flushPromises()
-    expect(client.create).toHaveBeenCalledTimes(1)
+    expect(client.create).toHaveBeenCalledTimes(2)
     for (const network of ['solana', 'ethereum', 'solana']) {
       await page.get(`input[name="network"][value="${network}"]`).setValue(true)
       await flushPromises()
-      expect(client.create).toHaveBeenCalledTimes(1)
+      expect(client.create).toHaveBeenCalledTimes(2)
       expect(page.find('.selector').exists()).toBe(true)
       expect(page.find('[data-testid="quote-loading"]').exists()).toBe(false)
       expectNoTransferControls(page)
@@ -118,6 +117,7 @@ describe('currency changes after reopening the checkout selector', () => {
     await flushPromises()
 
     expect(client.create.mock.calls.map(([pair]) => pair)).toEqual([
+      { currency: 'USDT', network: 'tron' },
       { currency: 'USDT', network: 'tron' },
       { currency: 'USDC', network: 'solana' },
     ])
@@ -133,13 +133,14 @@ describe('currency changes after reopening the checkout selector', () => {
     const { page, client } = await setup()
     await page.get('input[name="currency"][value="USDC"]').setValue(true)
     await flushPromises()
-    expect(client.create).toHaveBeenCalledTimes(1)
+    expect(client.create).toHaveBeenCalledTimes(2)
     expect(page.get('[data-testid="continue"]').text()).toBe('Continue with USDC on Ethereum (ERC-20)')
     expectNoTransferControls(page)
     await page.get('[data-testid="continue"]').trigger('click')
     await flushPromises()
 
     expect(client.create.mock.calls.map(([pair]) => pair)).toEqual([
+      { currency: 'USDT', network: 'tron' },
       { currency: 'USDT', network: 'tron' },
       { currency: 'USDC', network: 'ethereum' },
     ])

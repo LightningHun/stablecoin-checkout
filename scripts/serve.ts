@@ -1,5 +1,5 @@
 import { createServer, preview } from "vite";
-import { createMockServer } from "../mock/server";
+import { createMockServer } from "../backend/server";
 const mock = createMockServer();
 mock.listen(Number(process.env.MOCK_PORT || 8787), "127.0.0.1");
 const app = process.argv.includes("--preview")

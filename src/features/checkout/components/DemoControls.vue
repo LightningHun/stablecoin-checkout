@@ -1,13 +1,15 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { resetDemoServer } from "../infrastructure/demoReset";
 import CopyButton from "./CopyButton.vue";
 import { statuses } from "../domain/paymentModel";
 const props = defineProps<{ orderId: string }>();
-const emit = defineEmits<{ refresh: []; reset: [] }>();
+const emit = defineEmits<{ reset: [] }>();
 const requireSignature = ref(false);
 let signatureRevision = 0;
 const checkoutUrl = ref("");
 const creatingLink = ref(false);
+const resetting = ref(false);
 const state = ref("awaiting_payment"),
   fault = ref("none"),
   orderAmount = ref("149.90"),
@@ -37,7 +39,6 @@ async function command(path: string, body: Record<string, unknown>) {
       throw Error("Control failed");
     }
     message.value = "Demo updated";
-    emit("refresh");
   } catch {
     message.value = "Demo controls unavailable";
   }
@@ -94,8 +95,17 @@ async function createOrderLink() {
   }
 }
 async function reset() {
-  await command("reset", {});
-  emit("reset");
+  if (resetting.value) return;
+  resetting.value = true;
+  try {
+    await resetDemoServer();
+    emit("reset");
+  } catch {
+    message.value =
+      "Demo reset could not be confirmed. Your checkout has not been restarted.";
+  } finally {
+    resetting.value = false;
+  }
 }
 </script>
 <template>
@@ -156,7 +166,12 @@ async function reset() {
     >
       Advance 15 minutes
 </button
-    ><button class="secondary" data-testid="demo-reset" @click="reset">
+    ><button
+      class="secondary"
+      data-testid="demo-reset"
+      :disabled="resetting"
+      @click="reset"
+    >
       Reset demo
     </button>
     <button class="secondary" :disabled="creatingLink" @click="createOrderLink">

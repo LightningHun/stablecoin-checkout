@@ -91,9 +91,8 @@ async function customApi(
       body = { valid: true, order_id: orderId, checked_at: now };
     if (path === "/api/currencies") body = catalogue;
     if (path === "/api/payments" && request.method() === "POST") {
-      if (request.postDataJSON().purpose === "bootstrap") {
-        body = { ...current, payment_reference: "BOOT-custom-42", status: "expired", expired_at: now, quote: { ...payment.quote, expires_at: now } };
-      } else creates.push(request.postDataJSON());
+      expect(Object.keys(request.postDataJSON()).sort()).toEqual(["currency", "network", "order_id"]);
+      creates.push(request.postDataJSON());
       status = 201;
     }
     // Neither x-server-time nor Date is supplied: the app must accept the API.
@@ -142,6 +141,7 @@ test("API catalogue owns first selection, metadata, precision, branding and USD 
   ).toHaveCount(0);
   await page.getByTestId("continue").click();
   expect(api.creates).toEqual([
+    { order_id: orderId, currency: "TOK", network: "custom-chain" },
     { order_id: orderId, currency: "TOK", network: "custom-chain" },
   ]);
   await expect(page).toHaveTitle("Aurora Audio");
@@ -193,7 +193,7 @@ test("API catalogue owns first selection, metadata, precision, branding and USD 
     "style",
     "width: 16.06%;",
   );
-  await expect(page.getByTestId("countdown")).toHaveCount(0);
+  await expect(page.getByTestId("countdown")).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
 
@@ -232,7 +232,7 @@ test("missing initial merchant and order amount block Continue without inventing
     order: { currency: "USD" },
   });
   await page.goto(`/?order=${encodeURIComponent(orderId)}`);
-  await expect(page.getByRole("alert")).toContainText("invalid data");
+  await expect(page.getByRole("alert")).toContainText("The quote request outcome is uncertain.");
   await expect(page).toHaveTitle("Checkout");
   await expect(page.getByTestId("continue")).toHaveCount(0);
   await expect(page.getByTestId("fiat-total")).toHaveCount(0);

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { compareDecimal, decimalScale, parseUnits } from "../domain/money";
-import type { Currency, Pair, Payment } from "../domain/paymentModel";
+import type { Currency, Payment } from "../domain/paymentModel";
 const decimal = z
   .string()
   .max(512)
@@ -107,7 +107,7 @@ const base = {
   payment_reference: z.string().min(1),
   order_id: orderIdSchema,
   merchant: merchantInfoSchema.default({ name: "Merchant" }),
-  order: z.object({ currency: code, amount: decimal.default("0") }),
+  order: z.object({ currency: code, amount: decimal }),
   quote,
 };
 const received = { amount_received: decimal, tx_hash: z.string().min(1) };
@@ -230,31 +230,6 @@ export function parsePayment(
       parseUnits(value, currency.decimals),
     );
   }
-  return payment;
-}
-
-// A bootstrap must contain real metadata, even when legacy Payment consumers
-// allow display fallbacks. Parse raw values before defaults can fill them in.
-const bootstrapMetadataSchema = z.object({
-  merchant: merchantInfoSchema.extend({ name: z.string().trim().min(1) }),
-  order: z.object({ currency: code, amount: decimal }),
-});
-export function parseBootstrapPayment(
-  input: unknown,
-  currencies: readonly Currency[],
-  orderId: string,
-  pair: Pair,
-): Payment {
-  bootstrapMetadataSchema.parse(input);
-  const payment = parsePayment(input, currencies);
-  if (
-    payment.order_id !== orderId ||
-    payment.quote.crypto_currency !== pair.currency ||
-    payment.quote.network !== pair.network ||
-    payment.status !== "expired" ||
-    Date.parse(payment.quote.expires_at) > Date.parse(payment.expired_at)
-  )
-    throw Error("Invalid initial payment information");
   return payment;
 }
 

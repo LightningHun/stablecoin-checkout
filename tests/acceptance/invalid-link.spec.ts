@@ -52,6 +52,9 @@ test("unknown order validates once, copies support details and returns with Go b
   await page.getByRole("button", { name: "Go back", exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByTestId("continue")).toBeEnabled();
+  await expect(page.getByTestId("payment-status")).toHaveAttribute("data-status", "selection");
+  await expect(page.getByTestId("transfer-amount")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("stablecoin-checkout:payment-reference:ORD-88213"))).toBeNull();
 });
 
 for (const [url, reason] of [
@@ -168,6 +171,9 @@ test("demo panel creates a signed link and requires signatures without changing 
   );
   await page.goto("/");
   await expect(page.getByTestId("continue")).toBeEnabled();
+  await expect(page.getByTestId("payment-status")).toHaveAttribute("data-status", "selection");
+  await expect(page.getByTestId("transfer-amount")).toHaveCount(0);
+  expect(await page.evaluate(() => localStorage.getItem("stablecoin-checkout:payment-reference:ORD-88213"))).toBeNull();
 });
 
 test("invalid screen at 390px stacks full-width actions without horizontal overflow", async ({

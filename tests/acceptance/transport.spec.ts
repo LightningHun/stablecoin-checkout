@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 import { fixedNow, paymentSnapshot, sourceAddress, sourceQuote } from '../fixtures/oracles'
-import { bootstrapSnapshot, independentCatalogue, noTransferAction, startQuote, stubApi } from './fixtures'
+import { independentCatalogue, noTransferAction, startQuote, stubApi } from './fixtures'
 
 test('T10 every terminal state stops automatic polling', async ({ page }) => {
   for (const state of ['paid', 'overpaid', 'failed', 'expired'] as const) {
@@ -34,12 +34,10 @@ test('T14 server-expired requote retains reference and double clicks coalesce', 
 test('T15 uncertain creation is not automatically retried', async ({ page }) => {
   const api = await stubApi(page)
   await page.route('**/api/payments', async route => {
-    if (route.request().postDataJSON().purpose === 'bootstrap') return route.fallback()
     api.requests.create += 1
     await route.abort('connectionfailed')
   })
   await page.goto('/')
-  await page.getByRole('button', { name: /Continue with/ }).click()
   await expect(page.getByRole('alert')).toBeVisible()
   await page.clock.runFor(120000)
   expect(api.requests.create).toBe(1)
@@ -96,7 +94,6 @@ test('T07 local zero hides instructions before server reconciliation completes',
     const path = new URL(route.request().url()).pathname
     const headers = { 'content-type': 'application/json', 'x-server-time': new Date(fixedNow).toISOString() }
     if (path === '/api/currencies') return route.fulfill({ headers, json: independentCatalogue })
-    if (route.request().method() === 'POST' && route.request().postDataJSON().purpose === 'bootstrap') return route.fulfill({ status: 201, headers, json: bootstrapSnapshot() })
     if (route.request().method() === 'POST') return route.fulfill({ status: 201, headers, json: { ...paymentSnapshot(), quote: { ...sourceQuote, expires_at: new Date(fixedNow + 1000).toISOString() } } })
     gets += 1
     await new Promise<void>(resolve => { getResolve = resolve })

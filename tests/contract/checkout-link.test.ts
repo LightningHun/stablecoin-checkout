@@ -1,6 +1,6 @@
 // @vitest-environment node
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createMockServer } from "../../mock/server";
+import { createMockServer } from "../../backend/server";
 import type { Server } from "node:http";
 
 let server: Server;

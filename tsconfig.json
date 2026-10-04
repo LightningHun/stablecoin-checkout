@@ -16,7 +16,7 @@
   "include": [
     "src/**/*.ts",
     "src/**/*.vue",
-    "mock/**/*.ts",
+    "backend/**/*.ts",
     "scripts/**/*.ts",
     "tests/**/*.ts",
     "*.config.ts"

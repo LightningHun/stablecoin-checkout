@@ -1,12 +1,11 @@
 /** Decimal strings enter once; every monetary operation stays in integer units. */
+function validateScale(scale: number): void {
+  if (!Number.isInteger(scale) || scale < 0 || scale > 255)
+    throw new Error("Invalid decimal scale");
+}
 export function parseUnits(value: string, scale: number): bigint {
-  if (
-    !Number.isInteger(scale) ||
-    scale < 0 ||
-    scale > 255 ||
-    !/^(0|[1-9]\d*)(\.\d+)?$/.test(value)
-  )
-    throw new Error("Invalid decimal");
+  validateScale(scale);
+  if (!/^(0|[1-9]\d*)(\.\d+)?$/.test(value)) throw new Error("Invalid decimal");
   const [whole, rawFraction = ""] = value.split(".");
   const fraction = rawFraction.replace(/0+$/, "");
   if (fraction.length > scale) throw new Error("Excess precision");
@@ -20,6 +19,7 @@ export function formatUnits(
   scale: number,
   minFraction = 2,
 ): string {
+  validateScale(scale);
   const sign = value < 0n ? "-" : "";
   const digits = (value < 0n ? -value : value)
     .toString()

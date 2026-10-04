@@ -27,13 +27,15 @@ test('persistence restores an underpayment from GET and a later 404 starts fresh
   await expect(page.getByTestId('continue')).toHaveCount(0)
   await expect(page.getByRole('radio')).toHaveCount(0)
   expect(api.requests.get).toBeGreaterThan(gets)
-  expect(api.requests.create).toBe(1)
+  expect(api.requests.create).toBe(2)
   await page.route('**/api/payments/*', route => route.fulfill({ status: 404, headers, json: { title: 'Unknown payment' } }))
+  api.setState('awaiting_payment')
   await page.reload()
   await expect(page.getByTestId('continue')).toBeVisible()
   await expect(page.getByRole('radio', { name: 'USDT', exact: true })).toBeVisible()
   await expect(page.getByTestId('transfer-address')).toHaveCount(0)
   expect(await stored(page)).toBeNull()
+  expect(api.requests.create).toBe(3)
 })
 
 test('persistence keeps a paid receipt across reload and stops all automatic GETs', async ({ page }) => {
@@ -128,5 +130,5 @@ test('blocked browser storage preserves the ordinary fresh checkout', async ({ p
   await expect(page.getByTestId('transfer-amount')).toHaveText(/163\.69\s*USDT/)
   await page.reload()
   await expect(page.getByTestId('continue')).toBeVisible()
-  expect(api.requests.create).toBe(1)
+  expect(api.requests.create).toBe(3)
 })

@@ -2,7 +2,6 @@ import type { Currency, Pair, Payment } from "../domain/paymentModel";
 import {
   catalogueSchema,
   parsePayment,
-  parseBootstrapPayment,
   checkoutLinkSchema,
 } from "./responseSchemas";
 import type { CatalogueInfo, CheckoutLinkVerdict } from "./responseSchemas";
@@ -20,7 +19,6 @@ export interface PaymentClient {
   ): Promise<ApiResult<CheckoutLinkVerdict>>;
   catalogue?(signal: AbortSignal): Promise<ApiResult<CatalogueInfo>>;
   currencies(signal: AbortSignal): Promise<ApiResult<Currency[]>>;
-  bootstrap?(pair: Pair, signal: AbortSignal): Promise<ApiResult<Payment>>;
   create(pair: Pair, signal: AbortSignal): Promise<ApiResult<Payment>>;
   status(reference: string, signal: AbortSignal): Promise<ApiResult<Payment>>;
   requote(
@@ -136,30 +134,11 @@ export function createPaymentClient(
     catalogue: (signal) => request("/currencies", signal, parseCatalogue),
     currencies: (signal) =>
       request("/currencies", signal, (v) => parseCatalogue(v).currencies),
-    bootstrap: async (pair, signal) => {
-      if (!catalogue) await request("/currencies", signal, parseCatalogue);
-      const result = await request(
-        "/payments",
-        signal,
-        (value) =>
-          parseBootstrapPayment(value, catalogue!.currencies, orderId, pair),
-        { order_id: orderId, ...pair, purpose: "bootstrap" },
-      );
-      if (
-        result.data.status !== "expired" ||
-        Date.parse(result.data.expired_at) > Date.parse(result.serverTime)
-      )
-        throw new ApiError(
-          "The payment server returned invalid data. Transfer controls are paused.",
-          0,
-          true,
-        );
-      return result;
-    },
     create: (pair, signal) =>
       paymentRequest("/payments", signal, {
         order_id: orderId,
-        ...pair,
+        currency: pair.currency,
+        network: pair.network,
       }),
     status: (ref, signal) =>
       paymentRequest("/payments/" + encodeURIComponent(ref), signal),

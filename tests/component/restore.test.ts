@@ -82,7 +82,8 @@ describe('restore a payment from a validated server snapshot', () => {
     client.status.mockRejectedValue(new ApiError('HTTP 500', 500))
     vi.setSystemTime(fixedNow + 1000000)
     await vi.advanceTimersByTimeAsync(2000)
-    expect(controller.availability.value).not.toBe('local-deadline-reached')
+    if (state === 'underpaid') expect(controller.availability.value).toBe('local-deadline-reached')
+    else expect(controller.availability.value).not.toBe('local-deadline-reached')
     expect(controller.payment.value?.status).toBe(state)
   })
 

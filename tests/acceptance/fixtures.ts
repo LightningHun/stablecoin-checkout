@@ -11,18 +11,12 @@ export const independentCatalogue = {
   })),
 }
 
-export function bootstrapSnapshot() {
-  return { ...paymentSnapshot('expired'), payment_reference: 'BOOT-test-PMT',
-    expired_at: '2026-08-14T08:37:10.842Z',
-    quote: { ...sourceQuote, expires_at: '2026-08-14T08:37:10.842Z' } };
-}
-
 export type BrowserPayment = Record<string, unknown> & { status: string; payment_reference: string; quote: typeof sourceQuote | Record<string, unknown> }
 export async function stubApi(page: Page, initial: State = 'awaiting_payment') {
   let current: BrowserPayment = paymentSnapshot(initial)
   let getMode: 'ok' | '500' | 'disconnect' = 'ok'
   let createDelay = 0
-  const requests = { get: 0, bootstrap: 0, create: 0, requote: 0, activeGet: 0, maxActiveGet: 0 }
+  const requests = { get: 0, create: 0, requote: 0, activeGet: 0, maxActiveGet: 0 }
   await page.clock.install({ time: new Date(fixedNow) })
   await page.route('**/api/**', async route => {
     const request = route.request()
@@ -36,12 +30,14 @@ export async function stubApi(page: Page, initial: State = 'awaiting_payment') {
       return fulfill(current, 201)
     }
     if (url.pathname === '/api/payments' && request.method() === 'POST') {
-      if (request.postDataJSON().purpose === 'bootstrap') {
-        requests.bootstrap += 1;
-        return fulfill(bootstrapSnapshot(), 201);
-      }
+      expect(Object.keys(request.postDataJSON()).sort()).toEqual(['currency', 'network', 'order_id'])
       requests.create += 1
       if (createDelay) await new Promise(resolve => setTimeout(resolve, createDelay))
+      if (requests.create === 1) {
+        const quote = current.quote.network === request.postDataJSON().network
+          ? current.quote : sourceQuote
+        return fulfill({ ...paymentSnapshot(), payment_reference: current.payment_reference, order_id: current.order_id, merchant: current.merchant, order: current.order, quote }, 201)
+      }
       return fulfill(current, 201)
     }
     requests.get += 1

@@ -13,8 +13,8 @@ export function quoteAvailability(
   if (blocked) return "reconciling";
   if (!payment) return "unavailable";
   if (payment.status === "expired") return "server-expired";
-  if (payment.status === "underpaid") return "usable";
-  if (payment.status !== "awaiting_payment") return "unavailable";
+  if (payment.status !== "awaiting_payment" && payment.status !== "underpaid")
+    return "unavailable";
   return Date.parse(payment.quote.expires_at) > now
     ? "usable"
     : "local-deadline-reached";

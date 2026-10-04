@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Server } from "node:http";
-import { createMockServer } from "../../mock/server";
+import { createMockServer } from "../../backend/server";
 
 let server: Server;
 let base: string;
@@ -220,13 +220,16 @@ describe("independent order HTTP state", () => {
     },
   );
 
-  it("defaults a missing create order id and status target to ORD-88213", async () => {
+  it("requires the create order id while keeping the demo status target default", async () => {
+    const before = await (await request("/api/demo")).json();
     const response = await request("/api/payments", {
       currency: "USDT",
       network: "tron",
     });
-    expect(response.status).toBe(201);
-    expect(await response.json()).toMatchObject({
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ title: "Unknown order" });
+    expect(await (await request("/api/demo")).json()).toEqual(before);
+    expect(await create("ORD-88213")).toMatchObject({
       order_id: "ORD-88213",
       payment_reference: "AQH-100306-PMT",
       quote: { total_due: "163.69" },

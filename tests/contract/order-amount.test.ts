@@ -1,7 +1,7 @@
 // @vitest-environment node
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { Server } from "node:http";
-import { createMockServer } from "../../mock/server";
+import { createMockServer } from "../../backend/server";
 
 // Independent HTTP expectations: the quote amounts below were calculated offline
 // with Python Decimal at precision 70 and ROUND_HALF_UP, from the declared seeds.

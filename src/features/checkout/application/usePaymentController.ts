@@ -17,35 +17,66 @@ export interface ControllerOptions {
   clock?: ClockService;
   pollMs?: number;
   timeoutMs?: number;
+  creationPending?: boolean;
 }
 export function usePaymentController(options: ControllerOptions = {}) {
+  const uncertainMessage =
+    "The quote request outcome is uncertain. Do not send or create another payment. Ask the merchant to check your order.";
   const client = options.client ?? createPaymentClient(),
     clock = options.clock ?? new ClockService();
   const pollMs = options.pollMs ?? 2000,
     timeoutMs = options.timeoutMs ?? 10000;
   const payment = shallowRef<Payment | null>(null),
     currencies = shallowRef<Currency[]>([]);
-  const initialInfo = shallowRef<Pick<Payment, "merchant" | "order"> | null>(
-    null,
-  );
+  // The first ordinary POST supplies display metadata only. Its payment identity,
+  // quote and status never become an accepted or restorable checkout payment.
+  const checkoutInformation = shallowRef<Pick<
+    Payment,
+    "merchant" | "order" | "order_id"
+  > | null>(null);
   const initializing = ref(false);
   const order = computed(() =>
     payment.value
       ? { ...payment.value.order, order_id: payment.value.order_id }
-      : (initialInfo.value?.order ?? null),
+      : checkoutInformation.value
+        ? {
+            ...checkoutInformation.value.order,
+            order_id: checkoutInformation.value.order_id,
+          }
+        : null,
   );
   const merchant = computed(
-    () => payment.value?.merchant ?? initialInfo.value?.merchant ?? null,
+    () => payment.value?.merchant ?? checkoutInformation.value?.merchant ?? null,
   );
-  const health = ref<RequestHealth>("loading"),
-    error = ref(""),
+  const health = ref<RequestHealth>(options.creationPending ? "unavailable" : "loading"),
+    error = ref(options.creationPending ? uncertainMessage : ""),
     busy = ref(false),
     protocolBlocked = ref(false),
-    uncertain = ref(false),
+    uncertain = ref(options.creationPending ?? false),
     restoring = ref(false),
     referenceMissing = ref(false);
   const draft = shallowRef<Pair>({ currency: "", network: "" });
   const clockUncertain = ref(false);
+  const retryOutage = ref(false),
+    automaticRetries = ref(0),
+    manualRetries = ref(0),
+    lastManualRetryAt = ref<number | null>(null);
+  const automaticRetryLimit = 5,
+    manualRetryLimit = 3,
+    manualRetryInterval = 10000;
+  const requestPending = ref(false),
+    statusUnavailable = ref(false),
+    nextPollAt = ref<number | null>(null);
+  const connectionIssue = computed(
+    () =>
+      statusUnavailable.value &&
+      !!payment.value &&
+      health.value === "stale" &&
+      !busy.value &&
+      !restoring.value &&
+      !uncertain.value &&
+      !protocolBlocked.value,
+  );
   const tick = ref(0),
     lastChecked = ref<number | null>(null),
     generation = ref(0);
@@ -58,10 +89,63 @@ export function usePaymentController(options: ControllerOptions = {}) {
     localExpired = false;
   let restoreReference: string | null = null,
     restoreActive: Promise<RestoreResult> | null = null;
+  // Once a partial-payment quote reaches its deadline, a delayed clock sample
+  // must not make the same transfer instructions usable again.
+  const underpaidDeadlineReached = ref(false);
+  const hasTransferDeadline = computed(
+    () =>
+      payment.value?.status === "awaiting_payment" ||
+      payment.value?.status === "underpaid",
+  );
   const remaining = computed(() => {
     void tick.value;
+    if (payment.value?.status === "underpaid" && underpaidDeadlineReached.value)
+      return 0;
     return payment.value ? clock.remaining(payment.value.quote.expires_at) : 0;
   });
+  const retryInSeconds = computed(() => {
+    void tick.value;
+    if (
+      !connectionIssue.value ||
+      requestPending.value ||
+      nextPollAt.value === null
+    )
+      return null;
+    // This deadline belongs to setTimeout, not the server's quote/mock clock.
+    const seconds = Math.ceil((nextPollAt.value - performance.now()) / 1000);
+    return seconds > 0 ? seconds : null;
+  });
+  const automaticRetriesPaused = computed(
+    () =>
+      retryOutage.value &&
+      automaticRetries.value >= automaticRetryLimit &&
+      !requestPending.value,
+  );
+  const manualRetryLimitReached = computed(
+    () => retryOutage.value && manualRetries.value >= manualRetryLimit,
+  );
+  const manualRetryInSeconds = computed(() => {
+    void tick.value;
+    if (
+      !retryOutage.value ||
+      manualRetryLimitReached.value ||
+      lastManualRetryAt.value === null
+    )
+      return 0;
+    return Math.max(
+      0,
+      Math.ceil(
+        (lastManualRetryAt.value + manualRetryInterval - performance.now()) /
+          1000,
+      ),
+    );
+  });
+  function resetRetryLimits() {
+    retryOutage.value = false;
+    automaticRetries.value = 0;
+    manualRetries.value = 0;
+    lastManualRetryAt.value = null;
+  }
   const availability = computed(() => {
     void tick.value;
     return quoteAvailability(
@@ -78,14 +162,14 @@ export function usePaymentController(options: ControllerOptions = {}) {
       busy.value ||
         protocolBlocked.value ||
         uncertain.value ||
-        (clockUncertain.value && payment.value?.status === "awaiting_payment"),
+        (clockUncertain.value && hasTransferDeadline.value),
     );
   });
   const canChange = computed(
     () =>
       !busy.value &&
       !initializing.value &&
-      (!client.bootstrap || !!payment.value || !!initialInfo.value) &&
+      currencies.value.length > 0 &&
       !restoring.value &&
       !uncertain.value &&
       !protocolBlocked.value &&
@@ -96,6 +180,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
   function clearPoll() {
     clearTimeout(timer);
     timer = undefined;
+    nextPollAt.value = null;
   }
   function schedule() {
     clearPoll();
@@ -106,12 +191,31 @@ export function usePaymentController(options: ControllerOptions = {}) {
       isTerminal(payment.value.status)
     )
       return;
-    timer = setTimeout(
-      () => void poll(),
-      Math.min(30000, pollMs * 2 ** Math.min(Math.max(0, failures - 1), 4)),
+    if (retryOutage.value && automaticRetries.value >= automaticRetryLimit)
+      return;
+    const delay = Math.min(
+      30000,
+      pollMs *
+        2 **
+          Math.min(
+            retryOutage.value
+              ? automaticRetries.value
+              : Math.max(0, failures - 1),
+            4,
+          ),
     );
+    const gen = generation.value,
+      deadline = performance.now() + delay;
+    nextPollAt.value = deadline;
+    timer = setTimeout(() => {
+      if (disposed || gen !== generation.value || nextPollAt.value !== deadline)
+        return;
+      timer = undefined;
+      void poll(false, true);
+    }, delay);
   }
   function markError(cause: unknown) {
+    statusUnavailable.value = false;
     referenceMissing.value = cause instanceof ApiError && cause.status === 404;
     health.value = payment.value ? "stale" : "unavailable";
     error.value =
@@ -123,19 +227,22 @@ export function usePaymentController(options: ControllerOptions = {}) {
     clock.sample(result.serverTime, result.start, result.end);
     tick.value++;
     clockUncertain.value = false;
-    lastChecked.value = clock.now();
   }
   async function request<T>(
     operation: (signal: AbortSignal) => Promise<ApiResult<T>>,
   ): Promise<ApiResult<T>> {
     const controller = new AbortController();
     abort = controller;
+    requestPending.value = true;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
       return await operation(controller.signal);
     } finally {
       clearTimeout(timeout);
-      if (abort === controller) abort = null;
+      if (abort === controller) {
+        abort = null;
+        requestPending.value = false;
+      }
     }
   }
   function accept(
@@ -179,17 +286,30 @@ export function usePaymentController(options: ControllerOptions = {}) {
     // representation so polling cannot churn transfer instructions.
     if (!replace && payment.value)
       next = { ...next, quote: payment.value.quote };
+    const alreadyExpired =
+      !replace &&
+      (underpaidDeadlineReached.value ||
+        (hasTransferDeadline.value &&
+          payment.value !== null &&
+          clock.remaining(payment.value.quote.expires_at) === 0));
     sample(result);
+    underpaidDeadlineReached.value =
+      alreadyExpired ||
+      (next.status === "underpaid" &&
+        clock.remaining(next.quote.expires_at) === 0);
     payment.value = Object.freeze(next);
+    lastChecked.value = clock.now();
+    statusUnavailable.value = false;
     referenceMissing.value = false;
     health.value = "fresh";
     error.value = "";
     protocolBlocked.value = false;
     failures = 0;
+    resetRetryLimits();
     if (isTerminal(next.status)) clearPoll();
     return true;
   }
-  function poll(force = false): Promise<void> {
+  function poll(force = false, scheduled = false): Promise<void> {
     if (
       disposed ||
       busy.value ||
@@ -198,6 +318,29 @@ export function usePaymentController(options: ControllerOptions = {}) {
     )
       return Promise.resolve();
     if (active) return active;
+    if (retryOutage.value) {
+      const now = performance.now();
+      if (force) {
+        if (
+          manualRetries.value >= manualRetryLimit ||
+          (lastManualRetryAt.value !== null &&
+            now - lastManualRetryAt.value < manualRetryInterval)
+        )
+          return Promise.resolve();
+        manualRetries.value++;
+        lastManualRetryAt.value = now;
+      } else {
+        // Focus, clock resync and local expiry cannot bypass the scheduled retry.
+        if (
+          !scheduled ||
+          automaticRetries.value >= automaticRetryLimit ||
+          nextPollAt.value === null ||
+          now < nextPollAt.value
+        )
+          return Promise.resolve();
+        automaticRetries.value++;
+      }
+    }
     clearPoll();
     const gen = generation.value,
       reference = payment.value.payment_reference;
@@ -205,7 +348,13 @@ export function usePaymentController(options: ControllerOptions = {}) {
       try {
         accept(await request((s) => client.status(reference, s)), gen);
       } catch (cause) {
-        if (!disposed && gen === generation.value) markError(cause);
+        if (!disposed && gen === generation.value) {
+          markError(cause);
+          statusUnavailable.value =
+            !(cause instanceof ApiError) ||
+            (!cause.protocol && (cause.status === 0 || cause.status >= 500));
+          if (statusUnavailable.value) retryOutage.value = true;
+        }
       }
     })();
     active = work;
@@ -216,12 +365,11 @@ export function usePaymentController(options: ControllerOptions = {}) {
     return work;
   }
   async function initialize(
-    options: { restore?: boolean; reuseCatalogue?: boolean } = {},
+    options: { reuseCatalogue?: boolean } = {},
   ) {
-    if (disposed || active) return;
+    if (disposed || active || uncertain.value) return;
     const gen = generation.value;
     initializing.value = true;
-    if (!options.restore && !payment.value) initialInfo.value = null;
     const work = (async () => {
       try {
         if (!options.reuseCatalogue || !currencies.value.length) {
@@ -248,39 +396,10 @@ export function usePaymentController(options: ControllerOptions = {}) {
           draft.value = { currency: first.code, network: first.networks[0].id };
         if (!first?.networks[0])
           throw new ApiError("No payment networks are available.", 0, true);
-        if (
-          !options.restore &&
-          !restoring.value &&
-          !payment.value &&
-          client.bootstrap
-        ) {
-          const pair = { currency: first.code, network: first.networks[0].id };
-          const result = await request((s) => client.bootstrap!(pair, s));
-          if (
-            disposed ||
-            gen !== generation.value ||
-            restoring.value ||
-            payment.value
-          )
-            return;
-          if (
-            result.data.status !== "expired" ||
-            result.data.quote.crypto_currency !== pair.currency ||
-            result.data.quote.network !== pair.network ||
-            Date.parse(result.data.quote.expires_at) >
-              Date.parse(result.serverTime) ||
-            Date.parse(result.data.expired_at) > Date.parse(result.serverTime)
-          )
-            throw new ApiError("Invalid initial payment information.", 0, true);
-          sample(result);
-          initialInfo.value = {
-            merchant: result.data.merchant,
-            order: result.data.order,
-          };
-        }
         if (disposed || gen !== generation.value) return;
         protocolBlocked.value = false;
         health.value = "fresh";
+        statusUnavailable.value = false;
         error.value = "";
         failures = 0;
       } catch (cause) {
@@ -304,11 +423,11 @@ export function usePaymentController(options: ControllerOptions = {}) {
       // Let catalogue loading finish in the same single-flight slot first.
       if (previous) await previous;
       if (disposed) return "unavailable";
-      // A failed bootstrap must not be hidden by the client's private metadata
+      // A failed catalogue load must not be hidden by the client's private metadata
       // fetch: selector and progress need the same validated catalogue too.
       if (!currencies.value.length) {
         if (active === previous) active = null;
-        await initialize({ restore: true });
+        await initialize();
         if (disposed || !currencies.value.length) {
           busy.value = false;
           return "unavailable";
@@ -333,6 +452,8 @@ export function usePaymentController(options: ControllerOptions = {}) {
           if (disposed || gen !== generation.value) return;
           if (cause instanceof ApiError && cause.status === 404) {
             payment.value = null;
+            lastChecked.value = null;
+            statusUnavailable.value = false;
             referenceMissing.value = true;
             protocolBlocked.value = false;
             health.value = "fresh";
@@ -352,8 +473,6 @@ export function usePaymentController(options: ControllerOptions = {}) {
         restoring.value = false;
         restoreReference = null;
       }
-      if ((outcome as RestoreResult) === "not-found" && client.bootstrap)
-        await initialize({ reuseCatalogue: true });
       schedule();
       return outcome;
     })();
@@ -363,7 +482,11 @@ export function usePaymentController(options: ControllerOptions = {}) {
     });
     return task;
   }
-  async function mutate(pair: Pair, requote = false) {
+  async function mutate(
+    pair: Pair,
+    kind: "create" | "requote" | "information" = "create",
+  ) {
+    const requote = kind === "requote";
     if (disposed || busy.value || uncertain.value || restoring.value) return;
     if (!requote && !canChange.value) return;
     busy.value = true;
@@ -406,7 +529,22 @@ export function usePaymentController(options: ControllerOptions = {}) {
             0,
             true,
           );
-        accept(result, gen, true, requote ? reference : undefined);
+        if (kind === "information") {
+          if (disposed || gen !== generation.value) return;
+          checkoutInformation.value = {
+            merchant: { ...result.data.merchant },
+            order: { ...result.data.order },
+            order_id: result.data.order_id,
+          };
+          referenceMissing.value = false;
+          protocolBlocked.value = false;
+          health.value = "fresh";
+          error.value = "";
+          failures = 0;
+          resetRetryLimits();
+        } else {
+          accept(result, gen, true, requote ? reference : undefined);
+        }
         localExpired = false;
       } catch (cause) {
         if (disposed || gen !== generation.value) return;
@@ -426,8 +564,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
           )
         ) {
           uncertain.value = true;
-          error.value =
-            "The quote request outcome is uncertain. Do not send or create another payment. Ask the merchant to check your order.";
+          error.value = uncertainMessage;
         }
       }
     })();
@@ -438,8 +575,12 @@ export function usePaymentController(options: ControllerOptions = {}) {
     busy.value = false;
     const queued = pendingPair;
     pendingPair = null;
-    if (queued && canChange.value) void mutate(queued);
+    if (queued && canChange.value && kind !== "information") void mutate(queued);
     else schedule();
+  }
+  function loadCheckoutInformation() {
+    if (payment.value || checkoutInformation.value) return Promise.resolve();
+    return mutate(draft.value, "information");
   }
   function create(pair: Pair = draft.value) {
     return mutate(pair);
@@ -458,7 +599,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     if (!p || p.status !== "expired" || busy.value) return Promise.resolve();
     return mutate(
       { currency: p.quote.crypto_currency, network: p.quote.network },
-      true,
+      "requote",
     );
   }
   function retry() {
@@ -468,8 +609,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
   }
   function resume() {
     tick.value++;
-    if (payment.value?.status === "awaiting_payment")
-      clockUncertain.value = true;
+    if (hasTransferDeadline.value) clockUncertain.value = true;
     if (
       !disposed &&
       !busy.value &&
@@ -482,18 +622,16 @@ export function usePaymentController(options: ControllerOptions = {}) {
     tick.value++;
     if (
       clock.needsResync() &&
-      payment.value?.status === "awaiting_payment" &&
+      hasTransferDeadline.value &&
       !clockUncertain.value
     ) {
       clockUncertain.value = true;
       void poll();
     }
-    if (
-      payment.value?.status === "awaiting_payment" &&
-      remaining.value === 0 &&
-      !localExpired
-    ) {
+    if (hasTransferDeadline.value && remaining.value === 0 && !localExpired) {
       localExpired = true;
+      if (payment.value?.status === "underpaid")
+        underpaidDeadlineReached.value = true;
       void poll();
     }
   }, 250);
@@ -503,6 +641,9 @@ export function usePaymentController(options: ControllerOptions = {}) {
     ++generation.value;
     clearPoll();
     clearInterval(ticker);
+    requestPending.value = false;
+    statusUnavailable.value = false;
+    resetRetryLimits();
     pendingPair = null;
     abort?.abort();
     window.removeEventListener("focus", resume);
@@ -525,11 +666,18 @@ export function usePaymentController(options: ControllerOptions = {}) {
     availability,
     canChange,
     lastChecked,
+    connectionIssue,
+    requestPending,
+    retryInSeconds,
+    automaticRetriesPaused,
+    manualRetryLimitReached,
+    manualRetryInSeconds,
     generation,
     uncertain,
     restoring,
     referenceMissing,
     initialize,
+    loadCheckoutInformation,
     restore,
     create,
     select,
