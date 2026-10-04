@@ -10,10 +10,11 @@ import {
   watch,
 } from "vue";
 import { usePaymentController } from "./application/usePaymentController";
+import { useCheckoutLink } from "./application/useCheckoutLink";
 import { createPaymentClient } from "./infrastructure/paymentClient";
 import { resetDemoServer } from "./infrastructure/demoReset";
-import type { CheckoutLinkVerdict } from "./infrastructure/responseSchemas";
 import InvalidLinkView from "./components/InvalidLinkView.vue";
+import ConnectionBanner from "./components/ConnectionBanner.vue";
 import type { RestoreResult } from "./application/usePaymentController";
 import {
   loadReference,
@@ -23,7 +24,9 @@ import {
   markCreationPending,
   clearPendingCreation,
 } from "./infrastructure/paymentStorage";
+import { isResult, isTerminal } from "./domain/paymentModel";
 import type { Pair, Payment } from "./domain/paymentModel";
+import { findCurrency, findNetwork } from "./domain/catalogue";
 import OrderSummary from "./components/OrderSummary.vue";
 import MerchantBrand from "./components/MerchantBrand.vue";
 import AssetNetworkSelector from "./components/AssetNetworkSelector.vue";
@@ -35,34 +38,34 @@ import DemoControls from "./components/DemoControls.vue";
 import TransactionLink from "./components/TransactionLink.vue";
 const params = new URLSearchParams(location.search);
 const orderId = params.get("order") ?? "ORD-88213";
-const requiresValidation = params.has("order") || params.has("sig");
 const client = createPaymentClient("/api", orderId);
-const linkState = ref<"checking" | "ready" | "invalid" | "unavailable">(
-  requiresValidation ? "checking" : "ready",
-);
-const invalidLink = shallowRef<Extract<
-  CheckoutLinkVerdict,
-  { valid: false }
-> | null>(null);
-const linkError = ref("");
-const validating = ref(false);
+// Explicit order/signature links need a valid verdict before any session work.
+const {
+  requiresValidation,
+  state: linkState,
+  invalid: invalidLink,
+  error: linkError,
+  validating,
+  validate: validateLink,
+} = useCheckoutLink(client, params);
 const canGoBack = window.history.length > 1;
-const controller = shallowRef<ReturnType<typeof usePaymentController> | null>(
-  null,
-);
+type Session = ReturnType<typeof usePaymentController>;
+const controller = shallowRef<Session | null>(null);
+/** Project one controller value, with a neutral fallback until the session exists. */
+function fromSession<T>(read: (session: Session) => T, fallback: T) {
+  return computed(() => (controller.value ? read(controller.value) : fallback));
+}
 // The scope lets the sole controller owner start synchronously *after* validation,
 // while preserving its normal onScopeDispose cleanup without changing its logic.
 const controllerScope = effectScope();
 const restorePending = ref(false);
 let disposed = false;
-let validationAbort: AbortController | null = null;
-let validationTimer: ReturnType<typeof setTimeout> | undefined;
 let resetting = false;
 let pageRefresh = Promise.resolve();
-const payment = computed(() => controller.value?.payment.value ?? null);
-const currencies = computed(() => controller.value?.currencies.value ?? []);
-const order = computed(() => controller.value?.order.value ?? null);
-const health = computed(() => controller.value?.health.value ?? "loading");
+const payment = fromSession<Payment | null>((s) => s.payment.value, null);
+const currencies = fromSession((s) => s.currencies.value, []);
+const order = fromSession((s) => s.order.value, null);
+const health = fromSession((s) => s.health.value, "loading");
 const error = computed(
   () => linkError.value || controller.value?.error.value || "",
 );
@@ -75,31 +78,23 @@ const draft = computed<Pair>({
     if (controller.value) controller.value.draft.value = pair;
   },
 });
-const remaining = computed(() => controller.value?.remaining.value ?? 0);
-const availability = computed(
-  () => controller.value?.availability.value ?? "unavailable",
+const remaining = fromSession((s) => s.remaining.value, 0);
+const availability = fromSession((s) => s.availability.value, "unavailable");
+const canChange = fromSession((s) => s.canChange.value, false);
+const lastChecked = fromSession((s) => s.lastChecked.value, null);
+const uncertain = fromSession((s) => s.uncertain.value, false);
+const connectionIssue = fromSession((s) => s.connectionIssue.value, false);
+const requestPending = fromSession((s) => s.requestPending.value, false);
+const retryInSeconds = fromSession((s) => s.retryInSeconds.value, null);
+const automaticRetriesPaused = fromSession(
+  (s) => s.automaticRetriesPaused.value,
+  false,
 );
-const canChange = computed(() => controller.value?.canChange.value ?? false);
-const lastChecked = computed(() => controller.value?.lastChecked.value ?? null);
-const uncertain = computed(() => controller.value?.uncertain.value ?? false);
-const connectionIssue = computed(
-  () => controller.value?.connectionIssue.value ?? false,
+const manualRetryLimitReached = fromSession(
+  (s) => s.manualRetryLimitReached.value,
+  false,
 );
-const requestPending = computed(
-  () => controller.value?.requestPending.value ?? false,
-);
-const retryInSeconds = computed(
-  () => controller.value?.retryInSeconds.value ?? null,
-);
-const automaticRetriesPaused = computed(
-  () => controller.value?.automaticRetriesPaused.value ?? false,
-);
-const manualRetryLimitReached = computed(
-  () => controller.value?.manualRetryLimitReached.value ?? false,
-);
-const manualRetryInSeconds = computed(
-  () => controller.value?.manualRetryInSeconds.value ?? 0,
-);
+const manualRetryInSeconds = fromSession((s) => s.manualRetryInSeconds.value, 0);
 const restoringPayment = computed(
   () => restorePending.value || controller.value?.restoring.value || false,
 );
@@ -142,7 +137,7 @@ function resetDemo() {
   window.location.reload();
 }
 const locale = params.get("locale") || navigator.language || "en-IE";
-const merchant = computed(() => controller.value?.merchant.value ?? null);
+const merchant = fromSession((s) => s.merchant.value, null);
 const initialPaymentPending = computed(() => !payment.value && !order.value);
 const initialLoadFailed = computed(
   () => initialPaymentPending.value && !!error.value && !busy.value,
@@ -154,19 +149,17 @@ watch(
   },
   { immediate: true },
 );
-const paymentDecimals = computed(
-  () =>
-    currencies.value.find(
-      (currency) => currency.code === payment.value?.quote.crypto_currency,
-    )?.decimals,
+const paymentDecimals = computed(() =>
+  payment.value
+    ? findCurrency(currencies.value, payment.value.quote.crypto_currency)
+        ?.decimals
+    : undefined,
 );
 const selectionVisible = computed(
   () => !restoringPayment.value && selecting.value && canChange.value,
 );
 const selectedNetwork = computed(() =>
-  currencies.value
-    .find((c) => c.code === draft.value.currency)
-    ?.networks.find((n) => n.id === draft.value.network),
+  findNetwork(currencies.value, draft.value),
 );
 const displayedPair = computed(() =>
   busy.value
@@ -185,9 +178,7 @@ const funds = computed(
   () => payment.value && "amount_received" in payment.value,
 );
 const result = computed(
-  () =>
-    payment.value &&
-    ["paid", "overpaid", "failed"].includes(payment.value.status),
+  () => payment.value && isResult(payment.value.status),
 );
 const isUnderpaidQuoteExpired = computed(
   () => payment.value?.status === "underpaid" && remaining.value === 0,
@@ -214,9 +205,7 @@ watch(
       wasBusy ||
       !previous ||
       current?.status !== "paid" ||
-      !["awaiting_payment", "detected", "confirming", "underpaid"].includes(
-        previous.status,
-      ) ||
+      isTerminal(previous.status) ||
       previous.payment_reference !== current.payment_reference ||
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
     )
@@ -349,51 +338,13 @@ async function startSession() {
 }
 async function initializePage() {
   if (disposed || validating.value) return;
-  if (requiresValidation && linkState.value !== "ready") {
-    validating.value = true;
-    linkError.value = "";
-    linkState.value = "checking";
-    const abort = new AbortController();
-    validationAbort = abort;
-    validationTimer = setTimeout(() => abort.abort(), 10000);
-    try {
-      if (!client.validateLink)
-        throw Error("Link verification is unavailable.");
-      const { data } = await client.validateLink(
-        params.get("order"),
-        params.get("sig"),
-        abort.signal,
-      );
-      if (disposed) return;
-      if (!data.valid) {
-        invalidLink.value = data;
-        linkState.value = "invalid";
-        return;
-      }
-      linkState.value = "ready";
-    } catch (cause) {
-      if (disposed) return;
-      linkState.value = "unavailable";
-      linkError.value =
-        cause instanceof Error
-          ? cause.message
-          : "Link verification is unavailable.";
-      return;
-    } finally {
-      clearTimeout(validationTimer);
-      validationAbort = null;
-      validating.value = false;
-    }
-  }
-  await startSession();
+  if (await validateLink()) await startSession();
 }
 onMounted(() => {
   pageRefresh = initializePage();
 });
 onScopeDispose(() => {
   disposed = true;
-  clearTimeout(validationTimer);
-  validationAbort?.abort();
   controllerScope.stop();
 });
 </script>
@@ -430,101 +381,20 @@ onScopeDispose(() => {
       </div>
       <span class="order-reference mono">Order {{ orderId }}</span>
     </header>
-    <div v-if="error" class="connection-banner">
-      <template v-if="connectionIssue">
-        <div class="connection-message" role="alert">
-          <svg
-            class="connection-icon"
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="1.8"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            aria-hidden="true"
-          >
-            <path d="M12 3.5l9.5 17H2.5L12 3.5z" />
-            <path d="M12 10v5" />
-            <circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none" />
-          </svg>
-          <span
-            ><strong>Can't reach the payment server.</strong> Showing the last
-            verified payment details.</span
-          >
-        </div>
-        <span
-          v-if="retryInSeconds !== null"
-          class="connection-retry-time"
-          data-testid="retry-countdown"
-          aria-live="off"
-          >Retrying in {{ retryInSeconds }} s.</span
-        >
-        <span
-          v-else-if="requestPending"
-          class="connection-retry-time"
-          data-testid="request-checking"
-          aria-live="off"
-          >Checking…</span
-        >
-        <span
-          v-else-if="automaticRetriesPaused"
-          data-testid="automatic-retries-paused"
-          >Automatic retries paused.</span
-        >
-      </template>
-      <span v-else role="alert"
-        ><strong>Can't reach a verified payment update.</strong> {{ error }}
-        <span v-if="payment"
-          >Last known state: {{ payment.status.replaceAll("_", " ") }}.</span
-        ></span
-      >
-      <button
-        v-if="!uncertain"
-        data-testid="retry"
-        :disabled="
-          busy ||
-          requestPending ||
-          manualRetryLimitReached ||
-          manualRetryInSeconds > 0
-        "
-        :aria-describedby="
-          manualRetryLimitReached || manualRetryInSeconds > 0
-            ? 'manual-retry-guidance'
-            : undefined
-        "
-        @click="retry"
-      >
-        <svg
-          v-if="connectionIssue"
-          class="connection-icon"
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.8"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          aria-hidden="true"
-        >
-          <path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7" />
-        </svg>
-        Retry now
-      </button>
-      <span
-        v-if="manualRetryLimitReached"
-        id="manual-retry-guidance"
-        data-testid="manual-retry-limit"
-        >Manual retry limit reached.</span
-      >
-      <span
-        v-else-if="manualRetryInSeconds > 0"
-        id="manual-retry-guidance"
-        data-testid="manual-retry-cooldown"
-        aria-live="off"
-        >You can retry again in {{ manualRetryInSeconds }} s.</span
-      >
-    </div>
+    <ConnectionBanner
+      v-if="error"
+      :error="error"
+      :connection-issue="connectionIssue"
+      :retry-in-seconds="retryInSeconds"
+      :request-pending="requestPending"
+      :automatic-retries-paused="automaticRetriesPaused"
+      :uncertain="uncertain"
+      :busy="busy"
+      :manual-retry-limit-reached="manualRetryLimitReached"
+      :manual-retry-in-seconds="manualRetryInSeconds"
+      :last-known-status="payment?.status ?? null"
+      @retry="retry"
+    />
     <main
       v-if="linkState === 'ready'"
       class="checkout"
