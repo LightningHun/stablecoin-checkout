@@ -5,6 +5,10 @@ import type {
   PaymentStatus,
 } from "../src/features/checkout/domain/paymentModel";
 import { parseUnits, formatUnits } from "../src/features/checkout/domain/money";
+import {
+  findCurrency,
+  findNetwork,
+} from "../src/features/checkout/domain/catalogue";
 // USDT/Tron is the supplied fixture. Other entries are original synthetic demo data.
 export const quoteSeeds: Record<
   string,
@@ -51,8 +55,8 @@ export function makePayment(
   orderAmount = "149.90",
   orderId = "ORD-88213",
 ): Payment {
-  const currency = catalogue.find((c) => c.code === pair.currency);
-  const network = currency?.networks.find((n) => n.id === pair.network);
+  const currency = findCurrency(catalogue, pair.currency);
+  const network = findNetwork(catalogue, pair);
   const seed = quoteSeeds[pair.currency + "/" + pair.network];
   if (!currency || !network || !seed) throw new Error("Unsupported pair");
   const baseOrderCents = parseUnits("149.90", 2);
@@ -91,9 +95,7 @@ export function withStatus(
 ): Payment {
   const { payment_reference, order_id, merchant, order, quote } = payment;
   const base = { payment_reference, order_id, merchant, order, quote };
-  const decimals = catalogue.find(
-    (currency) => currency.code === quote.crypto_currency,
-  )?.decimals;
+  const decimals = findCurrency(catalogue, quote.crypto_currency)?.decimals;
   if (decimals === undefined) throw Error("Unknown currency precision");
   const total = parseUnits(quote.total_due, decimals);
   const received =

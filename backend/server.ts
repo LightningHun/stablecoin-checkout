@@ -5,7 +5,9 @@ import { orderIdSchema } from "../src/features/checkout/infrastructure/responseS
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { catalogue } from "./catalogue";
 import { makePayment, withStatus } from "./fixtures";
+import { advanceConfirmations } from "./progression";
 import { defaultScenario, normalizeOrderAmount } from "./scenarios";
+import { findNetwork } from "../src/features/checkout/domain/catalogue";
 import {
   hasFunds,
   statuses,
@@ -121,21 +123,19 @@ export function createMockServer(options: { now?: () => number } = {}) {
     if (p.status !== "detected" && p.status !== "confirming") return p;
 
     const reachedAt = confirmationReachedAt.get(p.payment_reference);
-    const network = catalogue
-      .find((currency) => currency.code === p.quote.crypto_currency)
-      ?.networks.find((entry) => entry.id === p.quote.network);
+    const network = findNetwork(catalogue, {
+      currency: p.quote.crypto_currency,
+      network: p.quote.network,
+    });
     if (reachedAt === undefined || !network) return p;
-    const intervalMs = network.avg_confirmation_seconds * 1000;
-    const elapsed = Math.floor((now() - reachedAt) / intervalMs);
-    if (elapsed <= 0) return p;
-
-    const gained = Math.min(
-      elapsed,
-      p.required_confirmations - p.confirmations,
+    const progress = advanceConfirmations(
+      p,
+      reachedAt,
+      now(),
+      network.avg_confirmation_seconds * 1000,
     );
-    const confirmations = p.confirmations + gained;
-    // Retain partial intervals and settle at the due time, even on a late read.
-    const advancedAt = reachedAt + gained * intervalMs;
+    if (!progress) return p;
+    const { confirmations, advancedAt } = progress;
     const advanced = withStatus(
       p,
       confirmations === p.required_confirmations ? "paid" : "confirming",
@@ -149,157 +149,171 @@ export function createMockServer(options: { now?: () => number } = {}) {
     return p;
   }
   let resetRevision = 0;
+  // Evaluator routes: reset, order registry, scenario controls and inspection.
+  async function resetDemo(req: IncomingMessage, res: ServerResponse) {
+    const input = await body(req);
+    const nextScenario = defaultScenario();
+    if ("orderAmount" in input)
+      nextScenario.orderAmount = normalizeOrderAmount(input.orderAmount);
+    resetRevision++;
+    scenario = nextScenario;
+    payments.clear();
+    confirmationReachedAt.clear();
+    orders.clear();
+    orders.set("ORD-88213", { current: null, fundsObserved: false });
+    orderSequence = 88214;
+    orderAmounts.clear();
+    orderAmounts.set("ORD-88213", scenario.orderAmount);
+    sequence = 100306;
+    frozen =
+      input.freeze === true
+        ? Date.parse(String(input.now ?? "2026-08-14T08:37:10.842Z"))
+        : null;
+    offset =
+      input.now && frozen === null
+        ? Date.parse(String(input.now)) - (options.now?.() ?? Date.now())
+        : 0;
+    if (typeof input.ttlMs === "number") scenario.ttlMs = input.ttlMs;
+    Object.assign(metrics, {
+      gets: 0,
+      posts: 0,
+      activeGets: 0,
+      maxActiveGets: 0,
+    });
+    return json(res, 200, {
+      reset: true,
+      now: new Date(now()).toISOString(),
+    });
+  }
+  async function registerOrder(req: IncomingMessage, res: ServerResponse) {
+    const input = await body(req);
+    const amount =
+      "amount" in input ? normalizeOrderAmount(input.amount) : "149.90";
+    let order_id: string;
+    if ("order_id" in input) order_id = orderIdSchema.parse(input.order_id);
+    else {
+      while (orderSequence <= 99999 && orders.has(`ORD-${orderSequence}`))
+        orderSequence++;
+      if (orderSequence > 99999) throw Error("Demo order registry is full");
+      order_id = `ORD-${orderSequence++}`;
+    }
+    if (orders.has(order_id)) throw Error("Order already exists");
+    orders.set(order_id, { current: null, fundsObserved: false });
+    orderAmounts.set(order_id, amount);
+    const sig = signature(order_id);
+    return json(res, 201, {
+      order_id,
+      sig,
+      checkout_url: `/?order=${encodeURIComponent(order_id)}&sig=${sig}`,
+    });
+  }
+  async function applyScenario(req: IncomingMessage, res: ServerResponse) {
+    const input = await body(req);
+    // Validate before changing clocks, payment state, or any scenario fields.
+    const orderId = readOrderId(input.order_id);
+    if (
+      "requireSignature" in input &&
+      typeof input.requireSignature !== "boolean"
+    )
+      throw Error("Invalid signature requirement");
+    if ("orderAmount" in input)
+      orderAmounts.set(orderId, normalizeOrderAmount(input.orderAmount));
+    if (typeof input.requireSignature === "boolean")
+      scenario.requireSignature = input.requireSignature;
+    const current = orders.get(orderId)?.current ?? null;
+    if (typeof input.advanceMs === "number") {
+      if (frozen !== null) frozen += input.advanceMs;
+      else offset += input.advanceMs;
+    }
+    if (["none", "500", "disconnect", "slow"].includes(String(input.fault)))
+      scenario.fault = input.fault as typeof scenario.fault;
+    if (typeof input.delayMs === "number")
+      scenario.delayMs = Math.min(30000, Math.max(0, input.delayMs));
+    if (
+      input.status &&
+      current &&
+      statuses.includes(input.status as PaymentStatus)
+    ) {
+      const appliedAt = now();
+      save(
+        withStatus(current, input.status as PaymentStatus, appliedAt),
+        appliedAt,
+      );
+    }
+    return json(res, 200, {
+      scenario: scenarioFor(orderId),
+      payment: orders.get(orderId)?.current ?? null,
+    });
+  }
+  function describeDemo(res: ServerResponse, url: URL) {
+    const orderId = readOrderId(url.searchParams.get("order_id") ?? undefined);
+    return json(res, 200, {
+      scenario: scenarioFor(orderId),
+      payment: orders.get(orderId)?.current ?? null,
+      metrics,
+      requireSignature: scenario.requireSignature,
+      now: new Date(now()).toISOString(),
+      orders: [...orders].map(([order_id, order]) => ({
+        order_id,
+        payment_reference: order.current?.payment_reference ?? null,
+        status: order.current?.status ?? null,
+        fundsObserved: order.fundsObserved,
+      })),
+    });
+  }
+  async function verifyLink(
+    req: IncomingMessage,
+    res: ServerResponse,
+    url: URL,
+  ) {
+    if (await injectFault(req, res)) return;
+    const orderId = url.searchParams.get("order_id");
+    const sig = url.searchParams.get("sig");
+    let reason: string | null = null;
+    if (!orderIdSchema.safeParse(orderId).success) reason = "malformed_order";
+    else if (!orders.has(orderId!)) reason = "unknown_order";
+    else if (sig !== null) {
+      if (
+        !/^[0-9a-f]{16}$/.test(sig) ||
+        !timingSafeEqual(Buffer.from(sig), Buffer.from(signature(orderId!)))
+      )
+        reason = "invalid_signature";
+    } else if (scenario.requireSignature) reason = "missing_signature";
+    const checked_at = new Date(now()).toISOString();
+    return json(
+      res,
+      200,
+      reason === null
+        ? { valid: true, order_id: orderId, checked_at }
+        : {
+            valid: false,
+            reason,
+            order_id: orderId?.slice(0, 64) ?? null,
+            checked_at,
+            help_url: "mailto:help@payment-project.example",
+          },
+    );
+  }
   return createServer(async (req, res) => {
     const requestRevision = resetRevision;
     const url = new URL(req.url ?? "/", "http://localhost");
     const path = url.pathname;
     try {
-      if (path === "/api/demo/reset" && req.method === "POST") {
-        const input = await body(req);
-        const nextScenario = defaultScenario();
-        if ("orderAmount" in input)
-          nextScenario.orderAmount = normalizeOrderAmount(input.orderAmount);
-        resetRevision++;
-        scenario = nextScenario;
-        payments.clear();
-        confirmationReachedAt.clear();
-        orders.clear();
-        orders.set("ORD-88213", { current: null, fundsObserved: false });
-        orderSequence = 88214;
-        orderAmounts.clear();
-        orderAmounts.set("ORD-88213", scenario.orderAmount);
-        sequence = 100306;
-        frozen =
-          input.freeze === true
-            ? Date.parse(String(input.now ?? "2026-08-14T08:37:10.842Z"))
-            : null;
-        offset =
-          input.now && frozen === null
-            ? Date.parse(String(input.now)) - (options.now?.() ?? Date.now())
-            : 0;
-        if (typeof input.ttlMs === "number") scenario.ttlMs = input.ttlMs;
-        Object.assign(metrics, {
-          gets: 0,
-          posts: 0,
-          activeGets: 0,
-          maxActiveGets: 0,
-        });
-        return json(res, 200, {
-          reset: true,
-          now: new Date(now()).toISOString(),
-        });
-      }
-      if (path === "/api/demo/orders" && req.method === "POST") {
-        const input = await body(req);
-        const amount =
-          "amount" in input ? normalizeOrderAmount(input.amount) : "149.90";
-        let order_id: string;
-        if ("order_id" in input) order_id = orderIdSchema.parse(input.order_id);
-        else {
-          while (orderSequence <= 99999 && orders.has(`ORD-${orderSequence}`))
-            orderSequence++;
-          if (orderSequence > 99999) throw Error("Demo order registry is full");
-          order_id = `ORD-${orderSequence++}`;
-        }
-        if (orders.has(order_id)) throw Error("Order already exists");
-        orders.set(order_id, { current: null, fundsObserved: false });
-        orderAmounts.set(order_id, amount);
-        const sig = signature(order_id);
-        return json(res, 201, {
-          order_id,
-          sig,
-          checkout_url: `/?order=${encodeURIComponent(order_id)}&sig=${sig}`,
-        });
-      }
-      if (path === "/api/demo/scenario" && req.method === "POST") {
-        const input = await body(req);
-        // Validate before changing clocks, payment state, or any scenario fields.
-        const orderId = readOrderId(input.order_id);
-        if (
-          "requireSignature" in input &&
-          typeof input.requireSignature !== "boolean"
-        )
-          throw Error("Invalid signature requirement");
-        if ("orderAmount" in input)
-          orderAmounts.set(orderId, normalizeOrderAmount(input.orderAmount));
-        if (typeof input.requireSignature === "boolean")
-          scenario.requireSignature = input.requireSignature;
-        const current = orders.get(orderId)?.current ?? null;
-        if (typeof input.advanceMs === "number") {
-          if (frozen !== null) frozen += input.advanceMs;
-          else offset += input.advanceMs;
-        }
-        if (["none", "500", "disconnect", "slow"].includes(String(input.fault)))
-          scenario.fault = input.fault as typeof scenario.fault;
-        if (typeof input.delayMs === "number")
-          scenario.delayMs = Math.min(30000, Math.max(0, input.delayMs));
-        if (
-          input.status &&
-          current &&
-          statuses.includes(input.status as PaymentStatus)
-        ) {
-          const appliedAt = now();
-          save(
-            withStatus(current, input.status as PaymentStatus, appliedAt),
-            appliedAt,
-          );
-        }
-        return json(res, 200, {
-          scenario: scenarioFor(orderId),
-          payment: orders.get(orderId)?.current ?? null,
-        });
-      }
-      if (path === "/api/demo" && req.method === "GET") {
-        const orderId = readOrderId(
-          url.searchParams.get("order_id") ?? undefined,
-        );
-        return json(res, 200, {
-          scenario: scenarioFor(orderId),
-          payment: orders.get(orderId)?.current ?? null,
-          metrics,
-          requireSignature: scenario.requireSignature,
-          now: new Date(now()).toISOString(),
-          orders: [...orders].map(([order_id, order]) => ({
-            order_id,
-            payment_reference: order.current?.payment_reference ?? null,
-            status: order.current?.status ?? null,
-            fundsObserved: order.fundsObserved,
-          })),
-        });
-      }
-      if (path === "/api/checkout/link" && req.method === "GET") {
-        if (await injectFault(req, res)) return;
-        const orderId = url.searchParams.get("order_id");
-        const sig = url.searchParams.get("sig");
-        let reason: string | null = null;
-        if (!orderIdSchema.safeParse(orderId).success)
-          reason = "malformed_order";
-        else if (!orders.has(orderId!)) reason = "unknown_order";
-        else if (sig !== null) {
-          if (
-            !/^[0-9a-f]{16}$/.test(sig) ||
-            !timingSafeEqual(Buffer.from(sig), Buffer.from(signature(orderId!)))
-          )
-            reason = "invalid_signature";
-        } else if (scenario.requireSignature) reason = "missing_signature";
-        const checked_at = new Date(now()).toISOString();
-        return json(
-          res,
-          200,
-          reason === null
-            ? { valid: true, order_id: orderId, checked_at }
-            : {
-                valid: false,
-                reason,
-                order_id: orderId?.slice(0, 64) ?? null,
-                checked_at,
-                help_url: "mailto:help@payment-project.example",
-              },
-        );
-      }
+      if (path === "/api/demo/reset" && req.method === "POST")
+        return await resetDemo(req, res);
+      if (path === "/api/demo/orders" && req.method === "POST")
+        return await registerOrder(req, res);
+      if (path === "/api/demo/scenario" && req.method === "POST")
+        return await applyScenario(req, res);
+      if (path === "/api/demo" && req.method === "GET")
+        return describeDemo(res, url);
+      if (path === "/api/checkout/link" && req.method === "GET")
+        return await verifyLink(req, res, url);
       if (path === "/api/currencies" && req.method === "GET") {
         return json(res, 200, { currencies: catalogue });
       }
+      // Payment routes share body parsing, metrics, fault injection and the
+      // reset-revision guard before dispatching on the exact path.
       if (!path.startsWith("/api/payments"))
         return json(res, 404, { title: "Not found" });
       const input = req.method === "POST" ? await body(req) : {};
