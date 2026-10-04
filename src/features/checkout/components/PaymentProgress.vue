@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, ref } from "vue";
 import { parseUnits, formatUnits } from "../domain/money";
+import { isResult, isTerminal } from "../domain/paymentModel";
 import type { Payment, RequestHealth } from "../domain/paymentModel";
 import CopyButton from "./CopyButton.vue";
 import TransactionLink from "./TransactionLink.vue";
+import { formatClockTime, formatHourMinute } from "./formatTime";
 const props = defineProps<{
   payment: Payment | null;
   health: RequestHealth;
@@ -27,9 +29,7 @@ const revealActive = computed(
     props.payment?.status === "paid" &&
     props.reveal.previous.payment_reference ===
       props.payment.payment_reference &&
-    ["awaiting_payment", "detected", "confirming", "underpaid"].includes(
-      props.reveal.previous.status,
-    ) &&
+    !isTerminal(props.reveal.previous.status) &&
     !window.matchMedia?.("(prefers-reduced-motion: reduce)").matches,
 );
 const ghost = computed(() => {
@@ -169,7 +169,7 @@ function title() {
         class="confirmation-icon"
         :class="{
           failed: payment.status === 'failed',
-          large: ['paid', 'overpaid', 'failed'].includes(payment.status),
+          large: isResult(payment.status),
         }"
         aria-hidden="true"
         >{{ payment.status === "failed" ? "×" : "✓" }}</span
@@ -177,10 +177,7 @@ function title() {
       <strong
         role="status"
         :class="{
-          result:
-            expiredUnderpayment ||
-            (payment &&
-              ['paid', 'overpaid', 'failed'].includes(payment.status)),
+          result: expiredUnderpayment || (payment && isResult(payment.status)),
         }"
         >{{ title() }}</strong
       ><span
@@ -205,13 +202,7 @@ function title() {
       >
       received · the rate for the rest expired at
       <time :datetime="expiredUnderpayment.quote.expires_at">{{
-        new Date(expiredUnderpayment.quote.expires_at).toLocaleTimeString(
-          "en-GB",
-          {
-            hour: "2-digit",
-            minute: "2-digit",
-          },
-        )
+        formatHourMinute(expiredUnderpayment.quote.expires_at)
       }}</time>
     </p>
     <div
@@ -334,17 +325,13 @@ function title() {
         </div>
         <div v-if="payment.status === 'detected'">
           <dt>Detected</dt>
-          <dd>
-            {{ new Date(payment.detected_at).toLocaleTimeString("en-GB") }}
-          </dd>
+          <dd>{{ formatClockTime(payment.detected_at) }}</dd>
         </div>
         <div v-if="'settled_at' in payment">
           <dt>Settled</dt>
           <dd>{{ new Date(payment.settled_at).toLocaleString("en-GB") }}</dd>
         </div>
-        <template
-          v-if="['paid', 'overpaid', 'failed'].includes(payment.status)"
-        >
+        <template v-if="isResult(payment.status)">
           <div>
             <dt>Order</dt>
             <dd class="mono">{{ payment.order_id }}</dd>
@@ -360,10 +347,7 @@ function title() {
         </template>
       </dl>
       <CopyButton
-        v-if="
-          expiredUnderpayment ||
-          ['paid', 'overpaid', 'failed'].includes(payment.status)
-        "
+        v-if="expiredUnderpayment || isResult(payment.status)"
         :value="
           payment.status === 'failed'
             ? payment.payment_reference +
@@ -378,8 +362,7 @@ function title() {
       <div v-if="connectionIssue" class="connection-support">
         <p class="muted">
           <template v-if="lastChecked !== null">
-            Last checked
-            {{ new Date(lastChecked).toLocaleTimeString("en-GB") }}.
+            Last checked {{ formatClockTime(lastChecked) }}.
           </template>
           Current server status is unknown. If you already sent funds, do not
           send again.
@@ -398,8 +381,8 @@ function title() {
         v-else-if="health === 'stale' && lastChecked !== null"
         class="small muted"
       >
-        Last checked {{ new Date(lastChecked).toLocaleTimeString("en-GB") }}.
-        Showing the last verified payment facts.
+        Last checked {{ formatClockTime(lastChecked) }}. Showing the last
+        verified payment facts.
       </p>
     </template>
   </div>

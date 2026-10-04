@@ -5,6 +5,7 @@ import type { Payment } from "../domain/paymentModel";
 import { transferAmount } from "../domain/quotePolicy";
 import NetworkBadge from "./NetworkBadge.vue";
 import CopyButton from "./CopyButton.vue";
+import { formatHourMinute } from "./formatTime";
 const props = defineProps<{ payment: Payment; remaining: number }>();
 const qr = ref("");
 const quote = computed(() => props.payment.quote);
@@ -128,12 +129,7 @@ const countdown = computed(() => {
         left</span
       ><span class="muted"
         >Expires
-        {{
-          new Date(quote.expires_at).toLocaleTimeString("en-GB", {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        }}</span
+        {{ formatHourMinute(quote.expires_at) }}</span
       >
       <div class="time-rule"></div>
     </div>

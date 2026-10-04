@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onScopeDispose, ref } from "vue";
 import type { Currency, Pair, CurrencyCode } from "../domain/paymentModel";
+import { findCurrency, findNetwork } from "../domain/catalogue";
 import NetworkBadge from "./NetworkBadge.vue";
 import { useAutoHeightTransition } from "./useAutoHeightTransition";
 const props = defineProps<{
@@ -11,11 +12,9 @@ const props = defineProps<{
 const emit = defineEmits<{ select: [pair: Pair]; continue: [] }>();
 const networkOptions = useAutoHeightTransition(() => props.pair.currency);
 const currency = computed(() =>
-  props.currencies.find((c) => c.code === props.pair.currency),
+  findCurrency(props.currencies, props.pair.currency),
 );
-const selected = computed(() =>
-  currency.value?.networks.find((n) => n.id === props.pair.network),
-);
+const selected = computed(() => findNetwork(props.currencies, props.pair));
 const continueButton = ref<HTMLButtonElement | null>(null);
 const continueLabel = ref<HTMLSpanElement | null>(null);
 const continueWidth = ref<string>();
@@ -45,7 +44,7 @@ onMounted(() => {
 onScopeDispose(() => labelObserver?.disconnect());
 
 function changeCurrency(code: CurrencyCode) {
-  const c = props.currencies.find((c) => c.code === code);
+  const c = findCurrency(props.currencies, code);
   if (c)
     emit("select", {
       currency: code,
