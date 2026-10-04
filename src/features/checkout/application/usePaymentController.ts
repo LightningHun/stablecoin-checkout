@@ -1,16 +1,24 @@
 import { computed, onScopeDispose, ref, shallowRef } from "vue";
 import { acceptSnapshot, hasFunds, isTerminal } from "../domain/paymentModel";
+import { findNetwork } from "../domain/catalogue";
 import type {
   Currency,
   Pair,
   Payment,
   RequestHealth,
 } from "../domain/paymentModel";
-import { quoteAvailability } from "../domain/quotePolicy";
-import { compareDecimal } from "../domain/money";
+import { isSameQuote, quoteAvailability } from "../domain/quotePolicy";
 import { ApiError, createPaymentClient } from "../infrastructure/paymentClient";
 import type { ApiResult, PaymentClient } from "../infrastructure/paymentClient";
 import { ClockService } from "../infrastructure/ClockService";
+import {
+  automaticRetryLimit,
+  isDefiniteRejection,
+  isRecoverableStatusFailure,
+  manualRetryInterval,
+  manualRetryLimit,
+  nextPollDelay,
+} from "./retryPolicy";
 export type RestoreResult = "restored" | "not-found" | "unavailable";
 export interface ControllerOptions {
   client?: PaymentClient;
@@ -61,9 +69,6 @@ export function usePaymentController(options: ControllerOptions = {}) {
     automaticRetries = ref(0),
     manualRetries = ref(0),
     lastManualRetryAt = ref<number | null>(null);
-  const automaticRetryLimit = 5,
-    manualRetryLimit = 3,
-    manualRetryInterval = 10000;
   const requestPending = ref(false),
     statusUnavailable = ref(false),
     nextPollAt = ref<number | null>(null);
@@ -193,17 +198,11 @@ export function usePaymentController(options: ControllerOptions = {}) {
       return;
     if (retryOutage.value && automaticRetries.value >= automaticRetryLimit)
       return;
-    const delay = Math.min(
-      30000,
-      pollMs *
-        2 **
-          Math.min(
-            retryOutage.value
-              ? automaticRetries.value
-              : Math.max(0, failures - 1),
-            4,
-          ),
-    );
+    const delay = nextPollDelay(pollMs, {
+      retryOutage: retryOutage.value,
+      automaticRetries: automaticRetries.value,
+      failures,
+    });
     const gen = generation.value,
       deadline = performance.now() + delay;
     nextPollAt.value = deadline;
@@ -265,18 +264,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
         0,
         true,
       );
-    if (
-      !replace &&
-      payment.value &&
-      (compareDecimal(
-        next.quote.network_fee,
-        payment.value.quote.network_fee,
-      ) !== 0 ||
-        JSON.stringify({
-          ...next.quote,
-          network_fee: payment.value.quote.network_fee,
-        }) !== JSON.stringify(payment.value.quote))
-    )
+    if (!replace && payment.value && !isSameQuote(next.quote, payment.value.quote))
       throw new ApiError(
         "Quote changed unexpectedly. Transfer controls are paused.",
         0,
@@ -350,9 +338,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
       } catch (cause) {
         if (!disposed && gen === generation.value) {
           markError(cause);
-          statusUnavailable.value =
-            !(cause instanceof ApiError) ||
-            (!cause.protocol && (cause.status === 0 || cause.status >= 500));
+          statusUnavailable.value = isRecoverableStatusFailure(cause);
           if (statusUnavailable.value) retryOutage.value = true;
         }
       }
@@ -385,13 +371,8 @@ export function usePaymentController(options: ControllerOptions = {}) {
           currencies.value = result.data.currencies;
         }
         const first = currencies.value[0];
-        const stillListed = currencies.value.some(
-          (currency) =>
-            currency.code === draft.value.currency &&
-            currency.networks.some(
-              (network) => network.id === draft.value.network,
-            ),
-        );
+        const stillListed =
+          findNetwork(currencies.value, draft.value) !== undefined;
         if (!payment.value && !stillListed && first?.networks[0])
           draft.value = { currency: first.code, network: first.networks[0].id };
         if (!first?.networks[0])
@@ -555,14 +536,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
           } catch (err) {
             markError(err);
           }
-        } else if (
-          posted &&
-          !(
-            cause instanceof ApiError &&
-            cause.status >= 400 &&
-            cause.status < 500
-          )
-        ) {
+        } else if (posted && !isDefiniteRejection(cause)) {
           uncertain.value = true;
           error.value = uncertainMessage;
         }
