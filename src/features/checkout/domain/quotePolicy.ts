@@ -1,4 +1,5 @@
-import type { Payment } from "./paymentModel";
+import { compareDecimal } from "./money";
+import type { Payment, Quote } from "./paymentModel";
 export type QuoteAvailability =
   | "usable"
   | "local-deadline-reached"
@@ -21,3 +22,14 @@ export function quoteAvailability(
 }
 export const transferAmount = (p: Payment): string =>
   p.status === "underpaid" ? p.amount_outstanding : p.quote.total_due;
+/**
+ * Same-reference polling must not change the accepted quote. Only a numerically
+ * equal network-fee spelling is tolerated; every other field must match exactly.
+ */
+export function isSameQuote(incoming: Quote, accepted: Quote): boolean {
+  return (
+    compareDecimal(incoming.network_fee, accepted.network_fee) === 0 &&
+    JSON.stringify({ ...incoming, network_fee: accepted.network_fee }) ===
+      JSON.stringify(accepted)
+  );
+}

@@ -83,6 +83,9 @@ export const isTerminal = (status: PaymentStatus): boolean =>
   ["paid", "overpaid", "expired", "failed"].includes(status);
 export const hasFunds = (status: PaymentStatus): boolean =>
   ["detected", "confirming", "underpaid", "paid", "overpaid"].includes(status);
+/** Final outcomes presented with a receipt; expired is terminal but has none. */
+export const isResult = (status: PaymentStatus): boolean =>
+  ["paid", "overpaid", "failed"].includes(status);
 const allowed: Record<PaymentStatus, readonly PaymentStatus[]> = {
   awaiting_payment: statuses,
   detected: [
