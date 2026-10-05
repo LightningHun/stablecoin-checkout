@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { Payment } from "../domain/paymentModel";
-defineProps<{ payment: Payment; busy: boolean }>();
+defineProps<{ mobile?: boolean; payment: Payment; busy: boolean }>();
 const emit = defineEmits<{ requote: [] }>();
 </script>
 <template>
-  <div class="recovery">
+  <div class="recovery" :class="{ mobile }">
     <strong class="recovery-heading">
       <svg
         xmlns="http://www.w3.org/2000/svg"
@@ -79,9 +79,7 @@ const emit = defineEmits<{ requote: [] }>();
 .recovery-card .primary {
   padding: 11px 16px;
 }
-@media (max-width: 600px) {
-  .recovery-grid {
-    grid-template-columns: 1fr;
-  }
+:where(.recovery.mobile) .recovery-grid {
+  grid-template-columns: 1fr;
 }
 </style>

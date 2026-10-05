@@ -36,6 +36,7 @@ import RecoveryPanel from "./components/RecoveryPanel.vue";
 import NetworkBadge from "./components/NetworkBadge.vue";
 import DemoControls from "./components/DemoControls.vue";
 import TransactionLink from "./components/TransactionLink.vue";
+defineProps<{ mobile?: boolean }>();
 const params = new URLSearchParams(location.search);
 const orderId = params.get("order") ?? "ORD-88213";
 const client = createPaymentClient("/api", orderId);
@@ -350,6 +351,7 @@ onScopeDispose(() => {
 </script>
 <template>
   <InvalidLinkView
+    :mobile="mobile"
     v-if="invalidLink"
     :reason="invalidLink.reason"
     :order-in-link="invalidLink.order_id"
@@ -358,7 +360,7 @@ onScopeDispose(() => {
     :can-go-back="canGoBack"
   />
   <template v-else>
-    <header v-if="linkState === 'ready'" class="merchant-header">
+    <header v-if="linkState === 'ready'" class="merchant-header" :class="{ mobile }">
       <MerchantBrand v-if="merchant" :merchant="merchant" />
       <div
         v-else
@@ -382,6 +384,7 @@ onScopeDispose(() => {
       <span class="order-reference mono">Order {{ orderId }}</span>
     </header>
     <ConnectionBanner
+      :mobile="mobile"
       v-if="error"
       :error="error"
       :connection-issue="connectionIssue"
@@ -398,10 +401,11 @@ onScopeDispose(() => {
     <main
       v-if="linkState === 'ready'"
       class="checkout"
-      :class="{ 'motion-ready': motionReady }"
+      :class="{ mobile, 'motion-ready': motionReady }"
       data-testid="checkout"
     >
       <OrderSummary
+        :mobile="mobile"
         :amount="order?.amount"
         :unavailable="initialLoadFailed"
         :currency="order?.currency"
@@ -458,6 +462,7 @@ onScopeDispose(() => {
           </template>
         </div>
         <AssetNetworkSelector
+          :mobile="mobile"
           v-else-if="selectionVisible"
           :class="{ 'motion-enter': payment }"
           :currencies="currencies"
@@ -509,7 +514,7 @@ onScopeDispose(() => {
         >
           Amount, address and QR code appear after you choose a network.
         </p>
-        <div v-else-if="busy" class="loading-quote" data-testid="quote-loading">
+        <div v-else-if="busy" class="loading-quote" :class="{ mobile }" data-testid="quote-loading">
           <div class="network-warning" :class="draft.network">
             <NetworkBadge :network="draft.network" />
             <div>
@@ -539,11 +544,13 @@ onScopeDispose(() => {
           </p>
         </div>
         <QuoteDetails
+          :mobile="mobile"
           v-else-if="payment && availability === 'usable'"
           :payment="payment"
           :remaining="remaining"
         />
         <RecoveryPanel
+          :mobile="mobile"
           v-else-if="payment?.status === 'expired'"
           :payment="payment"
           :busy="busy"
@@ -619,6 +626,7 @@ onScopeDispose(() => {
           >
         </div>
         <PaymentProgress
+          :mobile="mobile"
           :decimals="paymentDecimals"
           :payment="selectionVisible ? null : payment"
           :health="health"
@@ -797,45 +805,43 @@ onScopeDispose(() => {
   border-top: 1px solid var(--line);
   padding-top: 16px;
 }
-@media (max-width: 600px) {
-  .checkout {
-    margin-top: 26px;
-  }
-  .step {
-    padding-left: 29px;
-    padding-bottom: 36px;
-  }
-  .received-summary {
-    flex-direction: column;
-    gap: 8px;
-  }
-  .qr-skeleton {
-    align-self: center;
-    width: 168px;
-    height: 168px;
-  }
-  .skeleton-panel {
-    gap: 20px;
-  }
-  .line-skeleton {
-    width: 100%;
-  }
-  .skeleton-details {
-    gap: 10px;
-  }
-  .skeleton-details > .skeleton {
-    height: 20px;
-  }
-  .skeleton-details > .button-skeleton {
-    height: 44px;
-  }
-  .action-label {
-    font-size: 9px;
-    padding: 6px;
-  }
-  .step-heading h2 {
-    font-size: 14px;
-  }
+.checkout:where(.mobile) {
+  margin-top: 26px;
+}
+:where(.checkout.mobile) .step {
+  padding-left: 29px;
+  padding-bottom: 36px;
+}
+:where(.checkout.mobile) .received-summary {
+  flex-direction: column;
+  gap: 8px;
+}
+:where(.checkout.mobile) .qr-skeleton {
+  align-self: center;
+  width: 168px;
+  height: 168px;
+}
+:where(.checkout.mobile) .skeleton-panel {
+  gap: 20px;
+}
+:where(.checkout.mobile) .line-skeleton {
+  width: 100%;
+}
+:where(.checkout.mobile) .skeleton-details {
+  gap: 10px;
+}
+:where(.checkout.mobile) .skeleton-details > .skeleton {
+  height: 20px;
+}
+:where(.checkout.mobile) .skeleton-details > .button-skeleton {
+  height: 44px;
+}
+:where(.checkout.mobile) .action-label {
+  font-size: 9px;
+  padding: 6px;
+}
+:where(.checkout.mobile) .step-heading h2 {
+  font-size: 14px;
 }
 /* An expired partial-payment quote keeps its receipt, without transfer actions. */
 .confirmation-step.incomplete > .step-marker {
@@ -847,12 +853,10 @@ onScopeDispose(() => {
   min-width: 0;
   overflow-wrap: anywhere;
 }
-@media (max-width: 600px) {
-  .confirmation-step.incomplete .step-heading {
-    height: auto;
-    min-height: 28px;
-    flex-wrap: wrap;
-  }
+:where(.checkout.mobile) .confirmation-step.incomplete .step-heading {
+  height: auto;
+  min-height: 28px;
+  flex-wrap: wrap;
 }
 /* Motion starts with checkout interaction; removals remain immediate. */
 .checkout.motion-ready .step-marker {

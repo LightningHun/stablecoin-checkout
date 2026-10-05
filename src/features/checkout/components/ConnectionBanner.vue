@@ -4,6 +4,7 @@
  * the page decides when it is shown and owns the retry request.
  */
 defineProps<{
+  mobile?: boolean;
   error: string;
   connectionIssue: boolean;
   retryInSeconds: number | null;
@@ -18,7 +19,7 @@ defineProps<{
 const emit = defineEmits<{ retry: [] }>();
 </script>
 <template>
-  <div class="connection-banner">
+  <div class="connection-banner" :class="{ mobile }">
     <template v-if="connectionIssue">
       <div class="connection-message" role="alert">
         <svg
@@ -158,14 +159,12 @@ const emit = defineEmits<{ retry: [] }>();
   align-items: center;
   gap: 6px;
 }
-@media (max-width: 600px) {
-  .connection-banner {
-    flex-direction: column;
-    padding: 12px 16px;
-    gap: 8px;
-  }
-  .connection-banner button {
-    align-self: center;
-  }
+.connection-banner:where(.mobile) {
+  flex-direction: column;
+  padding: 12px 16px;
+  gap: 8px;
+}
+.connection-banner:where(.mobile) button {
+  align-self: center;
 }
 </style>

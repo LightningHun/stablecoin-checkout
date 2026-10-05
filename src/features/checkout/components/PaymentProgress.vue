@@ -7,6 +7,7 @@ import CopyButton from "./CopyButton.vue";
 import TransactionLink from "./TransactionLink.vue";
 import { formatClockTime, formatHourMinute } from "./formatTime";
 const props = defineProps<{
+  mobile?: boolean;
   payment: Payment | null;
   health: RequestHealth;
   decimals?: number;
@@ -95,6 +96,7 @@ function title() {
   <div
     class="payment-progress"
     :class="{
+      mobile,
       'paid-reveal-content': revealActive,
       'underpaid-incomplete': expiredUnderpayment,
     }"
@@ -389,7 +391,7 @@ function title() {
 </template>
 
 <style lang="scss">
-// Keep keyframe names stable for finishGhost's animationend handler.
+/* Keep keyframe names stable for finishGhost's animationend handler. */
 @use "../../../styles/checkout-shared" as shared;
 
 :where(.payment-progress) {
@@ -453,12 +455,10 @@ function title() {
 .connection-support .copy-control {
   margin-top: 12px;
 }
-@media (max-width: 600px) {
-  .progress-heading {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 12px;
-  }
+:where(.payment-progress.mobile) .progress-heading {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
 }
 .underpaid-incomplete .incomplete-subtitle {
   margin: 2px 0 16px 42px;
@@ -478,10 +478,8 @@ function title() {
 .incomplete-warning svg {
   display: block;
 }
-@media (max-width: 600px) {
-  .underpaid-incomplete .receipt {
-    grid-template-columns: minmax(0, 1fr);
-  }
+.underpaid-incomplete:where(.mobile) .receipt {
+  grid-template-columns: minmax(0, 1fr);
 }
 .checkout.motion-ready .payment-progress > p,
 .checkout.motion-ready .confirmation-icon,
@@ -531,14 +529,12 @@ function title() {
   height: 100%;
   background: var(--ink);
 }
-@media (max-width: 600px) {
-  .progress-heading:has(.confirmation-icon) {
-    grid-template-columns: auto minmax(0, 1fr);
-    align-items: center;
-  }
-  .progress-heading .confirmations {
-    grid-column: 1/-1;
-  }
+:where(.payment-progress.mobile) .progress-heading:has(.confirmation-icon) {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+}
+:where(.payment-progress.mobile) .progress-heading .confirmations {
+  grid-column: 1/-1;
 }
 
 /* One-shot paid reveal. The only outgoing content is an inert confirmation ghost. */
@@ -691,13 +687,11 @@ function title() {
     transform: none;
   }
 }
-@media (max-width: 600px) {
-  .paid-ghost-heading {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-  .paid-ghost-count {
-    grid-column: 1 / -1;
-  }
+:where(.payment-progress.mobile) .paid-ghost-heading {
+  grid-template-columns: auto minmax(0, 1fr);
+}
+:where(.payment-progress.mobile) .paid-ghost-count {
+  grid-column: 1 / -1;
 }
 @media (prefers-reduced-motion: reduce) {
   .paid-confirmation-ghost,

@@ -5,6 +5,7 @@ import { findCurrency, findNetwork } from "../domain/catalogue";
 import NetworkBadge from "./NetworkBadge.vue";
 import { useAutoHeightTransition } from "./useAutoHeightTransition";
 const props = defineProps<{
+  mobile?: boolean;
   currencies: Currency[];
   pair: Pair;
   disabled: boolean;
@@ -53,7 +54,7 @@ function changeCurrency(code: CurrencyCode) {
 }
 </script>
 <template>
-  <div class="selector">
+  <div class="selector" :class="{ mobile }">
     <fieldset :disabled="disabled">
       <legend class="eyebrow">Currency</legend>
       <div class="currency-segments">
@@ -219,46 +220,44 @@ function changeCurrency(code: CurrencyCode) {
   font-size: 13px;
   margin: 8px 0 16px;
 }
-@media (max-width: 600px) {
-  .network-option {
-    padding: 14px 16px;
-    gap: 14px;
-    display: grid;
-    grid-template-columns: 16px 28px minmax(0, 1fr);
-    column-gap: 14px;
-    row-gap: 0;
-    min-height: 80px;
-  }
-  .network-option > input,
-  .network-option > .network-badge {
-    grid-row: 1/3;
-  }
-  .network-info {
-    grid-column: 3;
-  }
-  .network-info strong {
-    white-space: normal;
-  }
-  .network-info small {
-    line-height: 1.3;
-  }
-  .fee {
-    grid-column: 3;
-    font-size: 12px;
-    line-height: 1.3;
-  }
-  .selector .primary {
-    width: 100%;
-    padding-left: 8px;
-    padding-right: 8px;
-    font-size: 13px;
-  }
-  .selector p {
-    margin: 8px 0 16px;
-  }
-  .selector p.small {
-    font-size: 12px;
-  }
+:where(.selector.mobile) .network-option {
+  padding: 14px 16px;
+  gap: 14px;
+  display: grid;
+  grid-template-columns: 16px 28px minmax(0, 1fr);
+  column-gap: 14px;
+  row-gap: 0;
+  min-height: 80px;
+}
+:where(.selector.mobile) .network-option > input,
+:where(.selector.mobile) .network-option > .network-badge {
+  grid-row: 1/3;
+}
+:where(.selector.mobile) .network-info {
+  grid-column: 3;
+}
+:where(.selector.mobile) .network-info strong {
+  white-space: normal;
+}
+:where(.selector.mobile) .network-info small {
+  line-height: 1.3;
+}
+:where(.selector.mobile) .fee {
+  grid-column: 3;
+  font-size: 12px;
+  line-height: 1.3;
+}
+.selector:where(.mobile) .primary {
+  width: 100%;
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 13px;
+}
+.selector:where(.mobile) p {
+  margin: 8px 0 16px;
+}
+.selector:where(.mobile) p.small {
+  font-size: 12px;
 }
 /* Motion starts with checkout interaction; removals remain immediate. */
 .checkout.motion-ready .currency-segments label,
@@ -275,19 +274,17 @@ function changeCurrency(code: CurrencyCode) {
 .selector > p:last-child {
   margin-bottom: 4px;
 }
-@media (min-width: 601px) {
-  .continue-button {
-    width: var(--continue-button-width, auto);
-    max-width: 100%;
-    overflow: hidden;
-    transition: width var(--motion-medium, 220ms)
-      var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
-  }
-  .continue-label {
-    display: block;
-    width: max-content;
-    margin-inline: 0;
-  }
+:where(.selector:not(.mobile)) .continue-button {
+  width: var(--continue-button-width, auto);
+  max-width: 100%;
+  overflow: hidden;
+  transition: width var(--motion-medium, 220ms)
+    var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+}
+:where(.selector:not(.mobile)) .continue-label {
+  display: block;
+  width: max-content;
+  margin-inline: 0;
 }
 @media (prefers-reduced-motion: reduce) {
   .continue-button {

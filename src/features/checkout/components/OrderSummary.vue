@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { formatFiat } from "../domain/money";
 defineProps<{
+  mobile?: boolean;
   amount?: string;
   locale: string;
   currency?: string;
@@ -8,7 +9,7 @@ defineProps<{
 }>();
 </script>
 <template>
-  <section class="order-summary" aria-label="Order total">
+  <section class="order-summary" :class="{ mobile }" aria-label="Order total">
     <div class="eyebrow">Total to pay</div>
     <h1 v-if="amount !== undefined && currency" data-testid="fiat-total">
       {{ formatFiat(amount, locale, currency) }}
@@ -45,13 +46,11 @@ defineProps<{
   font-weight: 600;
   margin-top: 2px;
 }
-@media (max-width: 600px) {
-  .order-summary {
-    padding-bottom: 26px;
-    margin-bottom: 28px;
-  }
-  .order-summary h1 {
-    font-size: 36px;
-  }
+.order-summary:where(.mobile) {
+  padding-bottom: 26px;
+  margin-bottom: 28px;
+}
+.order-summary:where(.mobile) h1 {
+  font-size: 36px;
 }
 </style>

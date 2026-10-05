@@ -6,7 +6,7 @@ import { transferAmount } from "../domain/quotePolicy";
 import NetworkBadge from "./NetworkBadge.vue";
 import CopyButton from "./CopyButton.vue";
 import { formatHourMinute } from "./formatTime";
-const props = defineProps<{ payment: Payment; remaining: number }>();
+const props = defineProps<{ mobile?: boolean; payment: Payment; remaining: number }>();
 const qr = ref("");
 const quote = computed(() => props.payment.quote);
 const amount = computed(() => transferAmount(props.payment));
@@ -44,7 +44,7 @@ const countdown = computed(() => {
 });
 </script>
 <template>
-  <div class="quote-details">
+  <div class="quote-details" :class="{ mobile }">
     <div v-if="payment.status === 'underpaid'" class="notice">
       <strong
         >△ Your transfer was {{ payment.amount_outstanding }}
@@ -231,28 +231,26 @@ const countdown = computed(() => {
   color: #555;
   font-size: 13px;
 }
-@media (max-width: 600px) {
-  .qr {
-    width: 180px;
-    height: 180px;
-    align-self: center;
-  }
-  .transfer-value strong {
-    font-size: 30px;
-  }
-  .quote-fee {
-    line-height: 1.6;
-  }
-  .deadline {
-    flex-direction: column;
-    gap: 3px;
-  }
-  .time-rule {
-    margin-top: 6px;
-  }
-  .notice p {
-    margin-left: 0;
-  }
+:where(.quote-details.mobile) .qr {
+  width: 180px;
+  height: 180px;
+  align-self: center;
+}
+:where(.quote-details.mobile) .transfer-value strong {
+  font-size: 30px;
+}
+:where(.quote-details.mobile) .quote-fee {
+  line-height: 1.6;
+}
+:where(.quote-details.mobile) .deadline {
+  flex-direction: column;
+  gap: 3px;
+}
+:where(.quote-details.mobile) .time-rule {
+  margin-top: 6px;
+}
+:where(.quote-details.mobile) .notice p {
+  margin-left: 0;
 }
 /* Address panels and QR images stay opaque, including their ancestors. */
 .checkout.motion-ready .quote-details {

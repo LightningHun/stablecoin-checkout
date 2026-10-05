@@ -4,6 +4,7 @@ import CopyButton from "./CopyButton.vue";
 import MerchantBrand from "./MerchantBrand.vue";
 
 const props = defineProps<{
+  mobile?: boolean;
   reason: string;
   orderInLink: string | null;
   checkedAt: string;
@@ -45,8 +46,8 @@ function goBack() {
 onMounted(() => heading.value?.focus());
 </script>
 <template>
-  <div class="invalid-link-layout">
-    <header class="merchant-header">
+  <div class="invalid-link-layout" :class="{ mobile }">
+    <header class="merchant-header" :class="{ mobile }">
       <MerchantBrand />
     </header>
     <main class="invalid-link-view" data-testid="invalid-link">
@@ -174,27 +175,25 @@ onMounted(() => heading.value?.focus());
 .invalid-link-footer a {
   color: inherit;
 }
-@media (max-width: 600px) {
-  .invalid-link-view {
-    margin-top: 36px;
-  }
-  .invalid-link-view h1 {
-    font-size: 24px;
-  }
-  .invalid-link-actions {
-    flex-direction: column;
-  }
-  .invalid-link-actions > *,
-  .invalid-link-actions .secondary {
-    width: 100%;
-  }
-  .invalid-link-actions .secondary {
-    justify-content: center;
-  }
-  .invalid-link-footer {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    margin-bottom: 28px;
-  }
+:where(.invalid-link-layout.mobile) .invalid-link-view {
+  margin-top: 36px;
+}
+:where(.invalid-link-layout.mobile) .invalid-link-view h1 {
+  font-size: 24px;
+}
+:where(.invalid-link-layout.mobile) .invalid-link-actions {
+  flex-direction: column;
+}
+:where(.invalid-link-layout.mobile) .invalid-link-actions > *,
+:where(.invalid-link-layout.mobile) .invalid-link-actions .secondary {
+  width: 100%;
+}
+:where(.invalid-link-layout.mobile) .invalid-link-actions .secondary {
+  justify-content: center;
+}
+:where(.invalid-link-layout.mobile) .invalid-link-footer {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  margin-bottom: 28px;
 }
 </style>
