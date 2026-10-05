@@ -36,7 +36,7 @@ No missing required behavior, unsupported safety claims or critical/major findin
 | T03 | Network and races | Switch A to B rapidly; deliver A last. Only B details, copy value and QR appear. Block switching after funds are observed. |
 | T04 | Transfer integrity | Decode rendered QR with a separate decoder and compare its address to the expected fixture. Read clipboard after copy. Clipboard failure gives a usable fallback. |
 | T05 | Exact money | Check 162.69 + 1.00 = 163.69; 120.00 leaves 43.69; 180.00 yields 16.31. ETH 0.000000000000000001 and 1.123456789012345678 survive round trips. Reject excess precision. |
-| T06 | Suspended timers | Jump 120 seconds with callbacks coalesced; on return, remaining time equals the absolute deadline difference. Also test a real background-tab smoke run. |
+| T06 | Suspended timers | Jump 120 seconds with callbacks coalesced; on return, remaining time equals the absolute deadline difference. |
 | T07 | Clock and boundary | Skew client by +/-5 minutes, jump wall clock mid-session and delay server time samples. Test 1 ms before/at/after deadline and the resync fallback. |
 | T08 | Funds beat local expiry | Accept detected at 0 confirmations, then cross deadline and simulate 500. Never show payment expired. Repeat for confirming and underpaid; race detection with local zero. |
 | T09 | One poll owner | Delay responses beyond the poll period; active GET count never exceeds one. Coalesce focus/retry triggers. Repeatedly mount/unmount the Vue owner and dispose its composable scope; no timers, listeners or requests remain. |
@@ -50,7 +50,7 @@ No missing required behavior, unsupported safety claims or critical/major findin
 | T17 | Evaluator controls | From a clean browser, drive all states and both transport faults through documented controls; reset reproduces a known scenario and deterministic time. |
 | T18 | Usability | Keyboard-only use, clear labels, focus after changes, status announcements without per-second noise, mobile layout and 200% zoom. Color is never the only status cue. |
 
-Use Vitest for pure TypeScript, Vue Test Utils for SFCs/composable hosts, real HTTP contract tests and Playwright for browser acceptance. Await Vue updates explicitly, isolate browser contexts and inject independent client/server clocks. Supplement simulated time jumps with an actual two-minute background-tab check. Record unavailable browser coverage instead of silently omitting it. Capture traces and network counts for concurrency failures.
+Use Vitest for pure TypeScript, Vue Test Utils for SFCs/composable hosts, real HTTP contract tests and Playwright for browser acceptance. Await Vue updates explicitly, isolate browser contexts and inject independent client/server clocks. Record unavailable browser coverage instead of silently omitting it. Capture traces and network counts for concurrency failures.
 
 ## G5 mandatory deliberate defects
 
@@ -97,8 +97,8 @@ Create evidence only after work actually runs, under reports/. No pre-existing r
 
 G3A additionally includes one row per scoped requirement: source, expected behavior, observed behavior, code references, evidence and verdict. G5 additionally records the green baseline, each M ID, mutation patch hash, detecting tests, expected/actual failure, whether the intended assertion failed, restoration and final green result. All 12 mandatory behavioral defects and both VM defects must be accounted for. Include D IDs, viewport/reference pairs and approved deviations in visual evidence.
 
-Use the reviewed local Git commit SHA plus suite, fixture and artifact hashes. The checkout must match that candidate for tracked application inputs; record any differences. For a Git blocker only, use an isolated SHA-256 source manifest covering source, configuration, lockfile, tests and fixtures, excluding dependencies and generated reports. Never invent a commit. Later report commits must identify the application commit they verified; re-check relevant changes before reusing evidence.
+While Git is deferred, create an isolated candidate copy and a SHA-256 file manifest covering source, configuration, lockfile, tests and fixtures. Exclude dependencies and generated reports. Never invent a commit. After Git is authorized, use the reviewed commit SHA plus relevant artifact hashes. A later report-only change does not change the reviewed application candidate.
 
 Any relevant implementation, fixture, test or acceptance change invalidates affected signoffs. Reviewers do not approve their own implementation or repairs. After three failed repair attempts on the same issue, report the disagreement to the human. Missing evidence or unavailable review is blocked, never pass.
 
-Reproduce startup and scenarios from recorded commands while README creation remains deferred. Assess original submission requirements separately: technical checks may proceed while README is deferred or Git is explicitly blocked, but missing mandatory deliverables prevent full submission compliance. No application gate has been executed in this input package.
+Reproduce startup and scenarios from recorded commands while README creation remains deferred. Assess original submission requirements separately: technical checks may proceed without Git/README, but missing mandatory deliverables prevent full submission compliance. No application gate has been executed in this input package.

@@ -1,0 +1,22 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(git push:*)",
+      "Bash(git clean:*)",
+      "Bash(git rebase:*)",
+      "Bash(npx playwright test -u:*)",
+      "Bash(npx playwright test --update-snapshots:*)",
+      "Bash(npm run test:visual -- -u:*)",
+      "Bash(npm run test:visual -- --update-snapshots:*)",
+      "Bash(git stash:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git switch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git restore:*)",
+      "Bash(git reset:*)",
+      "Bash(git worktree:*)",
+      "Bash(git merge:*)"
+    ]
+  }
+}

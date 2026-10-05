@@ -1,5 +1,5 @@
 {
-  "contract": "docs/VERIFICATION.md and docs/DESIGN_SPEC.md",
+  "contract": "ai-instructions/Codex/VERIFICATION.md and docs/DESIGN_SPEC.md",
   "rule": "Run each single mutation only in an isolated fixed-candidate checkout; record expected assertion, actual assertion, patch hash, restoration and green rerun. Compilation or harness errors are not kills.",
   "defects": [
     { "id": "M01", "change": "Allow local expiry after detected", "tests": ["T08"], "target": "tests/component/controller.test.ts" },

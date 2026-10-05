@@ -18,13 +18,9 @@ and record the actual commands, results, and screenshot evidence.
 
 Continue beyond planning and scaffolding until the application runs.
 Preserve the supplied instructions and user files, and write original code.
-Initialize a local Git repository if the project has none, and make small,
-meaningful commits as implementation progresses. Reuse the configured author
-identity, inspect staged diffs and preserve genuine history. Follow AGENTS.md
-for repository boundaries and commit checks. Do not create a remote, push,
-deploy or create a README without a further request.
-Produce the deliverables listed in docs/EXPECTED_OUTPUTS.md.
+Keep Git initialization, commits, remote repository creation, deployment,
+and README creation deferred.
 
 Finally, start the application and mock API, then report the local URL,
 restart commands, verification results, intentional design deviations,
-and unresolved issues in English. Include the final commit SHA and Git status.
+and unresolved issues in English.

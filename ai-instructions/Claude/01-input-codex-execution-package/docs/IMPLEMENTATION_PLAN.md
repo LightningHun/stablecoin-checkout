@@ -2,22 +2,22 @@
 
 Build a running Vue 3 / TypeScript / Vite checkout with the controllable HTTP mock. Use the instructions and specifications bundled with this file; no previous conversation, README, task ledger, report schema, generator or Git repository is required to start.
 
-Status: authorized implementation and verification work complete. G0-G5 passed; G6 verified technical delivery and records incomplete full submission compliance because README and unavailable human work-history evidence remain deferred. See reports/gates for actual candidate-specific evidence. Local Git initialization and commits are authorized as stated in AGENTS.md.
+Status: no application task or gate is complete. Update the checklist as actual work progresses. Git and README creation remain deferred as stated in AGENTS.md. Use a source-manifest fingerprint until Git is authorized.
 
 ## Ordered work
 
-- [x] P00: Confirm requirements, assumptions and architecture; obtain G0/G1 evidence.
-- [x] P01: Bootstrap tooling and independent acceptance-test design; establish G2 readiness.
-- [x] P02: Implement exact money and the pure state model.
-- [x] P03: Implement the HTTP mock, fixtures, client and boundary validation.
-- [x] P04: Build quote selection and transfer UI.
-- [x] P05: Complete controller, polling, clock and recovery.
-- [x] P06: Complete all scenarios, evaluator controls and usability.
-- [x] P07: Obtain independent G3 and G3A reviews.
-- [x] P08: Run G4 tests and G5 test-effectiveness audit.
-- [x] P09: Explain results and assess G6 deliverables, identifying deferred items.
+- [ ] P00: Confirm requirements, assumptions and architecture; obtain G0/G1 evidence.
+- [ ] P01: Bootstrap tooling and independent acceptance-test design; establish G2 readiness.
+- [ ] P02: Implement exact money and the pure state model.
+- [ ] P03: Implement the HTTP mock, fixtures, client and boundary validation.
+- [ ] P04: Build quote selection and transfer UI.
+- [ ] P05: Complete controller, polling, clock and recovery.
+- [ ] P06: Complete all scenarios, evaluator controls and usability.
+- [ ] P07: Obtain independent G3 and G3A reviews.
+- [ ] P08: Run G4 tests and G5 test-effectiveness audit.
+- [ ] P09: Explain results and assess G6 deliverables, identifying deferred items.
 
-Tasks depend on the preceding task. Developer tests run throughout; formal acceptance follows the gate sequence. Make small factual local commits for completed slices under the Git policy in AGENTS.md.
+Tasks depend on the preceding task. Developer tests run throughout; formal acceptance follows the gate sequence. Make small factual commits for completed slices only after Git is authorized.
 
 ## P00 Requirements and architecture
 
@@ -25,7 +25,7 @@ Read REQUIREMENTS.md, the source, API_CONTRACT.md and ARCHITECTURE.md. Read DESI
 
 ## P01 Tooling and independent expectations
 
-Inspect the repository boundary and configured identity. Initialize Git at the project root if absent, add an appropriate .gitignore and commit the supplied instruction/reference baseline. Preserve any existing history and unrelated work. Then scaffold Vue 3 + TypeScript + Vite into the existing project without overwriting its instruction files. Configure Composition API SFCs, the Vue plugin, strict TypeScript, npm lockfile, Vitest, Vue Test Utils and Playwright. Select compatible versions and record runtime prerequisites. Add a runnable shell and the app/mock start-stop arrangement.
+Scaffold Vue 3 + TypeScript + Vite into the existing project without overwriting its instruction files. Configure Composition API SFCs, the Vue plugin, strict TypeScript, npm lockfile, Vitest, Vue Test Utils and Playwright. Select compatible versions and record runtime prerequisites. Add a runnable shell and the app/mock start-stop arrangement.
 
 A fresh test designer derives D01-D12 responsive visual expectations and VM01-VM02 detection criteria from DESIGN_SPEC.md. They also derive T01-T18 expectations from the requirements before seeing production helper implementations. Independently check money/address/network examples. Show meaningful red behavior for missing or deliberately wrong features, not module resolution or harness failures. Establish cases incrementally for later slices; G2 is readiness, G4 is final suite execution.
 
@@ -67,7 +67,7 @@ Complete usePaymentController, ClockService, PaymentProgress and RecoveryPanel. 
 
 ## P06 Complete and freeze a candidate
 
-Finish all states, pairs, error/slow controls, reset and accessibility checks T11/T17/T18. Capture D01-D12 at desktop/mobile widths; record declared deviations, fix visual issues and check intermediate widths and zoom. Remove placeholders and unsupported URLs/refund promises. Run preliminary checks and exercise the built preview with the mock. Commit the completed candidate and create a clean isolated checkout at that SHA. Record suite/fixture hashes; use a source-manifest fallback only for an explicitly reported Git blocker.
+Finish all states, pairs, error/slow controls, reset and accessibility checks T11/T17/T18. Capture D01-D12 at desktop/mobile widths; record declared deviations, fix visual issues and check intermediate widths and zoom. Remove placeholders and unsupported URLs/refund promises. Run preliminary checks and exercise the built preview with the mock. Freeze an isolated source copy and hash its manifest; use a commit SHA if Git has been authorized.
 
 ## P07 Independent review
 
@@ -79,7 +79,7 @@ After G3A, run G4 behavioral and visual suites on the same candidate. In a dispo
 
 ## P09 Explanation and delivery status
 
-Reproduce verified commands and required scenarios in a clean copy. Explain implemented behavior, decisions, evidence and limitations. Check the original documentation/history requirements separately from technical checks. Keep README creation deferred, but verify actual incremental local Git history and report final commit SHA/status. Report missing or deferred deliverables and do not claim full source-submission compliance. Preserve genuine work notes for later authorized final documentation; never invent rejected drafts or human code improvements.
+Reproduce verified commands and required scenarios in a clean copy. Explain implemented behavior, decisions, evidence and limitations. Check the original documentation/history requirements separately from technical checks. Do not create README or initialize Git while deferred. Report those items as deferred and do not claim full source-submission compliance. Preserve genuine work notes for later authorized final documentation; never invent rejected drafts or human code improvements.
 
 ## Recovery and progress
 

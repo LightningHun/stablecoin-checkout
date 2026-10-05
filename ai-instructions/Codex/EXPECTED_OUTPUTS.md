@@ -1,6 +1,6 @@
 # Expected implementation outputs
 
-This is the target inventory for the future implementation, not a claim that these files exist or checks have passed. Preserve the current instructions and references. Follow ARCHITECTURE.md for module ownership and VERIFICATION.md for acceptance. Equivalent additional modules are allowed when justified; do not create empty files merely to match this list.
+This is the target inventory for the future implementation, not a claim that these files exist or checks have passed. Preserve the current instructions and references. Follow [DESIGN_DOC.md](../../docs/DESIGN_DOC.md) for module ownership and VERIFICATION.md for acceptance. Equivalent additional modules are allowed when justified; do not create empty files merely to match this list.
 
 ## Application and configuration
 
@@ -64,7 +64,6 @@ Provide runnable tests for T01-T18, visual comparisons for D01-D12 at both refer
 ```text
 reports/
   run-instructions.md
-  verification-summary.md
   requirement-traceability.md
   design-comparison.md
   test-effectiveness.md
@@ -76,7 +75,7 @@ reports/
   logs/          # Command results and mutation failures/restoration
   manifests/     # Candidate, fixture and evidence fingerprints
 docs/
-  ARCHITECTURE.md  # Update to describe the actual implementation and final defense
+  DESIGN_DOC.md  # Update to describe the actual implementation and final defense
   adr/            # A few real decisions with context/options/consequences
 ```
 

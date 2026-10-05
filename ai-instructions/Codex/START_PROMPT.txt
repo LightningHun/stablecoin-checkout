@@ -1,0 +1,30 @@
+Open the project root (the parent of ai-instructions/) as a Codex project and send the prompt below as your first message.
+This file contains a starting prompt, not an executable program.
+
+Read ai-instructions/AGENTS.md and every linked specification, then implement a working
+stablecoin checkout and controllable HTTP mock API using Vue 3, TypeScript, and Vite.
+
+Use the selected requirements PDF as the functional specification, and
+docs/reference/crypto-checkout-design.pdf together with docs/DESIGN_SPEC.md as the visual specification.
+Render and inspect all 24 design pages, then implement them as state variants
+of one responsive checkout. Apply the documented conflict resolutions and
+record any additional assumptions with their rationale.
+
+Complete P00-P09 in ai-instructions/IMPLEMENTATION_PLAN.md. Use independent subagents for
+test design, G3 code review, G3A implementation and visual verification,
+and G5 test-effectiveness verification. Do not claim completion of any stage
+that could not be independently executed. Verify M01-M12 and VM01-VM02,
+and record the actual commands, results, and screenshot evidence.
+
+Continue beyond planning and scaffolding until the application runs.
+Preserve the supplied instructions and user files, and write original code.
+Initialize a local Git repository if the project has none, and make small,
+meaningful commits as implementation progresses. Reuse the configured author
+identity, inspect staged diffs and preserve genuine history. Follow ai-instructions/AGENTS.md
+for repository boundaries and commit checks. Do not create a remote, push,
+deploy or create a README without a further request.
+Produce the deliverables listed in ai-instructions/EXPECTED_OUTPUTS.md.
+
+Finally, start the application and mock API, then report the local URL,
+restart commands, verification results, intentional design deviations,
+and unresolved issues in English. Include the final commit SHA and Git status.

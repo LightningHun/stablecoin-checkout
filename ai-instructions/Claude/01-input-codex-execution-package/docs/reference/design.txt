@@ -1,0 +1,627 @@
+--- Design PDF page 1 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+1 Pay with
+CURRENCY
+USDT USDC ETH
+NETWORK
+T Tron (TRC-20)
+1 confirmation · about 1 min
+Fee 1.00 USDT
+E Ethereum (ERC-20)
+3 confirmations · about 3 min
+Fee 4.50 USDT
+Fees are set by the network. Your wallet must support the one you choose.
+Continue with USDT on Tron (TRC-20)
+The amount is then fixed for 15 minutes.
+2 Send the exact amount
+Amount, address and QR code appear after you choose a network.
+3 Confirmation
+Updates by itself once your transfer is seen.
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 2 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+1 Pay with
+CURRENCY
+USDT USDC ETH
+NETWORK
+T
+Tron (TRC-20)
+1 confirmation · about 1 min ·  
+Fee 1.00 USDT
+E
+Ethereum (ERC-20)
+3 confirmations · about 3 min ·  
+Fee 4.50 USDT
+Fees are set by the network. Your wallet must  
+support the one you choose.
+Continue with USDT on Tron (TRC-20)
+The amount is then fixed for 15 minutes.
+2 Send the exact amount
+Amount, address and QR code appear after you  
+choose a network.
+3 Confirmation
+Updates by itself once your transfer is seen.
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 3 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+1 Pay with
+CURRENCY
+USDT USDC ETH
+NETWORK
+E Ethereum (ERC-20)
+3 confirmations · about 3 min
+Fee 4.50 USDC
+P Polygon
+6 confirmations · about 30 s
+Fee 0.10 USDC
+S Solana
+1 confirmation · about 15 s
+Fee 0.01 USDC
+Fees are set by the network. Your wallet must support the one you choose.
+Continue with USDC on Polygon The amount is then fixed for 15 minutes.
+2 Send the exact amount
+Amount, address and QR code appear after you choose a network.
+3 Confirmation
+Updates by itself once your transfer is seen.
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 4 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+1 Pay with
+CURRENCY
+USDT USDC ETH
+NETWORK
+E
+Ethereum (ERC-20)
+3 confirmations · about 3 min ·  
+Fee 4.50 USDC
+P
+Polygon
+6 confirmations · about 30 s ·  
+Fee 0.10 USDC
+S
+Solana
+1 confirmation · about 15 s ·  
+Fee 0.01 USDC
+Fees are set by the network. Your wallet must  
+support the one you choose.
+Continue with USDC on Polygon
+The amount is then fixed for 15 minutes.
+2 Send the exact amount
+Amount, address and QR code appear after you  
+choose a network.
+3 Confirmation
+Updates by itself once your transfer is seen.
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 5 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with Change
+T USDTon Tron (TRC-20)
+2 Send the exact amount
+T Tron (TRC-20) network only
+USDT sent on any other network is lost and cannot be recovered.
+SEND EXACTLY
+163.69 USDT Copy
+Includes 1.00 USDT network fee · 1 USDT = €0.9214
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just the  
+ends.
+Copy address
+Rate locked ·14:32 left Expires 10:52
+3 Confirmation
+Waiting for your transfer
+This page updates by itself — no need to refresh. A transfer usually appears within  
+a minute.
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 6 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with Change
+T USDTon Tron (TRC-20)
+2 Send the exact amount
+T
+Tron (TRC-20) network only
+USDT sent on any other network is lost  
+and cannot be recovered.
+SEND EXACTLY
+163.69 USDT Copy
+Includes 1.00 USDT network fee · 1 USDT = €0.9214
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just  
+the ends.
+Copy address
+Rate locked ·14:32 left
+Expires 10:52
+3 Confirmation
+Waiting for your transfer
+This page updates by itself — no need to refresh.  
+A transfer usually appears within a minute.
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 7 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+Send the exact amount
+163.69 USDT received at 10:44 9d1f4c8a2be7…
+3 Confirmation
+Your money arrived 0 of 1 confirmations
+Tron is confirming the transfer — about a minute, nothing to do on your side.
+Your rate is locked in — this quote no longer expires.
+Amount received
+163.69 USDT
+Transaction
+9d1f4c8a2be7…
+Detected
+10:44:02
+Closing this page does not affect your payment.
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 8 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+Send the exact amount
+163.69 USDT received at 10:44
+9d1f4c8a2be7…
+3 Confirmation
+Your money arrived
+0 of 1 confirmations
+Tron is confirming the transfer — about a minute,  
+nothing to do on your side.
+Your rate is locked in — this quote no longer  
+expires.
+Amount received
+163.69 USDT
+Transaction
+9d1f4c8a2be7…
+Detected
+10:44:02
+Closing this page does not affect your payment.
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 9 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+E USDTon Ethereum (ERC-20)
+Send the exact amount
+167.19 USDT received at 10:44 9d1f4c8a2be7…
+3 Confirmation
+Confirming your transfer 2 of 3 confirmations
+Two of three Ethereum confirmations are in — about a minute to go, nothing to do on  
+your side.
+Your rate is locked in — this quote no longer expires.
+Amount received
+167.19 USDT
+Transaction
+9d1f4c8a2be7…
+Detected
+10:44:02
+Closing this page does not affect your payment.
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 10 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+E USDTon Ethereum (ERC-20)
+Send the exact amount
+167.19 USDT received at 10:44
+9d1f4c8a2be7…
+3 Confirmation
+Confirming your transfer
+2 of 3 confirmations
+Two of three Ethereum confirmations are in — about  
+a minute to go, nothing to do on your side.
+Your rate is locked in — this quote no longer  
+expires.
+Amount received
+167.19 USDT
+Transaction
+9d1f4c8a2be7…
+Detected
+10:44:02
+Closing this page does not affect your payment.
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 11 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+Send the exact amount
+163.69 USDT received at 10:44 9d1f4c8a2be7…
+Confirmation
+Paid
+163.69 USDT received · 14 Aug 2026, 10:47
+Order
+ORD-88213
+Network
+Tron (TRC-20)
+Transaction
+9d1f4c8a2be7…
+Payment reference
+AQH-100306-PMT
+Back to Nordwind Audio
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 12 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+Send the exact amount
+163.69 USDT received at 10:44
+9d1f4c8a2be7…
+Confirmation
+Paid
+163.69 USDT received · 14 Aug 2026, 10:47
+Order
+ORD-88213
+Network
+Tron (TRC-20)
+Transaction
+9d1f4c8a2be7…
+Payment reference
+AQH-100306-PMT
+Back to Nordwind Audio
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 13 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with Change
+T USDTon Tron (TRC-20)
+2 Send the exact amount Action needed
+This quote expired at 10:52
+An amount is held for 15 minutes because rates move. Nothing has been charged.
+Haven't sent anything yet?
+The amount may differ a little from  
+163.69 USDT .
+Get a new quote
+Already sent it?
+Don't send again. We keep watching  
+this address and the page updates  
+the moment your transfer is seen.
+3 Confirmation
+Nothing received yet.
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 14 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with Change
+T USDTon Tron (TRC-20)
+2 Send the exact amount Action needed
+This quote expired at 10:52
+An amount is held for 15 minutes because rates  
+move. Nothing has been charged.
+Haven't sent anything yet?
+The amount may differ a little from 163.69  
+USDT.
+Get a new quote
+Already sent it?
+Don't send again. We keep watching this  
+address and the page updates the moment  
+your transfer is seen.
+3 Confirmation
+Nothing received yet.
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 15 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+2 Send the exact amount Action needed
+Your transfer was 43.69 USDT short
+120.00 of 163.69 USDT arrived. Send the rest to the same address on the  
+same network and the order completes — your first transfer is safe and counted.
+T Tron (TRC-20) network only
+USDT sent on any other network is lost and cannot be recovered.
+SEND THE REMAINING
+43.69 USDT Copy
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just the  
+ends.
+Copy address
+No countdown: your first transfer already arrived, so this quote no longer expires.
+! Confirmation
+Received 120.00 of 163.69 USDT −43.69
+The order completes by itself once the remaining 43.69 USDT arrives.
+First transfer
+120.00 USDT
+Transaction
+9d1f4c8a2be7…
+Detected
+10:44:02
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 16 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+2 Send the exact amount Action needed
+Your transfer was 43.69 USDT short
+120.00 of 163.69 USDT arrived. Send the rest  
+to the same address on the same network and  
+the order completes — your first transfer is safe  
+and counted.
+T
+Tron (TRC-20) network only
+USDT sent on any other network is lost  
+and cannot be recovered.
+SEND THE REMAINING
+43.69 USDT Copy
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just  
+the ends.
+Copy address
+No countdown: your first transfer already arrived, so  
+this quote no longer expires.
+! Confirmation
+Received 120.00 of 163.69 USDT −43.69
+The order completes by itself once the remaining  
+43.69 USDT arrives.
+First transfer
+120.00 USDT
+Transaction
+9d1f4c8a2be7…
+Detected
+10:44:02
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 17 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+Send the exact amount
+180.00 USDT received at 10:44 9d1f4c8a2be7…
+Confirmation
+Paid — with 16.31 USDT extra
+180.00 USDT received · 14 Aug 2026, 10:47
+The order needed 163.69 USDT . The extra 16.31 USDT went to Nordwind Audio with  
+your payment and this page cannot send it back — contact Nordwind Audio with your  
+payment reference to have it refunded.
+Copy reference Contact Nordwind Audio
+Needed
+163.69 USDT
+Received
+180.00 USDT
+Transaction
+9d1f4c8a2be7…
+Payment reference
+AQH-100306-PMT
+Back to Nordwind Audio
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 18 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+Send the exact amount
+180.00 USDT received at 10:44
+9d1f4c8a2be7…
+Confirmation
+Paid — with 16.31 USDT extra
+180.00 USDT received · 14 Aug 2026, 10:47
+The order needed 163.69 USDT . The extra 16.31  
+USDTwent to Nordwind Audio with your payment  
+and this page cannot send it back — contact  
+Nordwind Audio with your payment reference to  
+have it refunded.
+Copy reference
+Contact Nordwind Audio
+Needed
+163.69 USDT
+Received
+180.00 USDT
+Transaction
+9d1f4c8a2be7…
+Payment reference
+AQH-100306-PMT
+Back to Nordwind Audio
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 19 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+Send the exact amount
+163.69 USDT received at 10:44 9d1f4c8a2be7…
+Confirmation Can't be fixed here
+Payment failed
+Settlement was rejected after your transfer arrived.
+Sending again will not help. Contact Nordwind Audio with the details below — they  
+can trace the transfer and arrange a refund or another way to pay.
+Payment reference
+AQH-100306-PMT
+Received
+163.69 USDT
+Network
+Tron (TRC-20)
+Transaction
+9d1f4c8a2be7…
+Copy details Contact Nordwind Audio
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 20 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with
+T USDTon Tron (TRC-20)
+Send the exact amount
+163.69 USDT received at 10:44
+9d1f4c8a2be7…
+Confirmation Can't be fixed here
+Payment failed
+Settlement was rejected after your transfer  
+arrived.
+Sending again will not help. Contact Nordwind Audio  
+with the details below — they can trace the transfer  
+and arrange a refund or another way to pay.
+Payment reference
+AQH-100306-PMT
+Received
+163.69 USDT
+Network
+Tron (TRC-20)
+Transaction
+9d1f4c8a2be7…
+Copy details
+Contact Nordwind Audio
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 21 ---
+N Nordwind Audio Order ORD-88213
+Can't reach the payment server. Retrying in 8 s. Your quote, your address and any transfer you have made are unaffected. Retry now
+TOTAL TO PAY
+€149.90
+Pay with Change
+T USDTon Tron (TRC-20)
+2 Send the exact amount
+T Tron (TRC-20) network only
+USDT sent on any other network is lost and cannot be recovered.
+SEND EXACTLY
+163.69 USDT Copy
+Includes 1.00 USDT network fee · 1 USDT = €0.9214
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just the  
+ends.
+Copy address
+Rate locked ·12:03 left Expires 10:52
+3 Confirmation
+Connection lost — reconnecting
+Last checked 10:41:12. A transfer you have already sent is still on its way; we catch  
+up as soon as the server answers.
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 22 ---
+N Nordwind Audio Order ORD-88213
+Can't reach the payment server. Retrying in 8 s. Your  
+quote, your address and any transfer you have made  
+are unaffected.
+Retry now
+TOTAL TO PAY
+€149.90
+Pay with Change
+T USDTon Tron (TRC-20)
+2 Send the exact amount
+T
+Tron (TRC-20) network only
+USDT sent on any other network is lost  
+and cannot be recovered.
+SEND EXACTLY
+163.69 USDT Copy
+Includes 1.00 USDT network fee · 1 USDT = €0.9214
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just  
+the ends.
+Copy address
+Rate locked ·12:03 left
+Expires 10:52
+3 Confirmation
+Connection lost — reconnecting
+Last checked 10:41:12. A transfer you have  
+already sent is still on its way; we catch up as  
+soon as the server answers.
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 23 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with Change
+P USDC on Polygon
+2 Send the exact amount
+P Polygon network only
+USDC sent on any other network is lost and cannot be recovered.
+Getting your quote for USDC on Polygon…
+Taking longer than usual. Do not send anything until the amount and address appear.
+3 Confirmation
+Updates by itself once your transfer is seen.
+Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+--- Design PDF page 24 ---
+N Nordwind Audio Order ORD-88213
+TOTAL TO PAY
+€149.90
+Pay with Change
+P USDC on Polygon
+2 Send the exact amount
+P
+Polygon network only
+USDC sent on any other network is lost  
+and cannot be recovered.
+Getting your quote for USDC on Polygon…
+Taking longer than usual. Do not send anything until  
+the amount and address appear.
+3 Confirmation
+Updates by itself once your transfer is seen.
+Reference AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
