@@ -37,7 +37,7 @@ src/
     infrastructure/paymentClient.ts
     infrastructure/responseSchemas.ts
     infrastructure/ClockService.ts
-mock/
+backend/
   server.ts
   catalogue.ts
   fixtures.ts

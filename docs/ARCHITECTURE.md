@@ -29,7 +29,7 @@ src/
     infrastructure/paymentClient.ts
     infrastructure/responseSchemas.ts
     infrastructure/ClockService.ts
-mock/
+backend/
   server.ts
   catalogue.ts
   fixtures.ts
@@ -79,7 +79,7 @@ Polls may skip intermediate states. `awaiting_payment -> paid` is valid. Repeate
 
 ## Time and polling
 
-Compute `max(0, expiresAt - estimatedServerNow)`; timer callbacks merely trigger recalculation. Use an injectable server clock in the mock. Add an explicitly documented server-time header, estimate with monotonic elapsed time, and account for round-trip uncertainty. Re-anchor on visibility/focus after suspension or clock discontinuity. Server confirmation controls recovery when time is uncertain.
+Compute `max(0, expiresAt - estimatedServerNow)`; timer callbacks merely trigger recalculation. Use an injectable server clock in the mock. Use an optional server-time header, otherwise HTTP Date or browser receipt time; estimate with monotonic elapsed time and account for round-trip uncertainty. Browser-only fallback cannot correct an already skewed device clock. Re-anchor on visibility/focus after suspension or clock discontinuity. Server confirmation controls recovery when time is uncertain.
 
 At local zero without known funds: hide copy/QR/send instructions, show that quote time ended and payment is being checked, then reconcile through the same polling owner. A detected/confirming/underpaid result takes precedence. A server-expired result enables normal requote. If unreachable, keep the last known facts with a stale indicator and do not encourage another transfer.
 
@@ -89,9 +89,9 @@ Serialize creation and requote. Disable double-click submissions. An aborted POS
 
 ## Exact money and transfer coherence
 
-Parse validated decimal strings into integer minor units using the currency scale (USDT/USDC 6, ETH 18). Reject excessive fractional precision; operate only on matching units/scales. Never convert monetary values through `Number` or `parseFloat`. Format values exactly. Milliseconds and confirmation counts can use ordinary numbers.
+Parse validated decimal strings into integer minor units using the currency scale supplied by the validated API catalogue (0–255 decimals, with 6/18 only current fixture values). Reject excessive fractional precision; operate only on matching units/scales. Never convert monetary values through `Number` or `parseFloat`. Format values exactly. Milliseconds and confirmation counts can use ordinary numbers.
 
-Use quoted `total_due` for transfer instructions. Show amount, fee, total and rate with units; do not recalculate the quote from the rate. Fiat formatting must preserve EUR 149.90 in different locales. Independently check the chosen formatter in target browsers.
+Use quoted `total_due` for transfer instructions. Show amount, fee, total and rate with units; do not recalculate the quote from the rate. Fiat formatting preserves the complete API decimal string in different locales and appends the API order currency code, without a fixed EUR symbol. Independently check the chosen formatter in target browsers.
 
 Token, network, amount, address, QR and copy value come from one accepted quote. While replacement is loading, never mix the new selection with the old address. Prominently repeat the network. QR contains only the address under the current contract and explains that amount/network still need checking. Decode QR and inspect clipboard contents in tests. Provide fallback when clipboard access fails.
 
@@ -103,7 +103,7 @@ Use keyboard-accessible controls, explicit labels, visible focus and status anno
 
 ## Design integration
 
-[DESIGN_SPEC.md](DESIGN_SPEC.md) defines the 24-page visual reference and D01-D12 state mapping. Implement these as projections of the same controller state, not separate routes or copied pages. Small presentational header/footer/step components and shared CSS tokens may be added without changing data ownership. Before the first quote, selection is a draft and Continue creates it; after a quote exists, a changed pair triggers the single replacement action. Financial facts, timers, QR and available actions remain derived from the accepted API snapshot. Independent visual comparison joins G3A; repeatable visual regressions join G4, with VM01-VM02 auditing at G5.
+[DESIGN_SPEC.md](DESIGN_SPEC.md) defines the 24-page visual reference and D01-D12 state mapping. Implement these as projections of the same controller state, not separate routes or copied pages. Small presentational header/footer/step components and shared CSS tokens may be added without changing data ownership. A fresh page creates a normal payment for the first API pair to obtain merchant/order metadata through the original three-field API. Only merchant/order metadata is retained from that initial response, in a separate controller projection. Its payment identity, quote, status and deadline are discarded without persistence or polling. First Continue creates and accepts a fresh payment even for the same pair; only that actual payment is persisted, polled and restored after reload. Refresh before Continue returns to selection. Saved real references are restored before any new creation, unless a pending mutation marker blocks restoration of an older reference. The marker covers both initial information and actual creation POSTs so reload cannot silently retry either; it clears on verified information-only success, after saving a real accepted reference, or on definitive rejection. Financial facts, timers, QR and available actions remain derived from the accepted API snapshot. Independent visual comparison joins G3A; repeatable visual regressions join G4, with VM01-VM02 auditing at G5.
 
 ## Implementation details confirmed during review
 

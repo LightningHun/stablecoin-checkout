@@ -22,7 +22,33 @@ Currency entries have `code`, `name`, `decimals`, `networks`. Each network has `
 | USDC | 6 | solana | Solana | 0.01 | 1 | 15 |
 | ETH | 18 | ethereum | Ethereum | 3.20 | 3 | 180 |
 
-## Creation example from the source
+## API-owned values (2026-10-03 update)
+
+The table above is the current mock fixture catalogue, not a frontend allowlist. The frontend accepts unique nonempty currency codes/network IDs, API names, fees, positive confirmation counts/timing, and integer token `decimals` from 0 through 255. Money stays decimal strings and BigInt; precision limits are validated against the fetched currency metadata. Trailing zero padding does not change a number. A quote fee must numerically equal its listed network fee; different values remain invalid. Existing accepted quotes stay immutable across status reads, including retaining their original fee spelling when an equivalent representation arrives.
+
+`GET /api/currencies` returns only `{ currencies }`; it does not return `order` or `merchant`, and is independent of an order query parameter. The payment response is the sole source of shopper order and merchant facts. Before verified metadata arrives, the page shows neutral loading placeholders and no Continue button. Payment responses require an explicit order amount; missing or malformed amounts are rejected as protocol errors rather than replaced with `"0"`. `order.currency` is a nonempty API code and is displayed as text, not replaced by a euro symbol. Order amounts retain API fractional precision and locale grouping.
+
+The mock merchant name is `nordwind audio`. The document title follows the verified merchant name, with the neutral title `Checkout` while loading. Optional `merchant.icon_url` is preferred; existing `logo_url` is also supported. HTTP(S) or relative image URLs are displayed, and missing, unsafe, or failed images fall back to the first Unicode character of the merchant name.
+
+Order IDs are opaque nonempty strings (maximum 256 characters; no surrounding whitespace/control characters), not an `ORD-` pattern. Request/response order identity must still match exactly. Mock orders must be registered: `POST /api/demo/orders` may receive an explicit `order_id` and `amount`, or generate an unused demo ID; it returns an encoded signed checkout URL. Unknown orders, wrong signatures and cross-order snapshots are still rejected. Per-order storage, fund locks and replacement rules are unchanged.
+
+The first API currency and its first network are selected on initial load. After link validation and catalogue loading, a fresh session sends the original `POST /api/payments` request with exactly `order_id`, `currency`, and `network`. All three fields are required. The backend rejects unsupported request fields; there is no metadata-only payment mode, separate reference sequence, or immediately expired initial record.
+
+The server creates an ordinary `awaiting_payment` record, but the frontend retains only `merchant`, `order`, and their order identity from this initial response. It discards the payment reference, status, quote, address, amount, and expiry: none is persisted, polled, displayed as transfer instructions, or reused on Continue. Refreshing before Continue loads display metadata again and keeps the selector open. The original API has no delete route, so discarding here means frontend disposal; a later successful creation replaces the backend's unfunded record through the existing replacement rule.
+
+Both the initial information POST and the first real Continue POST are mutations. An uncertain response (timeout, disconnect, server error, or invalid success data) blocks another creation rather than being retried as a harmless read. An order-scoped pending marker is written before POST and takes priority over an older saved reference. A verified initial information response clears that marker without saving a reference; a real payment response clears it only after its reference is saved. Definitive rejection and Demo Reset also clear it. Cross-reload protection requires available browser storage.
+
+The first Continue always creates a fresh payment with the selected pair, including when the pair matches the initial request. Only this accepted response supplies transfer instructions, a quote clock, a saved payment reference, and polling. Draft changes create nothing until Continue. Reopening an already started payment and continuing with its unchanged pair may reconcile and retain that actual payment. Observed funds, terminal states, expiry reconciliation and the existing replacement/requote rules still apply.
+
+Stored references take priority: a restored payment uses its own metadata and pair without any creation POST. An unresolved restoration blocks creation. A definitive 404 clears the old saved reference before the page obtains fresh display metadata and returns to selection. Previously saved references remain eligible for restoration because older versions did not distinguish an initial information request from a shopper-started payment; they cannot safely be bulk-deleted. A catalogue failure must recover before restoration can expose payment actions or precision-dependent progress.
+
+Demo amount changes affect the next created or requoted payment. Reading an existing payment does not update its accepted amount or extend its deadline. Reset reloads the normal first-payment flow.
+
+Successful responses no longer require `x-server-time`. The client uses a valid `x-server-time`, then a valid HTTP `Date`, then the browser receipt time. Mock responses keep the custom header for deterministic clock controls. With neither server header available, a wrong device clock cannot be corrected reliably; the absolute-deadline/monotonic countdown and server status polling remain in force, and observed funds never expire locally.
+
+Every expired snapshot uses `expired_at = quote.expires_at`, including late status reads and explicit demo expiry. Detected/confirming progression and the funds-observed latch are unchanged.
+
+## Current mock creation example (source amounts retained)
 
 Request: `{ "order_id": "ORD-88213", "currency": "USDT", "network": "tron" }`.
 
@@ -31,7 +57,7 @@ Request: `{ "order_id": "ORD-88213", "currency": "USDT", "network": "tron" }`.
   "payment_reference": "AQH-100306-PMT",
   "order_id": "ORD-88213",
   "status": "awaiting_payment",
-  "merchant": { "name": "Payment Project", "logo_url": null },
+  "merchant": { "name": "nordwind audio", "logo_url": null },
   "order": { "currency": "EUR", "amount": "149.90" },
   "quote": {
     "crypto_currency": "USDT",
@@ -91,7 +117,7 @@ These are implementation assumptions, not hidden additions to the brief. Record 
 3. Underpaid remains actionable using amount_outstanding and the supplied address; the original quote cannot expire partial funds. No top-up deadline is supplied.
 4. Selection changes before observed funds use POST /api/payments for a new attempt. The in-memory mock atomically supersedes an unfunded attempt for the order and rejects replacement if funds were detected. Serialize changes client-side and never show old transfer instructions with a new selection. This mock policy does not solve late transfers to superseded addresses in a real service.
 5. Requote is expiry-only and atomically checks that funds have not arrived. The client reconciles current state first; that check alone does not replace server atomicity.
-6. Add a documented server-time header, injectable clock and no-store responses for the mock. Normal demo deadlines are relative; deterministic tests use fixed seeds. If cross-origin access is introduced, expose the header explicitly.
+6. The mock provides an optional server-time header, injectable clock and no-store responses. The client fallback order is documented above; missing custom headers do not reject valid responses. Normal demo deadlines are relative; deterministic tests use fixed seeds. If cross-origin access is introduced, expose the optional header explicitly to benefit from clock correction.
 7. Status responses are snapshots, not amounts to accumulate. Duplicate delivery is idempotent. Overpaid can represent excess funds, including a second transfer, but does not prove transfer count.
 8. Late funds after terminal expiry are not observable once required polling stops. Report the missing real-service contract rather than claim a guarantee the API cannot support.
 
