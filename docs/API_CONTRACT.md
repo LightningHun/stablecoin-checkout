@@ -1,6 +1,6 @@
 # Mock API contract
 
-Source: [selected reformatted brief](reference/stablecoin-checkout-requirement-reformatted.pdf), pages 3-6. The design PDF is a visual reference and does not add API endpoints or provider capabilities; see DESIGN_SPEC.md for recorded conflicts. This is the implementation target for the exercise, not a live payment-provider contract. All money fields are decimal strings. Preserve explicit fixture values even where general prose is inconsistent.
+Source: [supplied requirements brief](reference/stablecoin-checkout-requirement.pdf), pages 3-6. The design PDF is a visual reference and does not add API endpoints or provider capabilities; see DESIGN_SPEC.md for recorded conflicts. This is the implementation target for the exercise, not a live payment-provider contract. All money fields are decimal strings. Preserve explicit fixture values even where general prose is inconsistent.
 
 ## Endpoints
 
@@ -28,7 +28,7 @@ The table above is the current mock fixture catalogue, not a frontend allowlist.
 
 `GET /api/currencies` returns only `{ currencies }`; it does not return `order` or `merchant`, and is independent of an order query parameter. The payment response is the sole source of shopper order and merchant facts. Before verified metadata arrives, the page shows neutral loading placeholders and no Continue button. Payment responses require an explicit order amount; missing or malformed amounts are rejected as protocol errors rather than replaced with `"0"`. `order.currency` is a nonempty API code and is displayed as text, not replaced by a euro symbol. Order amounts retain API fractional precision and locale grouping.
 
-The mock merchant name is `nordwind audio`. The document title follows the verified merchant name, with the neutral title `Checkout` while loading. Optional `merchant.icon_url` is preferred; existing `logo_url` is also supported. HTTP(S) or relative image URLs are displayed, and missing, unsafe, or failed images fall back to the first Unicode character of the merchant name.
+The mock merchant name is `Nordwind Audio`. The document title follows the verified merchant name, with the neutral title `Checkout` while loading. Optional `merchant.icon_url` is preferred; existing `logo_url` is also supported. HTTP(S) or relative image URLs are displayed, and missing, unsafe, or failed images fall back to the first Unicode character of the merchant name.
 
 Order IDs are opaque nonempty strings (maximum 256 characters; no surrounding whitespace/control characters), not an `ORD-` pattern. Request/response order identity must still match exactly. Mock orders must be registered: `POST /api/demo/orders` may receive an explicit `order_id` and `amount`, or generate an unused demo ID; it returns an encoded signed checkout URL. Unknown orders, wrong signatures and cross-order snapshots are still rejected. Per-order storage, fund locks and replacement rules are unchanged.
 
@@ -57,7 +57,7 @@ Request: `{ "order_id": "ORD-88213", "currency": "USDT", "network": "tron" }`.
   "payment_reference": "AQH-100306-PMT",
   "order_id": "ORD-88213",
   "status": "awaiting_payment",
-  "merchant": { "name": "nordwind audio", "logo_url": null },
+  "merchant": { "name": "Nordwind Audio", "logo_url": null },
   "order": { "currency": "EUR", "amount": "149.90" },
   "quote": {
     "crypto_currency": "USDT",
@@ -110,12 +110,12 @@ Successful requote preserves `payment_reference`, returns 201 and awaiting_payme
 
 ## Explicit mock decisions
 
-These are implementation assumptions, not hidden additions to the brief. Record changes with their rationale in the implementation evidence; see the decision rationale in ARCHITECTURE.md.
+These are implementation assumptions, not hidden additions to the brief. Record changes with their rationale in the implementation evidence; see the decision rationale in DESIGN_DOC.md.
 
 1. Implement the eight explicit statuses. Do not invent two to match the introductory count.
 2. Treat paid, overpaid, expired and failed as terminal for automatic polling. Overpaid is interpreted as settled because its fixture contains settled_at. Never promise automatic refunds.
-3. Underpaid remains actionable using amount_outstanding and the supplied address; the original quote cannot expire partial funds. No top-up deadline is supplied.
-4. Selection changes before observed funds use POST /api/payments for a new attempt. The in-memory mock atomically supersedes an unfunded attempt for the order and rejects replacement if funds were detected. Serialize changes client-side and never show old transfer instructions with a new selection. This mock policy does not solve late transfers to superseded addresses in a real service.
+3. Underpaid uses the original `quote.expires_at` as the deadline for sending `amount_outstanding` to the supplied address on the same network. At zero, remove transfer instructions and retain the partial-payment receipt; the API status remains `underpaid` and status polling continues subject to retry limits. Received funds are never erased by local expiry. The backend does not automatically expire underpaid, and its funds-observed latch prevents replacement or requote. This top-up-window policy is a later user-directed clarification of the supplied contract, not a new API field.
+4. Currency/network changes are drafts until Continue. Continuing with a changed pair before observed funds uses POST /api/payments for a new attempt; continuing the unchanged accepted pair reconciles it without resetting its deadline. The in-memory mock atomically supersedes an unfunded attempt for the order and rejects replacement if funds were detected. Serialize changes client-side and never show old transfer instructions with a new selection. This mock policy does not solve late transfers to superseded addresses in a real service.
 5. Requote is expiry-only and atomically checks that funds have not arrived. The client reconciles current state first; that check alone does not replace server atomicity.
 6. The mock provides an optional server-time header, injectable clock and no-store responses. The client fallback order is documented above; missing custom headers do not reject valid responses. Normal demo deadlines are relative; deterministic tests use fixed seeds. If cross-origin access is introduced, expose the optional header explicitly to benefit from clock correction.
 7. Status responses are snapshots, not amounts to accumulate. Duplicate delivery is idempotent. Overpaid can represent excess funds, including a second transfer, but does not prove transfer count.

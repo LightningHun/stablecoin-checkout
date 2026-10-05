@@ -1,9 +1,7 @@
-Source: Crypto checkout — hosted payment design.pdf. Packaged as crypto-checkout-design.pdf. Extracted text is searchable support; use the PDF for visual reference.
-
---- Design PDF page 1 ---
-P Payment Project Order ORD-88213
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 1 Pay with
 CURRENCY
 USDT USDC ETH
@@ -21,40 +19,40 @@ The amount is then fixed for 15 minutes.
 Amount, address and QR code appear after you choose a network.
 3 Confirmation
 Updates by itself once your transfer is seen.
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 2 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 1 Pay with
 CURRENCY
 USDT USDC ETH
 NETWORK
 T
 Tron (TRC-20)
-1 confirmation · about 1 min ·  
+1 confirmation · about 1 min ·
 Fee 1.00 USDT
 E
 Ethereum (ERC-20)
-3 confirmations · about 3 min ·  
+3 confirmations · about 3 min ·
 Fee 4.50 USDT
-Fees are set by the network. Your wallet must  
+Fees are set by the network. Your wallet must
 support the one you choose.
 Continue with USDT on Tron (TRC-20)
 The amount is then fixed for 15 minutes.
 2 Send the exact amount
-Amount, address and QR code appear after you  
+Amount, address and QR code appear after you
 choose a network.
 3 Confirmation
 Updates by itself once your transfer is seen.
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 3 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 1 Pay with
 CURRENCY
 USDT USDC ETH
@@ -74,104 +72,104 @@ Continue with USDC on Polygon The amount is then fixed for 15 minutes.
 Amount, address and QR code appear after you choose a network.
 3 Confirmation
 Updates by itself once your transfer is seen.
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 4 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 1 Pay with
 CURRENCY
 USDT USDC ETH
 NETWORK
 E
 Ethereum (ERC-20)
-3 confirmations · about 3 min ·  
+3 confirmations · about 3 min ·
 Fee 4.50 USDC
 P
 Polygon
-6 confirmations · about 30 s ·  
+6 confirmations · about 30 s ·
 Fee 0.10 USDC
 S
 Solana
-1 confirmation · about 15 s ·  
+1 confirmation · about 15 s ·
 Fee 0.01 USDC
-Fees are set by the network. Your wallet must  
+Fees are set by the network. Your wallet must
 support the one you choose.
 Continue with USDC on Polygon
 The amount is then fixed for 15 minutes.
 2 Send the exact amount
-Amount, address and QR code appear after you  
+Amount, address and QR code appear after you
 choose a network.
 3 Confirmation
 Updates by itself once your transfer is seen.
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 5 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with Change
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 2 Send the exact amount
 T Tron (TRC-20) network only
 USDT sent on any other network is lost and cannot be recovered.
 SEND EXACTLY
 163.69 USDT Copy
-Includes 1.00 USDT network fee · 1 USDT = €0.9214
+Includes  1.00 USDT  network fee · 1 USDT = €0.9214
 T
 T TRON (TRC-20) ADDRESS
 TQ5N n8kL pVv3 xJ7w YcR2 bF9a
 H4dM 6sGz 1e
-Compare every character with your wallet, not just the  
+Compare every character with your wallet, not just the
 ends.
 Copy address
-Rate locked ·14:32 left Expires 10:52
+Rate locked ·  14:32  left Expires 10:52
 3 Confirmation
 Waiting for your transfer
-This page updates by itself — no need to refresh. A transfer usually appears within  
+This page updates by itself — no need to refresh. A transfer usually appears within
 a minute.
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 6 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with Change
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 2 Send the exact amount
 T
 Tron (TRC-20) network only
-USDT sent on any other network is lost  
+USDT sent on any other network is lost
 and cannot be recovered.
 SEND EXACTLY
 163.69 USDT Copy
-Includes 1.00 USDT network fee · 1 USDT = €0.9214
+Includes  1.00 USDT  network fee · 1 USDT = €0.9214
 T
 T TRON (TRC-20) ADDRESS
 TQ5N n8kL pVv3 xJ7w YcR2 bF9a
 H4dM 6sGz 1e
-Compare every character with your wallet, not just  
+Compare every character with your wallet, not just
 the ends.
 Copy address
-Rate locked ·14:32 left
+Rate locked ·  14:32  left
 Expires 10:52
 3 Confirmation
 Waiting for your transfer
-This page updates by itself — no need to refresh.  
+This page updates by itself — no need to refresh.
 A transfer usually appears within a minute.
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 7 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 Send the exact amount
-163.69 USDT received at 10:44 9d1f4c8a2be7…
+163.69 USDT  received at 10:44 9d1f4c8a2be7…
 3 Confirmation
 Your money arrived 0 of 1 confirmations
 Tron is confirming the transfer — about a minute, nothing to do on your side.
@@ -183,23 +181,23 @@ Transaction
 Detected
 10:44:02
 Closing this page does not affect your payment.
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 8 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 Send the exact amount
-163.69 USDT received at 10:44
+163.69 USDT  received at 10:44
 9d1f4c8a2be7…
 3 Confirmation
 Your money arrived
 0 of 1 confirmations
-Tron is confirming the transfer — about a minute,  
+Tron is confirming the transfer — about a minute,
 nothing to do on your side.
-Your rate is locked in — this quote no longer  
+Your rate is locked in — this quote no longer
 expires.
 Amount received
 163.69 USDT
@@ -208,20 +206,20 @@ Transaction
 Detected
 10:44:02
 Closing this page does not affect your payment.
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 9 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-E USDTon Ethereum (ERC-20)
+E USDT  on Ethereum (ERC-20)
 Send the exact amount
-167.19 USDT received at 10:44 9d1f4c8a2be7…
+167.19 USDT  received at 10:44 9d1f4c8a2be7…
 3 Confirmation
 Confirming your transfer 2 of 3 confirmations
-Two of three Ethereum confirmations are in — about a minute to go, nothing to do on  
+Two of three Ethereum confirmations are in — about a minute to go, nothing to do on
 your side.
 Your rate is locked in — this quote no longer expires.
 Amount received
@@ -231,23 +229,23 @@ Transaction
 Detected
 10:44:02
 Closing this page does not affect your payment.
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 10 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-E USDTon Ethereum (ERC-20)
+E USDT  on Ethereum (ERC-20)
 Send the exact amount
-167.19 USDT received at 10:44
+167.19 USDT  received at 10:44
 9d1f4c8a2be7…
 3 Confirmation
 Confirming your transfer
 2 of 3 confirmations
-Two of three Ethereum confirmations are in — about  
+Two of three Ethereum confirmations are in — about
 a minute to go, nothing to do on your side.
-Your rate is locked in — this quote no longer  
+Your rate is locked in — this quote no longer
 expires.
 Amount received
 167.19 USDT
@@ -256,20 +254,20 @@ Transaction
 Detected
 10:44:02
 Closing this page does not affect your payment.
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 11 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 Send the exact amount
-163.69 USDT received at 10:44 9d1f4c8a2be7…
+163.69 USDT  received at 10:44 9d1f4c8a2be7…
 Confirmation
 Paid
-163.69 USDT received · 14 Aug 2026, 10:47
+163.69 USDT  received · 14 Aug 2026, 10:47
 Order
 ORD-88213
 Network
@@ -279,20 +277,20 @@ Transaction
 Payment reference
 AQH-100306-PMT
 Back to Payment Project
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 12 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 Send the exact amount
-163.69 USDT received at 10:44
+163.69 USDT  received at 10:44
 9d1f4c8a2be7…
 Confirmation
 Paid
-163.69 USDT received · 14 Aug 2026, 10:47
+163.69 USDT  received · 14 Aug 2026, 10:47
 Order
 ORD-88213
 Network
@@ -302,63 +300,64 @@ Transaction
 Payment reference
 AQH-100306-PMT
 Back to Payment Project
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 13 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with Change
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 2 Send the exact amount Action needed
 This quote expired at 10:52
 An amount is held for 15 minutes because rates move. Nothing has been charged.
 Haven't sent anything yet?
-The amount may differ a little from  
+The amount may differ a little from
 163.69 USDT .
 Get a new quote
 Already sent it?
-Don't send again. We keep watching  
-this address and the page updates  
+Don't send again. We keep watching
+this address and the page updates
 the moment your transfer is seen.
 3 Confirmation
 Nothing received yet.
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 14 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with Change
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 2 Send the exact amount Action needed
 This quote expired at 10:52
-An amount is held for 15 minutes because rates  
+An amount is held for 15 minutes because rates
 move. Nothing has been charged.
 Haven't sent anything yet?
-The amount may differ a little from 163.69  
+The amount may differ a little from  163.69
 USDT.
 Get a new quote
 Already sent it?
-Don't send again. We keep watching this  
-address and the page updates the moment  
+Don't send again. We keep watching this
+address and the page updates the moment
 your transfer is seen.
 3 Confirmation
 Nothing received yet.
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 15 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 2 Send the exact amount Action needed
 Your transfer was 43.69 USDT short
-120.00 of 163.69 USDT arrived. Send the rest to the same address on the  
-same network and the order completes — your first transfer is safe and counted.
+120.00  of  163.69 USDT  arrived. Send the rest to the same address on the
+same network before the rate expires and the order completes — your first
+transfer is safe and counted.
 T Tron (TRC-20) network only
 USDT sent on any other network is lost and cannot be recovered.
 SEND THE REMAINING
@@ -367,36 +366,38 @@ T
 T TRON (TRC-20) ADDRESS
 TQ5N n8kL pVv3 xJ7w YcR2 bF9a
 H4dM 6sGz 1e
-Compare every character with your wallet, not just the  
+Compare every character with your wallet, not just the
 ends.
 Copy address
-No countdown: your first transfer already arrived, so this quote no longer expires.
+Rate locked ·  14:32  left Expires 10:52
+The rate for the remaining amount is held until 10:52. After that we quote the
+remainder again — your first transfer stays counted.
 ! Confirmation
-Received 120.00 of 163.69 USDT −43.69
-The order completes by itself once the remaining 43.69 USDT arrives.
+Received  120.00  of  163.69 USDT −43.69
+The order completes by itself once the remaining  43.69 USDT  arrives.
 First transfer
 120.00 USDT
 Transaction
 9d1f4c8a2be7…
 Detected
 10:44:02
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 16 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 2 Send the exact amount Action needed
 Your transfer was 43.69 USDT short
-120.00 of 163.69 USDT arrived. Send the rest  
-to the same address on the same network and  
-the order completes — your first transfer is safe  
-and counted.
+120.00  of  163.69 USDT  arrived. Send the rest
+to the same address on the same network
+before the rate expires and the order completes
+— your first transfer is safe and counted.
 T
 Tron (TRC-20) network only
-USDT sent on any other network is lost  
+USDT sent on any other network is lost
 and cannot be recovered.
 SEND THE REMAINING
 43.69 USDT Copy
@@ -404,37 +405,40 @@ T
 T TRON (TRC-20) ADDRESS
 TQ5N n8kL pVv3 xJ7w YcR2 bF9a
 H4dM 6sGz 1e
-Compare every character with your wallet, not just  
+Compare every character with your wallet, not just
 the ends.
 Copy address
-No countdown: your first transfer already arrived, so  
-this quote no longer expires.
+Rate locked ·  14:32  left
+Expires 10:52
+The rate for the remaining amount is held until 10:52.
+After that we quote the remainder again — your first
+transfer stays counted.
 ! Confirmation
-Received 120.00 of 163.69 USDT −43.69
-The order completes by itself once the remaining  
-43.69 USDT arrives.
+Received  120.00  of  163.69 USDT −43.69
+The order completes by itself once the remaining
+43.69 USDT  arrives.
 First transfer
 120.00 USDT
 Transaction
 9d1f4c8a2be7…
 Detected
 10:44:02
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 17 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 Send the exact amount
-180.00 USDT received at 10:44 9d1f4c8a2be7…
+180.00 USDT  received at 10:44 9d1f4c8a2be7…
 Confirmation
 Paid — with 16.31 USDT extra
-180.00 USDT received · 14 Aug 2026, 10:47
-The order needed 163.69 USDT . The extra 16.31 USDT went to Payment Project  
-with your payment and this page cannot send it back — contact Payment Project with  
+180.00 USDT  received · 14 Aug 2026, 10:47
+The order needed  163.69 USDT . The extra  16.31 USDT  went to Payment Project
+with your payment and this page cannot send it back — contact Payment Project with
 your payment reference to have it refunded.
 Copy reference Contact Payment Project
 Needed
@@ -446,24 +450,24 @@ Transaction
 Payment reference
 AQH-100306-PMT
 Back to Payment Project
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 18 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 Send the exact amount
-180.00 USDT received at 10:44
+180.00 USDT  received at 10:44
 9d1f4c8a2be7…
 Confirmation
 Paid — with 16.31 USDT extra
-180.00 USDT received · 14 Aug 2026, 10:47
-The order needed 163.69 USDT . The extra 16.31  
-USDTwent to Payment Project with your payment  
-and this page cannot send it back — contact  
-Payment Project with your payment reference to  
+180.00 USDT  received · 14 Aug 2026, 10:47
+The order needed  163.69 USDT . The extra  16.31
+USDT  went to Payment Project with your payment
+and this page cannot send it back — contact
+Payment Project with your payment reference to
 have it refunded.
 Copy reference
 Contact Payment Project
@@ -476,21 +480,21 @@ Transaction
 Payment reference
 AQH-100306-PMT
 Back to Payment Project
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 19 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 Send the exact amount
-163.69 USDT received at 10:44 9d1f4c8a2be7…
+163.69 USDT  received at 10:44 9d1f4c8a2be7…
 Confirmation Can't be fixed here
 Payment failed
 Settlement was rejected after your transfer arrived.
-Sending again will not help. Contact Payment Project with the details below — they  
+Sending again will not help. Contact Payment Project with the details below — they
 can trace the transfer and arrange a refund or another way to pay.
 Payment reference
 AQH-100306-PMT
@@ -501,23 +505,23 @@ Tron (TRC-20)
 Transaction
 9d1f4c8a2be7…
 Copy details Contact Payment Project
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 20 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 Send the exact amount
-163.69 USDT received at 10:44
+163.69 USDT  received at 10:44
 9d1f4c8a2be7…
 Confirmation Can't be fixed here
 Payment failed
-Settlement was rejected after your transfer  
+Settlement was rejected after your transfer
 arrived.
-Sending again will not help. Contact Payment  
-Project with the details below — they can trace the  
+Sending again will not help. Contact Payment
+Project with the details below — they can trace the
 transfer and arrange a refund or another way to pay.
 Payment reference
 AQH-100306-PMT
@@ -529,77 +533,267 @@ Transaction
 9d1f4c8a2be7…
 Copy details
 Contact Payment Project
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 21 ---
-P Payment Project Order ORD-88213
-Can't reach the payment server. Retrying in 8 s. Your quote, your address and any transfer you have made are unaffected. Retry now
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
+Pay with
+T USDT  on Tron (TRC-20)
+Send the exact amount
+120.00 USDT  received at 10:44 9d1f4c8a2be7…
+Confirmation Can't be fixed here
+Payment incomplete
+120.00  of  163.69 USDT  received · the rate for the rest expired at 10:52
+The remaining  43.69 USDT  wasn’t sent before the rate expired, and this page can’t
+take it now — don’t send anything more to the address. Your first transfer is safe.
+Contact Payment Project with the details below; they can complete the order or
+refund what arrived.
+Received
+120.00 USDT
+Still owed
+43.69 USDT
+Transaction
+9d1f4c8a2be7…
+Payment reference
+AQH-100306-PMT
+Copy reference
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+TOTAL TO PAY
+€149.90
+Order  ORD-88213
+Pay with
+T USDT  on Tron (TRC-20)
+Send the exact amount
+120.00 USDT  received at 10:44
+9d1f4c8a2be7…
+Confirmation Can't be fixed here
+Payment incomplete
+120.00  of  163.69 USDT  received · the rate
+for the rest expired at 10:52
+The remaining  43.69 USDT  wasn’t sent before the
+rate expired, and this page can’t take it now — don’t
+send anything more to the address. Your first
+transfer is safe. Contact Payment Project with the
+details below; they can complete the order or refund
+what arrived.
+Received
+120.00 USDT
+Still owed
+43.69 USDT
+Transaction
+9d1f4c8a2be7…
+Payment reference
+AQH-100306-PMT
+Copy reference
+Reference  AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+Can’t reach the payment server.  Retrying in 8 s  · automatic retry 2 of 5.  Your quote, your address and any transfer you have made are unaffected. Retry now · 3 left
+TOTAL TO PAY
+€149.90
+Order  ORD-88213
 Pay with Change
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 2 Send the exact amount
 T Tron (TRC-20) network only
 USDT sent on any other network is lost and cannot be recovered.
 SEND EXACTLY
 163.69 USDT Copy
-Includes 1.00 USDT network fee · 1 USDT = €0.9214
+Includes  1.00 USDT  network fee · 1 USDT = €0.9214
 T
 T TRON (TRC-20) ADDRESS
 TQ5N n8kL pVv3 xJ7w YcR2 bF9a
 H4dM 6sGz 1e
-Compare every character with your wallet, not just the  
+Compare every character with your wallet, not just the
 ends.
 Copy address
-Rate locked ·12:03 left Expires 10:52
+Rate locked ·  12:03  left Expires 10:52
 3 Confirmation
 Connection lost — reconnecting
-Last checked 10:41:12. A transfer you have already sent is still on its way; we catch  
+Last checked 10:41:12. A transfer you have already sent is still on its way; we catch
 up as soon as the server answers.
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 22 ---
-P Payment Project Order ORD-88213
-Can't reach the payment server. Retrying in 8 s. Your  
-quote, your address and any transfer you have made  
-are unaffected.
-Retry now
+If this keeps up, contact Payment Project and quote your order ID.
+Copy order ID
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+Can’t reach the payment server.  Retrying in 8 s  ·
+automatic retry 2 of 5.  Your quote, your address and any
+transfer you have made are unaffected.
+Retry now · 3 left
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with Change
-T USDTon Tron (TRC-20)
+T USDT  on Tron (TRC-20)
 2 Send the exact amount
 T
 Tron (TRC-20) network only
-USDT sent on any other network is lost  
+USDT sent on any other network is lost
 and cannot be recovered.
 SEND EXACTLY
 163.69 USDT Copy
-Includes 1.00 USDT network fee · 1 USDT = €0.9214
+Includes  1.00 USDT  network fee · 1 USDT = €0.9214
 T
 T TRON (TRC-20) ADDRESS
 TQ5N n8kL pVv3 xJ7w YcR2 bF9a
 H4dM 6sGz 1e
-Compare every character with your wallet, not just  
+Compare every character with your wallet, not just
 the ends.
 Copy address
-Rate locked ·12:03 left
+Rate locked ·  12:03  left
 Expires 10:52
 3 Confirmation
 Connection lost — reconnecting
-Last checked 10:41:12. A transfer you have  
-already sent is still on its way; we catch up as  
+Last checked 10:41:12. A transfer you have
+already sent is still on its way; we catch up as
 soon as the server answers.
-Reference AQH-100306-PMT
+If this keeps up, contact Payment Project and quote
+your order ID.
+Copy order ID
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 23 ---
-P Payment Project Order ORD-88213
+
+P Payment Project
+Can’t reach the payment server.  Automatic retry 2 of 5 paused while we try now. Retrying now… 2 manual retries left after this
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with Change
-P USDC on Polygon
+T USDT  on Tron (TRC-20)
+2 Send the exact amount
+T Tron (TRC-20) network only
+USDT sent on any other network is lost and cannot be recovered.
+SEND EXACTLY
+163.69 USDT Copy
+Includes  1.00 USDT  network fee · 1 USDT = €0.9214
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just the
+ends.
+Copy address
+Rate locked ·  12:03  left Expires 10:52
+3 Confirmation
+Reconnecting…
+Trying the payment server now. A transfer you have already sent is still on its way;
+we catch up as soon as the server answers.
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+Can’t reach the payment server.  Automatic retry 2 of 5
+paused while we try now.
+Retrying now… 2 manual retries left after this
+TOTAL TO PAY
+€149.90
+Order  ORD-88213
+Pay with Change
+T USDT  on Tron (TRC-20)
+2 Send the exact amount
+T
+Tron (TRC-20) network only
+USDT sent on any other network is lost
+and cannot be recovered.
+SEND EXACTLY
+163.69 USDT Copy
+Includes  1.00 USDT  network fee · 1 USDT = €0.9214
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just
+the ends.
+Copy address
+Rate locked ·  12:03  left
+Expires 10:52
+3 Confirmation
+Reconnecting…
+Trying the payment server now. A transfer you
+have already sent is still on its way; we catch up
+as soon as the server answers.
+Reference  AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+Still can’t reach the payment server.  We stopped retrying after 5 automatic and 3 manual tries. Your quote, your address and any transfer you have made are unaffected.
+TOTAL TO PAY
+€149.90
+Order  ORD-88213
+Pay with Change
+T USDT  on Tron (TRC-20)
+2 Send the exact amount
+T Tron (TRC-20) network only
+USDT sent on any other network is lost and cannot be recovered.
+SEND EXACTLY
+163.69 USDT Copy
+Includes  1.00 USDT  network fee · 1 USDT = €0.9214
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just the
+ends.
+Copy address
+Rate locked ·  12:03  left Expires 10:52
+3 Confirmation
+Stopped retrying
+Last checked 10:43:52. A transfer you have already sent is still on its way —
+nothing is lost. Reload this page to check again.
+Reload page Copy order ID
+If it still fails after reloading, contact Payment Project and quote your order ID.
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+Still can’t reach the payment server.  We stopped
+retrying after 5 automatic and 3 manual tries. Your
+quote, your address and any transfer you have made
+are unaffected.
+TOTAL TO PAY
+€149.90
+Order  ORD-88213
+Pay with Change
+T USDT  on Tron (TRC-20)
+2 Send the exact amount
+T
+Tron (TRC-20) network only
+USDT sent on any other network is lost
+and cannot be recovered.
+SEND EXACTLY
+163.69 USDT Copy
+Includes  1.00 USDT  network fee · 1 USDT = €0.9214
+T
+T TRON (TRC-20) ADDRESS
+TQ5N n8kL pVv3 xJ7w YcR2 bF9a
+H4dM 6sGz 1e
+Compare every character with your wallet, not just
+the ends.
+Copy address
+Rate locked ·  12:03  left
+Expires 10:52
+3 Confirmation
+Stopped retrying
+Last checked 10:43:52. A transfer you have
+already sent is still on its way — nothing is lost.
+Reload this page to check again.
+Reload page Copy order ID
+If it still fails after reloading, contact Payment
+Project and quote your order ID.
+Reference  AQH-100306-PMT
+Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+TOTAL TO PAY
+€149.90
+Order  ORD-88213
+Pay with Change
+P USDC  on Polygon
 2 Send the exact amount
 P Polygon network only
 USDC sent on any other network is lost and cannot be recovered.
@@ -607,23 +801,104 @@ Getting your quote for USDC on Polygon…
 Taking longer than usual. Do not send anything until the amount and address appear.
 3 Confirmation
 Updates by itself once your transfer is seen.
-Reference AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
-
---- Design PDF page 24 ---
-P Payment Project Order ORD-88213
+Reference  AQH-100306-PMT Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
 TOTAL TO PAY
 €149.90
+Order  ORD-88213
 Pay with Change
-P USDC on Polygon
+P USDC  on Polygon
 2 Send the exact amount
 P
 Polygon network only
-USDC sent on any other network is lost  
+USDC sent on any other network is lost
 and cannot be recovered.
 Getting your quote for USDC on Polygon…
-Taking longer than usual. Do not send anything until  
+Taking longer than usual. Do not send anything until
 the amount and address appear.
 3 Confirmation
 Updates by itself once your transfer is seen.
-Reference AQH-100306-PMT
+Reference  AQH-100306-PMT
 Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+This payment link isn’t valid
+We can’t find an order for it, so there is nothing to pay here. Nothing has
+been charged. If a shop sent you this link, go back and start the payment
+again — you’ll get a fresh one.
+Go back Copy details
+FOR SUPPORT
+Reason
+The link’s signature doesn’t match ·  invalid_signature
+Order in the link
+ORD-88213
+Opened
+3 Oct 2026, 10:41
+Share these details with the shop or with the Help link below and they can trace the link.
+Help Payments by [PAYMENT PROVIDER]
+
+P Payment Project
+This payment link isn’t valid
+We can’t find an order for it, so there is nothing to pay
+here. Nothing has been charged. If a shop sent you this
+link, go back and start the payment again — you’ll get a
+fresh one.
+Go back
+Copy details
+FOR SUPPORT
+Reason
+The link’s signature doesn’t match ·
+invalid_signature
+Order in the link
+ORD-88213
+Opened
+3 Oct 2026, 10:41
+Share these details with the shop or with the Help link
+below and they can trace the link.
+Help Payments by [PAYMENT PROVIDER]
+
+MOTION SPEC
+The paid reveal
+What the shopper sees in the 1.3 seconds after the poll first returns paid. One sequence, read top to bottom: the
+confirmation bar completes, the step badge becomes a check, the mark lands, the facts arrive. No colour, no
+confetti.
+0 ms The last confirmation lands; the bar
+completes
+3 Confirmation
+Confirming 3 of 3
+300 ms The badge’s 3 becomes a check,
+drawn in
+Confirmation
+Confirming 3 of 3
+700 ms The mark lands and sheds one ring
+Confirmation
+Paid
+163.69 USDT  received ·
+10:47
+1.3 s Settled — details and the button have
+risen in
+Confirmation
+Paid
+163.69 USDT  received ·
+10:47
+Order
+ORD-88213
+Transaction
+9d1f4c8a2
+be7…
+Back to Payment Project
+0 ms 300 ms 600 ms 900 ms 1.2 s 1.5 s
+Confirmation bar, last segment fills
+Step-3 check stroke draws from left
+Old content fades out
+Paid mark scale .6 → 1, fade in
+Ring scale 1 → 2.6, opacity .6 → 0
+Title + amount rise 8px, fade in
+Details rise 8px, fade in
+Button rise 8px, fade in
+Easing: ease-out for fades and the check; a soft, overshoot-free
+curve (cubic-bezier .2 .7 .2 1) for the mark.
+Reduced motion: every element appears in its final state at once;
+nothing moves. The sequence plays once, when the poll first
+returns paid, never on reload.
