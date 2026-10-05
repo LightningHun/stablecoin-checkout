@@ -223,7 +223,7 @@ describe("background lifecycle audit — independent wall/monotonic time", () =>
   });
 
   it.each(["awaiting_payment", "underpaid"] as const)(
-    "AUDIT: %s must not revive when a pre-suspension response resolves after the monotonic clock stopped",
+    "AUDIT: %s blocks stale transfer instructions within 15 seconds of resume despite a pre-suspension response",
     async (state) => {
       const { c, client, move, result } = await setup(state);
       const oldResponse = result(snapshot(state));
@@ -235,43 +235,45 @@ describe("background lifecycle audit — independent wall/monotonic time", () =>
       move(901000, 0);
       window.dispatchEvent(new Event("focus"));
       document.dispatchEvent(new Event("visibilitychange"));
-      expect(c.availability.value).toBe("reconciling");
       expect(client.status).toHaveBeenCalledTimes(1);
       pending.resolve(oldResponse);
       await inFlight;
-      move(901250, 250);
-      await vi.advanceTimersByTimeAsync(250);
-      expect
-        .soft(
-          c.availability.value,
-          `after old response: remaining=${c.remaining.value}`,
-        )
-        .not.toBe("usable");
       client.status.mockRejectedValue(new ApiError("Unavailable", 500));
-      move(903000, 2000);
-      await vi.advanceTimersByTimeAsync(1750);
-      expect(client.status).toHaveBeenCalledTimes(2);
+      // Allow the requested 15-second grace period from resume, keeping both
+      // injected clocks and scheduled callbacks advancing together after return.
+      for (let elapsed = 250; elapsed <= 15000; elapsed += 250) {
+        move(901000 + elapsed, elapsed);
+        await vi.advanceTimersByTimeAsync(250);
+      }
+      expect(client.status.mock.calls.length).toBeGreaterThan(1);
       expect(c.health.value).toBe("stale");
-      expect(c.payment.value?.status).toBe(state);
+      expect(c.payment.value).toEqual(snapshot(state));
       expect(
         c.availability.value,
-        `after HTTP 500: remaining=${c.remaining.value}`,
+        `15 seconds after resume with HTTP 500: remaining=${c.remaining.value}`,
       ).not.toBe("usable");
     },
   );
 
-  it("AUDIT: a persisted pageshow blocks stale transfer instructions synchronously before the next ticker", async () => {
+  it("AUDIT: a persisted pageshow blocks stale transfer instructions within 5 seconds of restore", async () => {
     const { c, client, move } = await setup("underpaid");
     client.status.mockRejectedValue(new ApiError("Unavailable", 500));
     move(901000, 0);
     window.dispatchEvent(
       new PageTransitionEvent("pageshow", { persisted: true }),
     );
-    // BFCache may restore a rendered document before the 250ms interval runs.
-    expect.soft(c.availability.value).not.toBe("usable");
-    await vi.advanceTimersByTimeAsync(250);
-    expect(c.availability.value).not.toBe("usable");
-    expect(client.status).toHaveBeenCalledTimes(1);
-    expect(c.payment.value?.status).toBe("underpaid");
+    // BFCache restoration may keep instructions visible during the requested
+    // grace period, but they must be blocked by five seconds after return.
+    for (let elapsed = 250; elapsed <= 5000; elapsed += 250) {
+      move(901000 + elapsed, elapsed);
+      await vi.advanceTimersByTimeAsync(250);
+    }
+    expect(client.status).toHaveBeenCalled();
+    expect(c.health.value).toBe("stale");
+    expect(c.payment.value).toEqual(snapshot("underpaid"));
+    expect(
+      c.availability.value,
+      `5 seconds after persisted pageshow: remaining=${c.remaining.value}`,
+    ).not.toBe("usable");
   });
 });

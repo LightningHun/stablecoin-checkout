@@ -1,3 +1,8 @@
+export interface ClockCheckpoint {
+  wall: number;
+  monotonic: number;
+}
+
 export class ClockService {
   private anchor: number | null = null;
   private at = 0;
@@ -24,10 +29,20 @@ export class ClockService {
   remaining(expiresAt: string): number {
     return Math.max(0, Date.parse(expiresAt) - this.now() - this.uncertainty);
   }
-  needsResync(): boolean {
+  checkpoint(): ClockCheckpoint {
+    return { wall: this.wall(), monotonic: this.monotonic() };
+  }
+  needsResync(since?: ClockCheckpoint): boolean {
+    const checkpoint =
+      since ??
+      (this.anchor === null ? null : { wall: this.wallAt, monotonic: this.at });
     return (
-      this.anchor !== null &&
-      Math.abs(this.wall() - this.wallAt - (this.monotonic() - this.at)) > 2000
+      checkpoint !== null &&
+      Math.abs(
+        this.wall() -
+          checkpoint.wall -
+          (this.monotonic() - checkpoint.monotonic),
+      ) > 2000
     );
   }
   get sampled(): boolean {

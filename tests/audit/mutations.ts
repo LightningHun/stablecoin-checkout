@@ -83,7 +83,7 @@ export const mutations: Mutation[] = [
   {
     id: 'M10', description: 'Skip pre-requote reconciliation and submit before discovering detected funds', requirements: ['R06', 'R10', 'T08', 'T14'], file: controller,
     patches: patch(`          const reconciled = await request((s) => client.status(reference, s));
-          accept(reconciled, gen);
+          if (!accept(reconciled, gen)) return;
           if (
             reconciled.data.status !== "expired" ||
             hasFunds(reconciled.data.status)
@@ -153,9 +153,9 @@ export const mutations: Mutation[] = [
     runner: 'vitest', testFile: 'tests/unit/underpaid-expiry.test.ts', testName: 'evaluates the original deadline at 899999 ms elapsed', expectedFailure: 'usable', category: 'targeted',
   },
   {
-    id: 'A08', description: 'Accept callbacks after scope disposal and generation invalidation', requirements: ['R07', 'T09'], file: controller,
-    patches: patch('    if (disposed || gen !== generation.value) return false;', '    if ((disposed || gen !== generation.value) && false) return false;'),
-    runner: 'vitest', testFile: componentTests, testName: 'T09 scope disposal aborts in-flight GET and late finally cannot restart timers', expectedFailure: 'awaiting_payment', category: 'targeted',
+    id: 'A08', description: 'Publish a late reconciliation error after scope disposal or generation invalidation', requirements: ['R07', 'T09'], file: controller,
+    patches: patch('            if (!disposed && gen === generation.value) markError(err);', '            markError(err);'),
+    runner: 'vitest', testFile: 'tests/component/disposed-reconciliation.test.ts', testName: 'T09 disposed 409 reconciliation cannot publish a late transport rejection', expectedFailure: 'Quote conflict before disposal', category: 'targeted',
   },
   {
     id: 'A09', description: 'Encode the previous Tron address after an Ethereum replacement', requirements: ['R03', 'R04', 'T03', 'T04'], file: quote,

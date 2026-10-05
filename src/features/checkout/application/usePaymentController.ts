@@ -11,7 +11,10 @@ import type {
 import { isSameQuote, quoteAvailability } from "../domain/quotePolicy";
 import { ApiError, createPaymentClient } from "../infrastructure/paymentClient";
 import type { ApiResult, PaymentClient } from "../infrastructure/paymentClient";
-import { ClockService } from "../infrastructure/ClockService";
+import {
+  ClockService,
+  type ClockCheckpoint,
+} from "../infrastructure/ClockService";
 import {
   automaticRetryLimit,
   isDefiniteRejection,
@@ -28,6 +31,8 @@ export interface ControllerOptions {
   timeoutMs?: number;
   creationPending?: boolean;
 }
+// Request-local timing evidence; this never becomes part of a payment snapshot.
+type ClockedResult<T> = ApiResult<T> & { clockAtRequest: ClockCheckpoint };
 export function usePaymentController(options: ControllerOptions = {}) {
   const uncertainMessage =
     paymentErrors.uncertain;
@@ -223,20 +228,30 @@ export function usePaymentController(options: ControllerOptions = {}) {
     protocolBlocked.value ||= cause instanceof ApiError && cause.protocol;
     failures++;
   }
-  function sample<T>(result: ApiResult<T>) {
+  function sample<T>(result: ClockedResult<T>): boolean {
+    // A response spanning a stopped clock cannot establish the current time,
+    // even if focus/the ticker has not yet noticed the suspension.
+    if (clock.needsResync(result.clockAtRequest)) {
+      clockUncertain.value = true;
+      tick.value++;
+      return false;
+    }
     clock.sample(result.serverTime, result.start, result.end);
     tick.value++;
     clockUncertain.value = false;
+    return true;
   }
   async function request<T>(
     operation: (signal: AbortSignal) => Promise<ApiResult<T>>,
-  ): Promise<ApiResult<T>> {
+  ): Promise<ClockedResult<T>> {
+    const clockAtRequest = clock.checkpoint();
     const controller = new AbortController();
     abort = controller;
     requestPending.value = true;
     const timeout = setTimeout(() => controller.abort(), timeoutMs);
     try {
-      return await operation(controller.signal);
+      const result = await operation(controller.signal);
+      return { ...result, clockAtRequest };
     } finally {
       clearTimeout(timeout);
       if (abort === controller) {
@@ -246,7 +261,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     }
   }
   function accept(
-    result: ApiResult<Payment>,
+    result: ClockedResult<Payment>,
     gen: number,
     replace = false,
     expected = replace ? undefined : payment.value?.payment_reference,
@@ -278,16 +293,18 @@ export function usePaymentController(options: ControllerOptions = {}) {
     const alreadyExpired =
       !replace &&
       (underpaidDeadlineReached.value ||
-        (hasTransferDeadline.value &&
+        (clock.sampled &&
+          hasTransferDeadline.value &&
           payment.value !== null &&
           clock.remaining(payment.value.quote.expires_at) === 0));
-    sample(result);
+    const sampled = sample(result);
     underpaidDeadlineReached.value =
       alreadyExpired ||
-      (next.status === "underpaid" &&
+      (clock.sampled &&
+        next.status === "underpaid" &&
         clock.remaining(next.quote.expires_at) === 0);
     payment.value = Object.freeze(next);
-    lastChecked.value = clock.now();
+    if (sampled) lastChecked.value = clock.now();
     statusUnavailable.value = false;
     referenceMissing.value = false;
     health.value = "fresh";
@@ -489,7 +506,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
         if (requote) {
           if (!reference) return;
           const reconciled = await request((s) => client.status(reference, s));
-          accept(reconciled, gen);
+          if (!accept(reconciled, gen)) return;
           if (
             reconciled.data.status !== "expired" ||
             hasFunds(reconciled.data.status)
@@ -535,7 +552,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
           try {
             accept(await request((s) => client.status(reference, s)), gen);
           } catch (err) {
-            markError(err);
+            if (!disposed && gen === generation.value) markError(err);
           }
         } else if (posted && !isDefiniteRejection(cause)) {
           uncertain.value = true;
@@ -603,7 +620,13 @@ export function usePaymentController(options: ControllerOptions = {}) {
       clockUncertain.value = true;
       void poll();
     }
-    if (hasTransferDeadline.value && remaining.value === 0 && !localExpired) {
+    // Never latch expiry from the device wall clock before a server sample.
+    if (
+      clock.sampled &&
+      hasTransferDeadline.value &&
+      remaining.value === 0 &&
+      !localExpired
+    ) {
       localExpired = true;
       if (payment.value?.status === "underpaid")
         underpaidDeadlineReached.value = true;
