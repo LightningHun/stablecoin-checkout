@@ -52,7 +52,7 @@ const emit = defineEmits<{ requote: [] }>();
       <section class="recovery-card">
         <strong>{{ t("recovery.alreadySent") }}</strong>
         <p>
-          {{ t("recovery.assistance") }}
+          {{ t("recovery.assistance", { merchant: payment.merchant.name }) }}
         </p>
       </section>
     </div>

@@ -83,7 +83,7 @@ export default {
     "checking": "Checking payment…",
     "newQuote": "Get a new quote",
     "alreadySent": "Already sent it?",
-    "assistance": "Don't send again. Keep your payment reference and ask the merchant for assistance. Automatic monitoring has stopped."
+    "assistance": "Don't send again. Keep your payment reference and ask {merchant} for assistance. Automatic monitoring has stopped."
   },
   "connection": {
     "unreachable": "Can't reach the payment server.",
