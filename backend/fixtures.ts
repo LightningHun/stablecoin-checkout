@@ -69,7 +69,7 @@ export function makePayment(
     payment_reference: reference,
     order_id: orderId,
     status: "awaiting_payment",
-    merchant: { name: "nordwind audio", logo_url: null },
+    merchant: { name: "Nordwind Audio", logo_url: null },
     order: { currency: "EUR", amount: orderAmount },
     quote: {
       crypto_currency: pair.currency,

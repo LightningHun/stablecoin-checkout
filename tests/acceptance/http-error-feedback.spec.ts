@@ -297,7 +297,7 @@ test("real mock Demo HTTP 500 adds support and clears it after recovery", async 
   );
   await expect(page.getByTestId("copy-order-id")).toBeVisible();
   await expect(page.locator(".connection-contact")).toHaveText(
-    "If this keeps up, contact nordwind audio and quote your order ID.",
+    "If this keeps up, contact Nordwind Audio and quote your order ID.",
   );
   await page.getByTestId("demo-fault").selectOption("none");
   await page.getByTestId("demo-apply-fault").click();

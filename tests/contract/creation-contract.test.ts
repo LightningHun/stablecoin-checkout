@@ -49,7 +49,7 @@ describe("payment creation follows the original request contract", () => {
       payment_reference: "AQH-100306-PMT",
       status: "awaiting_payment",
       order_id: "ORD-88213",
-      merchant: { name: "nordwind audio", logo_url: null },
+      merchant: { name: "Nordwind Audio", logo_url: null },
       order: { amount: "149.90", currency: "EUR" },
       quote: {
         expires_at: "2026-08-14T08:52:10.842Z",
@@ -90,7 +90,7 @@ describe("payment creation follows the original request contract", () => {
       payment_reference: "AQH-100307-PMT",
       status: "awaiting_payment",
       order_id: "second-order",
-      merchant: { name: "nordwind audio" },
+      merchant: { name: "Nordwind Audio" },
       order: { amount: "250.00", currency: "EUR" },
       quote: { expires_at: "2026-08-14T08:52:10.842Z" },
     });

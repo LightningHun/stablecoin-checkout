@@ -42,7 +42,7 @@ test("a persisted startup lock stops loading and can explicitly reset the local 
     .getByRole("button", { name: "Reset demo checkout", exact: true })
     .click();
   await expect(page.getByTestId("continue")).toBeEnabled();
-  await expect(page).toHaveTitle("nordwind audio");
+  await expect(page).toHaveTitle("Nordwind Audio");
   await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
   expect(posts).toEqual(["/api/demo/reset", "/api/payments"]);
   expect(

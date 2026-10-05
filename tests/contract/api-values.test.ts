@@ -56,7 +56,7 @@ describe("API-owned values in the mock HTTP contract", () => {
     const payment = await create();
     expect(payment).toMatchObject({
       status: "awaiting_payment",
-      merchant: { name: "nordwind audio", logo_url: null },
+      merchant: { name: "Nordwind Audio", logo_url: null },
       quote: { expires_at: "2026-08-14T08:52:10.842Z" },
     });
     expect((await request("/api/demo/scenario", { advanceMs: 960000 })).status).toBe(200);
@@ -94,7 +94,7 @@ describe("API-owned values in the mock HTTP contract", () => {
     expect(after.status).toBe(200);
     expect(await after.json()).toEqual(catalogue);
     expect(await create()).toMatchObject({
-      merchant: { name: "nordwind audio", logo_url: null },
+      merchant: { name: "Nordwind Audio", logo_url: null },
       order: { currency: "EUR", amount: "250.00" },
     });
   });
@@ -121,7 +121,7 @@ describe("API-owned values in the mock HTTP contract", () => {
       const payment = await create(order_id);
       expect(payment).toMatchObject({
         payment_reference: "AQH-100306-PMT", order_id,
-        merchant: { name: "nordwind audio", logo_url: null },
+        merchant: { name: "Nordwind Audio", logo_url: null },
         order: { currency: "EUR", amount: "250.00" },
         quote: { crypto_amount: "271.330887", network_fee: "1.00", total_due: "272.330887" },
       });

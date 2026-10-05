@@ -205,7 +205,7 @@ describe("configurable mock order amount HTTP contract", () => {
       expect(await create(currency, network)).toMatchObject({
         order_id: "ORD-88213",
         status: "awaiting_payment",
-        merchant: { name: "nordwind audio", logo_url: null },
+        merchant: { name: "Nordwind Audio", logo_url: null },
         order: { currency: "EUR", amount: "149.90" },
         quote: {
           crypto_currency: currency,
