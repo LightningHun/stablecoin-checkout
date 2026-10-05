@@ -17,7 +17,12 @@ import type {
   Payment,
   PaymentStatus,
 } from "../src/features/checkout/domain/paymentModel";
-export function createMockServer(options: { now?: () => number } = {}) {
+export function createMockServer(
+  options: {
+    now?: () => number;
+    onDisconnect?: (request: IncomingMessage) => void;
+  } = {},
+) {
   let scenario = defaultScenario(),
     sequence = 100306,
     orderSequence = 88214;
@@ -91,6 +96,7 @@ export function createMockServer(options: { now?: () => number } = {}) {
     if (scenario.fault === "slow")
       await new Promise((resolve) => setTimeout(resolve, scenario.delayMs));
     if (scenario.fault === "disconnect") {
+      options.onDisconnect?.(req);
       req.socket.destroy();
       return true;
     }
