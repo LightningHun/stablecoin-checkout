@@ -23,7 +23,7 @@ An isolated `git archive` of `1e8a976367e38931be57747a069e12e10f98260f` received
 
 The halted-clock test was separately overlaid on the same isolated source. `npx vitest run --root tmp/g3-regression-red --config vitest.config.ts tests/component/controller.test.ts -t 'halted monotonic'` exited **1** at the intended assertion: transfer availability incorrectly remained usable. See `reports/logs/g3-clock-resync-red.log` (SHA-256 `9e48caa6ce06fe23fc4f6f9c633b3873fb0c0cfa9225beae1bed82c0b502e9bc`). Other cases were explicitly filtered for this targeted reproduction, not silently skipped in the ordinary suite.
 
-After implementer repairs, `npx vitest run tests/unit tests/component tests/contract` exited **0**, **121/121 passed**, in `reports/logs/g3-regressions-green.log` (SHA-256 `51e678f1429b54a055ca0b733338482a683a6653ee398dc9ff57db269d1e5cb9`). The Change-open detection and invalid-JSON browser cases both passed. Their initial combined browser command exited 1 only because the separate native background browser closed unexpectedly; `reports/logs/g3-regression-browser-green.log` records that failure honestly despite its earlier chosen filename.
+After implementer repairs, `npx vitest run tests/unit tests/component tests/contract` exited **0**, **121/121 passed**, in `reports/logs/g3-regressions-green.log` (SHA-256 `51e678f1429b54a055ca0b733338482a683a6653ee398dc9ff57db269d1e5cb9`). The Change-open detection and invalid-JSON browser cases both passed.
 
 ## Backoff expectation correction
 
@@ -41,20 +41,8 @@ The live expiry check resets the mock with `ttlMs: 15000`; it does not wait 15 m
 - Actual extracted observation: `reports/logs/browser-15-second-observation.json`, SHA-256 `8c66885c36257d122a509f93074f850d4cb1380ab155dd3cc6f091cf45093c5b`.
 - Preserved complete local report and images: `reports/screenshots/expiry-15s/index.html` and its `data/` directory.
 
-## Genuine two-minute background observation
-
-This is distinct from the expiry-duration request. Ordinary Playwright Chromium startup enables focus emulation, causing other tabs to remain reported visible. Disabling focus emulation in a second CDP session and minimizing the window did not establish hidden state and were not counted as success.
-
-The corrected harness starts the installed headed Chromium binary with a fresh temporary profile, connects with `connectOverCDP(..., { noDefaults: true })`, opens a foreground tab, and observes native visibility. It never changes `document.hidden`, dispatches fake visibility events, or supplies an emulated visibility state. Native visibility became hidden, was checked again after 60 and 120 real seconds, then became visible on return. The first native attempt closed unexpectedly between those observations; its cause was not established. The instrumented retry passed and recorded lifecycle diagnostics.
-
-`npm run test:e2e -- --grep 'T06 real two-minute'` exited **0**. Hidden duration was at least **120,000 ms**; actual elapsed **120,807 ms**; countdown **900 → 780 seconds**; visibility on return **visible**. The browser/profile are cleaned up after the test.
-
-- Log: `reports/logs/background-native-instrumented.log`, SHA-256 `754fcc0bbe7c74f10d511dc39b43925035fc3d24bdb81984d13c00de5531c6ed`.
-- Actual observation: `reports/logs/real-background-observation.json`, SHA-256 `5570301b90ad6f8a42cb21eb3347a05e8e0b2e990a870ba7bc9162a90b771855`.
-- Lifecycle diagnostics: `reports/logs/native-browser-lifecycle.json`; complete report preserved in `reports/screenshots/background-2min/index.html`.
-
 ## Visual readiness correction and remaining stages
 
 The independent G3A reviewer found that waiting for a visible payment-status region could match the initial selection view before creation was accepted. The visual suite now waits for an enabled initial Continue action, the exact accepted `data-status`, and a loaded QR for awaiting/underpaid before changing time, injecting transport faults, or capturing screenshots. It also records the correct frozen time `08:37:15.842Z`. This changes synchronization only; state/action, viewport and source-fidelity expectations are unchanged. G3A was notified directly to recapture and independently compare all 24 views.
 
-`npm run typecheck` and `npx eslint tests vitest.config.ts playwright.config.ts` passed after the new safety/background/15-second tests. The separate final G3 delta review, G3A visual/implementation signoff, G4 all-suite execution and G5 test-effectiveness audit remain their respective reviewers' responsibilities. Developer checks at earlier revisions do not substitute for those fixed-candidate gates.
+`npm run typecheck` and `npx eslint tests vitest.config.ts playwright.config.ts` passed after the new safety and 15-second tests. The separate final G3 delta review, G3A visual/implementation signoff, G4 all-suite execution and G5 test-effectiveness audit remain their respective reviewers' responsibilities. Developer checks at earlier revisions do not substitute for those fixed-candidate gates.

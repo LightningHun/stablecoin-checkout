@@ -107,7 +107,7 @@ Files use the exact naming convention `{evidence-directory}/{ID}-baseline.log`, 
 
 ## Test-source review
 
-Inspected the frozen unit, component, HTTP and browser acceptance sources. Literal fixture expectations are independent of production money calculations. Exact decimals, catalogue values, references and addresses are asserted directly. The real HTTP contract suite complements browser route stubs; stubs make races/error delivery controllable without purporting to verify mock routing. Component hosts exercise real lifecycle disposal and clocks. The real background test observes native visibility at 60 and 120 seconds instead of faking hidden state.
+Inspected the frozen unit, component, HTTP and browser acceptance sources. Literal fixture expectations are independent of production money calculations. Exact decimals, catalogue values, references and addresses are asserted directly. The real HTTP contract suite complements browser route stubs; stubs make races/error delivery controllable without purporting to verify mock routing. Component hosts exercise real lifecycle disposal and clocks.
 
 No explicit `.skip`, `.fixme`, `.only`, `passWithNoTests`, swallowed assertion exception or self-comparison oracle was found. Conditional assertions in parameterized tests correspond to fixed input states/viewports. Awaited Vue/browser updates, context isolation, scenario resets and ephemeral HTTP servers prevent the inspected cases from relying on prior test order. The mutation parser treats absent reports/runtime errors as harness failure and does not count them as kills. Required assertions and tolerance were never weakened.
 

@@ -42,7 +42,6 @@ Local test listener/tsx commands used authorized escalation. No shared live app/
 ## Test and documentation delta review
 
 - The visual suite now waits for the selected API state and fully loaded QR before capture. This strengthens determinism and avoids accepting a visible but wrong-state confirmation region. It does not approve baseline fidelity, which remains G3A/G5 work.
-- Native background-tab changes add lifecycle diagnostics and use the configured base URL. They retain actual headed Chromium, real visibility checks, two 60-second waits, the absolute deadline assertion and isolated profile cleanup. This review did not rerun the physical two-minute scenario; coordinator evidence is not relabelled as this reviewer's observation.
 - The new real HTTP 15-second expiry test checks awaiting state, server expiry, absence of send controls, a 12–20 second real elapsed window, a fresh quote and preserved reference. It does not use fake time or weaken expired-state assertions. It was code-reviewed here; actual browser execution is recorded elsewhere and remains part of G3A/G4 validation.
 - Architecture additions accurately describe the previously independently verified protocol, funds-observed, clock-resync and selection fixes. No API capabilities or unsupported custody/refund claims were added.
 
