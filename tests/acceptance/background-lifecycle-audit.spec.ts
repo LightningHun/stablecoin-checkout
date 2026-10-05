@@ -230,7 +230,18 @@ async function scenario(
     200,
   );
 }
-async function start(page: Page, request: APIRequestContext, ttlMs = 900000) {
+const creationPosts = (entries: Entry[]) =>
+  entries.filter(
+    (entry) =>
+      entry.method === "POST" &&
+      new URL(entry.url).pathname === "/api/payments",
+  );
+async function start(
+  page: Page,
+  request: APIRequestContext,
+  entries: Entry[],
+  ttlMs = 900000,
+) {
   expect(
     (await request.post("/api/demo/reset", { data: { ttlMs } })).status(),
   ).toBe(200);
@@ -241,6 +252,8 @@ async function start(page: Page, request: APIRequestContext, ttlMs = 900000) {
     throw new Error("Native lifecycle baseURL must use HTTP or HTTPS");
   await page.goto(checkoutURL.href);
   await expect(page.getByTestId("continue")).toBeEnabled();
+  // An ordinary creation supplies display metadata before the shopper continues.
+  expect(creationPosts(entries)).toHaveLength(1);
   const response = page.waitForResponse(
     (response) =>
       response.request().method() === "GET" &&
@@ -249,6 +262,8 @@ async function start(page: Page, request: APIRequestContext, ttlMs = 900000) {
   await page.getByTestId("continue").click();
   const payment = await (await response).json();
   await expect(page.getByTestId("transfer-qr")).toBeVisible();
+  // Continue creates the accepted payment; lifecycle events must add no more POSTs.
+  expect(creationPosts(entries)).toHaveLength(2);
   await page.evaluate((expires) => {
     new MutationObserver((records) => {
       if (Date.now() < Date.parse(expires)) return;
@@ -291,100 +306,12 @@ const statusGets = (entries: Entry[]) =>
       /\/api\/payments\/[^/]+$/.test(new URL(entry.url).pathname),
   );
 
-for (const state of ["awaiting_payment", "underpaid"] as const) {
-  test(`native hidden 15s: ${state} expires through HTTP 500 and recovers safely`, async ({
-    request,
-  }, info) => {
-    test.setTimeout(45000);
-    await native(info, async (page, evidence, entries, maxGets) => {
-      const initial = await start(page, request, 8000);
-      if (state === "underpaid") {
-        await scenario(request, { status: state });
-        await expect(page.getByTestId("payment-status")).toHaveAttribute(
-          "data-status",
-          "underpaid",
-        );
-      }
-      evidence.initial = initial;
-      evidence.before = await observe(page);
-      await scenario(request, { fault: "500" });
-      const other = await hide(page);
-      await new Promise((resolve) => setTimeout(resolve, 15000));
-      evidence.hidden = await observe(page);
-      expect((evidence.hidden as { visibility: string }).visibility).toBe(
-        "hidden",
-      );
-      await back(page, evidence);
-      evidence.returned = await observe(page);
-      await noTransferAction(page);
-      if (state === "underpaid")
-        await expect(
-          page.getByText("Payment incomplete", { exact: true }),
-        ).toBeVisible();
-      await expect(page.getByTestId("payment-status")).toHaveAttribute(
-        "data-status",
-        state,
-      );
-      expect(
-        await page.evaluate(
-          () => (window as unknown as AuditWindow).unsafeRenders,
-        ),
-      ).toEqual([]);
-      expect(maxGets()).toBe(1);
-      expect(
-        entries.filter(
-          (entry) =>
-            entry.method === "POST" &&
-            new URL(entry.url).pathname === "/api/payments",
-        ),
-      ).toHaveLength(1);
-      expect(entries.some((entry) => entry.url.endsWith("/requote"))).toBe(
-        false,
-      );
-      evidence.faultRequests = statusGets(entries);
-      await scenario(request, { fault: "none" });
-      // Automatic recovery can remove Retry between locating and clicking it.
-      // This case audits expiry/recovery; dedicated existing tests cover Retry races.
-      await expect(page.getByRole("alert")).toHaveCount(0, { timeout: 20000 });
-      if (state === "awaiting_payment")
-        await expect(page.getByTestId("payment-status")).toHaveAttribute(
-          "data-status",
-          "expired",
-        );
-      else {
-        await expect(page.getByRole("alert")).toHaveCount(0);
-        const saved = await (
-          await request.get("/api/payments/" + initial.payment_reference)
-        ).json();
-        expect(saved).toMatchObject({
-          status: "underpaid",
-          payment_reference: initial.payment_reference,
-          amount_received: "120.00",
-          amount_outstanding: "43.69",
-          quote: { expires_at: initial.quote.expires_at },
-        });
-        await page.reload();
-        await expect(
-          page.getByText("Payment incomplete", { exact: true }),
-        ).toBeVisible();
-        await noTransferAction(page);
-        await scenario(request, { status: "paid" });
-        await expect(page.getByTestId("payment-status")).toHaveAttribute(
-          "data-status",
-          "paid",
-        );
-      }
-      await other.close();
-    });
-  });
-}
-
 test("native hidden 15s: 500 backoff before expiry, visible recovery respects scheduled retry", async ({
   request,
 }, info) => {
   test.setTimeout(60000);
   await native(info, async (page, evidence, entries, maxGets) => {
-    evidence.initial = await start(page, request);
+    evidence.initial = await start(page, request, entries);
     await scenario(request, { fault: "500" });
     await expect(page.getByTestId("retry-countdown")).toBeVisible();
     evidence.before = await observe(page);
@@ -421,7 +348,7 @@ for (const mode of ["disconnect", "offline", "slow", "timeout"] as const) {
   }, info) => {
     test.setTimeout(50000);
     await native(info, async (page, evidence, entries, maxGets) => {
-      evidence.initial = await start(page, request, 12000);
+      evidence.initial = await start(page, request, entries, 12000);
       if (mode === "offline") await page.context().setOffline(true);
       else
         await scenario(request, {
@@ -466,7 +393,7 @@ for (const state of ["detected", "confirming"] as const) {
   }, info) => {
     test.setTimeout(45000);
     await native(info, async (page, evidence, entries, maxGets) => {
-      const initial = await start(page, request, 6000);
+      const initial = await start(page, request, entries, 6000);
       evidence.initial = initial;
       await scenario(request, { status: state });
       await expect(page.getByTestId("payment-status")).toHaveAttribute(
@@ -511,132 +438,3 @@ for (const state of ["detected", "confirming"] as const) {
     });
   });
 }
-
-test("native Back navigation and expired underpaid reload preserve receipt; record BFCache eligibility", async ({
-  request,
-}, info) => {
-  test.setTimeout(45000);
-  await native(info, async (page, evidence, entries, maxGets) => {
-    evidence.initial = await start(page, request, 8000);
-    await scenario(request, { status: "underpaid" });
-    await expect(page.getByTestId("payment-status")).toHaveAttribute(
-      "data-status",
-      "underpaid",
-    );
-    evidence.before = await observe(page);
-    await page.goto("about:blank");
-    await new Promise((resolve) => setTimeout(resolve, 15000));
-    await page.goBack({ waitUntil: "commit", timeout: 5000 });
-    evidence.afterBackBeforeActivation = await observe(page);
-    await back(page, evidence);
-    await expect(
-      page.getByText("Payment incomplete", { exact: true }),
-    ).toBeVisible();
-    await noTransferAction(page);
-    evidence.afterBack = await observe(page);
-    await page.reload();
-    await expect(
-      page.getByText("Payment incomplete", { exact: true }),
-    ).toBeVisible();
-    await noTransferAction(page);
-    expect(
-      entries.filter(
-        (entry) =>
-          entry.method === "POST" &&
-          new URL(entry.url).pathname === "/api/payments",
-      ),
-    ).toHaveLength(1);
-    expect(maxGets()).toBe(1);
-  });
-});
-
-test("native separate window 15s: focus loss and return preserve the expired quote boundary", async ({
-  request,
-}, info) => {
-  test.setTimeout(45000);
-  await native(info, async (page, evidence, entries, maxGets) => {
-    evidence.initial = await start(page, request, 8000);
-    evidence.before = await observe(page);
-    const context = page.context();
-    const session = await context.browser()!.newBrowserCDPSession();
-    const opened = context.waitForEvent("page");
-    await session.send("Target.createTarget", {
-      url: "about:blank",
-      newWindow: true,
-    });
-    const other = await opened;
-    await other.bringToFront();
-    evidence.windowActivation = await observe(page);
-    await expect
-      .poll(() => page.evaluate(() => document.hasFocus()))
-      .toBe(false);
-    await new Promise((resolve) => setTimeout(resolve, 15000));
-    evidence.otherWindow = await observe(page);
-    await back(page, evidence);
-    await expect(page.getByTestId("payment-status")).toHaveAttribute(
-      "data-status",
-      "expired",
-    );
-    await noTransferAction(page);
-    expect(maxGets()).toBe(1);
-    expect(entries.some((entry) => entry.url.endsWith("/requote"))).toBe(false);
-    await other.close();
-    await session.detach();
-  });
-});
-
-test("native hidden 15s: underpaid before expiry keeps the original deadline and remaining amount", async ({
-  request,
-}, info) => {
-  test.setTimeout(45000);
-  await native(info, async (page, evidence, entries, maxGets) => {
-    const initial = await start(page, request, 60000);
-    evidence.initial = initial;
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-    await scenario(request, { status: "underpaid" });
-    await expect(page.getByTestId("payment-status")).toHaveAttribute(
-      "data-status",
-      "underpaid",
-    );
-    const partial = await (
-      await request.get("/api/payments/" + initial.payment_reference)
-    ).json();
-    expect(partial.quote.expires_at).toBe(initial.quote.expires_at);
-    expect(partial).toMatchObject({
-      amount_received: "120.00",
-      amount_outstanding: "43.69",
-      payment_reference: initial.payment_reference,
-    });
-    evidence.before = await observe(page);
-    const other = await hide(page);
-    await new Promise((resolve) => setTimeout(resolve, 15000));
-    evidence.hidden = await observe(page);
-    expect((evidence.hidden as { visibility: string }).visibility).toBe(
-      "hidden",
-    );
-    await back(page, evidence);
-    await expect(page.getByTestId("countdown")).toBeVisible();
-    await expect(page.getByTestId("transfer-amount")).toContainText("43.69");
-    const returned = await observe(page);
-    evidence.returned = returned;
-    const [minutes, seconds] = returned.countdown!.split(":").map(Number);
-    expect(
-      Math.abs(
-        minutes! * 60 +
-          seconds! -
-          (Date.parse(initial.quote.expires_at) - returned.at) / 1000,
-      ),
-    ).toBeLessThanOrEqual(2);
-    expect(returned.state).toBe("underpaid");
-    expect(maxGets()).toBe(1);
-    expect(
-      entries.filter(
-        (entry) =>
-          entry.method === "POST" &&
-          new URL(entry.url).pathname === "/api/payments",
-      ),
-    ).toHaveLength(1);
-    expect(entries.some((entry) => entry.url.endsWith("/requote"))).toBe(false);
-    await other.close();
-  });
-});

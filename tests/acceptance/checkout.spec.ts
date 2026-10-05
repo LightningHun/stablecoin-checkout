@@ -136,13 +136,13 @@ for (const width of [320, 390, 768, 1280, 1440]) {
     await page.setViewportSize({ width, height: 1000 })
     await stubApi(page)
     await startQuote(page)
-    await noHorizontalOverflow(page)
     const qr = await page.getByTestId('transfer-qr').boundingBox()
     const address = await page.getByTestId('transfer-address').boundingBox()
     expect(qr).not.toBeNull()
     expect(address).not.toBeNull()
     if (width <= 390) expect(address!.y, 'Mobile reference requires address below the QR').toBeGreaterThanOrEqual(qr!.y + qr!.height)
     if (width >= 768) expect(address!.x, 'Desktop reference requires address beside the QR').toBeGreaterThan(qr!.x + qr!.width)
+    await noHorizontalOverflow(page)
   })
 }
 
