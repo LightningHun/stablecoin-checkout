@@ -103,7 +103,7 @@ test("demo-issued signed link opens its registered checkout", async ({
   await page.goto(issued.checkout_url);
   await expect(page.getByTestId("continue")).toBeEnabled();
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("250.00 EUR");
-  await expect(page.locator("header")).toContainText("Order ORD-88214");
+  await expect(page.locator(".order-summary .order-reference")).toContainText("Order ORD-88214");
   await page.getByTestId("continue").click();
   await expect(page.getByTestId("transfer-amount")).toContainText("272.33");
   await expect(page.getByTestId("fiat-total")).toHaveText("250.00 EUR");

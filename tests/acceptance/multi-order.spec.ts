@@ -25,7 +25,7 @@ test.beforeEach(async ({ request }) => {
 
 async function start(page: Page, order: string) {
   await page.goto(`/?order=${order}&demo=1`);
-  await expect(page.locator("header")).toContainText(`Order ${order}`);
+  await expect(page.locator(".order-summary .order-reference")).toContainText(`Order ${order}`);
   await page.getByTestId("continue").click();
   await expect(page.getByTestId("transfer-amount")).toHaveText(
     /163\.69\s*USDT/,
@@ -109,13 +109,13 @@ test("two orders keep independent states and references through reload, close an
   const reopenedSecond = await context.newPage();
   await reopenedFirst.goto("/?order=ORD-88213&demo=1");
   await reopenedSecond.goto("/?order=ORD-88214&demo=1");
-  await expect(reopenedFirst.locator("header")).toContainText(
+  await expect(reopenedFirst.locator(".order-summary .order-reference")).toContainText(
     "Order ORD-88213",
   );
   await expect(reopenedFirst.getByTestId("transfer-amount")).toHaveText(
     /43\.69\s*USDT/,
   );
-  await expect(reopenedSecond.locator("header")).toContainText(
+  await expect(reopenedSecond.locator(".order-summary .order-reference")).toContainText(
     "Order ORD-88214",
   );
   await expect(reopenedSecond.getByTestId("payment-status")).toHaveAttribute(
@@ -212,7 +212,7 @@ test("initial information and demo amount controls target the page's order befor
   await page.goto("/?order=ORD-88214&demo=1");
   await expect(page.getByTestId("continue")).toBeEnabled();
   expect(posts).toEqual([{ order_id: "ORD-88214", currency: "USDT", network: "tron" }]);
-  await expect(page.locator("header")).toContainText("Order ORD-88214");
+  await expect(page.locator(".order-summary .order-reference")).toContainText("Order ORD-88214");
   await expect(page.locator(".checkout-footer")).not.toContainText("Reference AQH");
   expect(await stored(page, "ORD-88214")).toBeNull();
   await page.getByText("Demo controls", { exact: true }).click();
@@ -313,6 +313,6 @@ test("a restored reference belonging to another order blocks transfer controls",
   await expect(second.getByTestId("transfer-address")).toHaveCount(0);
   await expect(second.getByTestId("transfer-qr")).toHaveCount(0);
   await expect(second.getByTestId("continue")).toHaveCount(0);
-  await expect(second.locator("header")).toContainText("Order ORD-88214");
+  await expect(second.locator(".order-summary .order-reference")).toContainText("Order ORD-88214");
   expect(await stored(second, "ORD-88214")).toBe("AQH-100307-PMT");
 });

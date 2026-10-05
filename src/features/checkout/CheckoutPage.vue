@@ -393,9 +393,6 @@ onScopeDispose(() => {
             : t("checkout.loadingDetails")
         }}</span>
       </div>
-      <span class="order-reference mono">{{
-        t("common.order", { order: orderId })
-      }}</span>
     </header>
     <ConnectionBanner
       :mobile="mobile"
@@ -420,6 +417,7 @@ onScopeDispose(() => {
     >
       <OrderSummary
         :mobile="mobile"
+        :order-id="orderId"
         :amount="order?.amount"
         :unavailable="initialLoadFailed"
         :currency="order?.currency"
@@ -701,11 +699,6 @@ onScopeDispose(() => {
   @include shared.address-panel;
 
   @include shared.amount-skeleton;
-}
-
-.order-reference {
-  font-size: 12px;
-  color: var(--muted);
 }
 
 .checkout {

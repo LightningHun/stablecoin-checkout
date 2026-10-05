@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { useI18n } from "vue-i18n";
+import { I18nT, useI18n } from "vue-i18n";
 import { formatFiat } from "../domain/money";
 const { t } = useI18n({ useScope: "global" });
 defineProps<{
   mobile?: boolean;
+  orderId?: string;
   amount?: string;
   locale: string;
   currency?: string;
@@ -29,6 +30,17 @@ defineProps<{
       role="status"
       :aria-label="t('summary.loading')"
     ></div>
+    <I18nT
+      v-if="orderId"
+      keypath="common.order"
+      tag="p"
+      class="order-reference"
+      scope="global"
+    >
+      <template #order>
+        <span class="mono">{{ orderId }}</span>
+      </template>
+    </I18nT>
   </section>
 </template>
 
@@ -51,6 +63,17 @@ defineProps<{
     line-height: 1.3;
     font-weight: 600;
     margin-top: 2px;
+  }
+
+  .order-reference {
+    margin: 8px 0 0;
+    font-size: 14px;
+    color: #505050;
+    overflow-wrap: anywhere;
+
+    .mono {
+      color: var(--ink);
+    }
   }
 
   &:where(.mobile) {
