@@ -192,3 +192,45 @@ async function reset() {
     <p role="status">{{ message }}</p>
   </details>
 </template>
+
+<style lang="scss">
+.demo-controls {
+  margin: 40px 0;
+  padding: 16px;
+  border: 1px dashed var(--border);
+  color: #555;
+  font-size: 12px;
+}
+.demo-controls summary {
+  cursor: pointer;
+}
+.demo-controls label {
+  display: block;
+  margin: 12px 0 4px;
+}
+.demo-controls select {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+}
+.demo-controls button {
+  margin: 4px 8px 4px 0;
+}
+.demo-controls .demo-signature-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.demo-signature-control input {
+  width: auto;
+}
+.demo-issued-link {
+  overflow-wrap: anywhere;
+}
+.demo-issued-link a {
+  display: block;
+  margin: 12px 0;
+  color: inherit;
+}
+</style>

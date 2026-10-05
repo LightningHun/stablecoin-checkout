@@ -53,3 +53,35 @@ const emit = defineEmits<{ requote: [] }>();
     </div>
   </div>
 </template>
+
+<style lang="scss">
+@use "../../../styles/checkout-shared" as shared;
+
+:where(.recovery) {
+  @include shared.recovery-heading;
+}
+
+.recovery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.recovery-card {
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+}
+.recovery-card p {
+  margin: 8px 0 12px;
+  color: #555;
+}
+.recovery-card .primary {
+  padding: 11px 16px;
+}
+@media (max-width: 600px) {
+  .recovery-grid {
+    grid-template-columns: 1fr;
+  }
+}
+</style>

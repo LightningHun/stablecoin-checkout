@@ -32,7 +32,12 @@ watch(icon, () => {
     <span>{{ name }}</span>
   </div>
 </template>
-<style scoped>
+
+<style lang="scss">
+@use "../../../styles/checkout-shared" as shared;
+
+@include shared.merchant-brand;
+
 .merchant-icon {
   object-fit: contain;
 }

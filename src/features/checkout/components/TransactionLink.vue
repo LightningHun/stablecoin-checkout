@@ -41,3 +41,28 @@ const shortened = computed(() => `${props.hash.slice(0, 12)}…`);
   </a>
   <span v-else class="mono" :title="hash">{{ hash }}</span>
 </template>
+
+<style lang="scss">
+.transaction-link {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  max-width: 100%;
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 1px;
+  white-space: nowrap;
+}
+.transaction-link svg {
+  flex: none;
+}
+.transaction-link:hover {
+  border-bottom-color: currentColor;
+}
+.transaction-link:focus-visible {
+  outline: 3px solid #355bea;
+  outline-offset: 4px;
+}
+</style>

@@ -105,10 +105,10 @@ export const mutations: Mutation[] = [
     runner: 'vitest', testFile: 'tests/contract/http.test.ts', testName: 'T14 M12 server-confirmed expiry requotes with the same reference', expectedFailure: 'AQH-100306-PMT', category: 'mandatory',
   },
   {
-    id: 'VM01', description: 'Remove mobile QR/address vertical stacking', requirements: ['R28', 'D03', 'T18'], file: 'src/styles/main.css',
-    patches: patch(`  .address-panel {
-    flex-direction: column;`, `  .address-panel {
-    flex-direction: row;`),
+    id: 'VM01', description: 'Remove mobile QR/address vertical stacking', requirements: ['R28', 'D03', 'T18'], file: 'src/styles/_checkout-shared.scss',
+    patches: patch(`    .address-panel {
+      flex-direction: column;`, `    .address-panel {
+      flex-direction: row;`),
     runner: 'playwright', testFile: checkoutTests, testName: 'T18 responsive 390px and VM01 QR arrangement', expectedFailure: 'Mobile reference requires address below the QR', category: 'mandatory',
   },
   {

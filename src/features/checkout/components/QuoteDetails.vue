@@ -135,3 +135,135 @@ const countdown = computed(() => {
     </div>
   </div>
 </template>
+
+<style lang="scss">
+@use "../../../styles/checkout-shared" as shared;
+
+:where(.quote-details) {
+  @include shared.network-warning;
+  @include shared.address-panel;
+  @include shared.recovery-heading;
+}
+
+.amount-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.transfer-value {
+  font-size: 14px;
+}
+.transfer-value strong {
+  font-size: 34px;
+  line-height: 1.4;
+  font-weight: 500;
+  letter-spacing: -1px;
+  overflow-wrap: anywhere;
+}
+.quote-fee {
+  font-size: 12px;
+  margin: 14px 0 16px;
+}
+.qr {
+  width: 160px;
+  height: 160px;
+  flex: none;
+  image-rendering: auto;
+}
+.address-info {
+  min-width: 0;
+  flex: 1;
+}
+.network-label.eyebrow {
+  color: var(--accent);
+  font-weight: 600;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  letter-spacing: 0.6px;
+}
+.network-label .network-badge {
+  width: 20px;
+  height: 20px;
+  font-size: 11px;
+}
+.address {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.8;
+  margin: 8px 0;
+}
+/* Visual grouping only: copied and encoded addresses contain no spaces. */
+.address-group {
+  display: inline-block;
+  white-space: nowrap;
+}
+.address-group:not(:last-child) {
+  margin-right: 1ch;
+}
+.address-info p.small {
+  margin: 8px 0;
+}
+.deadline {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 16px;
+  font-size: 13px;
+}
+.time-rule {
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(to right, var(--ink) 96%, var(--line) 96%);
+}
+.quote-details > p:last-child {
+  margin-bottom: 0;
+}
+.notice {
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+.notice p {
+  margin: 2px 0 0 30px;
+  color: #555;
+  font-size: 13px;
+}
+@media (max-width: 600px) {
+  .qr {
+    width: 180px;
+    height: 180px;
+    align-self: center;
+  }
+  .transfer-value strong {
+    font-size: 30px;
+  }
+  .quote-fee {
+    line-height: 1.6;
+  }
+  .deadline {
+    flex-direction: column;
+    gap: 3px;
+  }
+  .time-rule {
+    margin-top: 6px;
+  }
+  .notice p {
+    margin-left: 0;
+  }
+}
+/* Address panels and QR images stay opaque, including their ancestors. */
+.checkout.motion-ready .quote-details {
+  animation: checkout-settle var(--motion-medium) var(--ease-out);
+}
+
+/* Keep display spacing while preserving the canonical amount and address strings. */
+.transfer-value > span {
+  margin-left: 7px;
+}
+.address {
+  font-size: 15px;
+}
+</style>

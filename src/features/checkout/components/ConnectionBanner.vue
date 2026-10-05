@@ -114,3 +114,58 @@ const emit = defineEmits<{ retry: [] }>();
     >
   </div>
 </template>
+
+<style lang="scss">
+.connection-banner {
+  padding: 12px 24px;
+  background: var(--ink);
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  font-size: 13px;
+}
+.connection-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+}
+.connection-message > span {
+  overflow-wrap: anywhere;
+}
+.connection-icon {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+.connection-message .connection-icon {
+  margin-top: 2px;
+}
+.connection-retry-time {
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.connection-banner button {
+  background: none;
+  border: 0;
+  color: #fff;
+  text-decoration: underline;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+@media (max-width: 600px) {
+  .connection-banner {
+    flex-direction: column;
+    padding: 12px 16px;
+    gap: 8px;
+  }
+  .connection-banner button {
+    align-self: center;
+  }
+}
+</style>

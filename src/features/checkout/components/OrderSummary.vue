@@ -24,3 +24,34 @@ defineProps<{
     ></div>
   </section>
 </template>
+
+<style lang="scss">
+@use "../../../styles/checkout-shared" as shared;
+
+:where(.order-summary) {
+  @include shared.amount-skeleton;
+}
+
+.order-summary {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 32px;
+  margin-bottom: 36px;
+}
+.order-summary h1 {
+  overflow-wrap: anywhere;
+  font-size: 40px;
+  letter-spacing: -1.8px;
+  line-height: 1.3;
+  font-weight: 600;
+  margin-top: 2px;
+}
+@media (max-width: 600px) {
+  .order-summary {
+    padding-bottom: 26px;
+    margin-bottom: 28px;
+  }
+  .order-summary h1 {
+    font-size: 36px;
+  }
+}
+</style>
