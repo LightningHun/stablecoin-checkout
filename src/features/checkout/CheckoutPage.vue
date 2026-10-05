@@ -659,13 +659,18 @@ onScopeDispose(() => {
 @use "../../styles/checkout-shared" as shared;
 
 @include shared.merchant-header;
+
 @include shared.merchant-brand;
+
 :where(.checkout) {
   @include shared.checkout-footer;
 }
+
 :where(.loading-quote) {
   @include shared.network-warning;
+
   @include shared.address-panel;
+
   @include shared.amount-skeleton;
 }
 
@@ -673,11 +678,13 @@ onScopeDispose(() => {
   font-size: 12px;
   color: var(--muted);
 }
+
 .checkout {
   width: var(--column);
   max-width: calc(100% - 32px);
   margin: 46px auto 0;
 }
+
 .step {
   position: relative;
   margin-left: 14px;
@@ -685,10 +692,12 @@ onScopeDispose(() => {
   padding-bottom: 36px;
   border-left: 1px solid var(--line);
   min-width: 0;
+
+  &:last-of-type {
+    border-left-color: transparent;
+  }
 }
-.step:last-of-type {
-  border-left-color: transparent;
-}
+
 .step-marker {
   position: absolute;
   left: -15px;
@@ -705,22 +714,33 @@ onScopeDispose(() => {
   z-index: 1;
   box-shadow: 0 7px 0 #fff;
 }
-.step.active > .step-marker {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
+
+.step.active {
+  > .step-marker {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
 }
-.step.done > .step-marker {
-  background: #909090;
-  border-color: #909090;
-  color: #fff;
+
+.step.done {
+  > .step-marker {
+    background: #909090;
+    border-color: #909090;
+    color: #fff;
+  }
 }
+
 .step.done {
   border-left-color: var(--ink);
 }
-.confirmation-step.done > .step-marker {
-  background: var(--ink);
+
+.confirmation-step.done {
+  > .step-marker {
+    background: var(--ink);
+  }
 }
+
 .step-heading {
   height: 28px;
   display: flex;
@@ -729,12 +749,19 @@ onScopeDispose(() => {
   gap: 8px;
   margin-bottom: 16px;
 }
-.inactive h2 {
-  color: var(--muted);
+
+.inactive {
+  h2 {
+    color: var(--muted);
+  }
 }
-.step.inactive p {
-  margin-top: 22px;
+
+.step.inactive {
+  p {
+    margin-top: 22px;
+  }
 }
+
 .text-button {
   border: 0;
   background: transparent;
@@ -742,21 +769,25 @@ onScopeDispose(() => {
   text-underline-offset: 3px;
   padding: 0;
 }
+
 .selected-pair {
   display: flex;
   align-items: center;
   gap: 10px;
   min-height: 28px;
 }
+
 .received-summary {
   display: flex;
   justify-content: space-between;
   gap: 12px;
 }
+
 .transaction {
   font-size: 13px;
   overflow-wrap: anywhere;
 }
+
 .action-label {
   font: 10px var(--mono);
   letter-spacing: 0.5px;
@@ -765,171 +796,237 @@ onScopeDispose(() => {
   padding: 6px 9px;
   border-radius: 3px;
   white-space: nowrap;
+
+  &.outline {
+    background: white;
+    color: var(--ink);
+    border: 1px solid var(--border);
+  }
 }
-.action-label.outline {
-  background: white;
-  color: var(--ink);
-  border: 1px solid var(--border);
+
+.loading-quote {
+  > p {
+    font-size: 13px;
+    color: #555;
+  }
 }
-.loading-quote > p {
-  font-size: 13px;
-  color: #555;
-}
+
 .line-skeleton {
   width: 65%;
   height: 14px;
   margin-bottom: 16px;
 }
+
 .qr-skeleton {
   width: 144px;
   height: 144px;
   flex: none;
 }
+
 .skeleton-details {
   width: 100%;
   display: grid;
   gap: 12px;
+
+  > .skeleton {
+    height: 16px;
+  }
+
+  > .skeleton:first-child {
+    width: 40%;
+  }
+
+  > .button-skeleton {
+    height: 44px;
+    width: 45%;
+    margin-top: 8px;
+  }
 }
-.skeleton-details > .skeleton {
-  height: 16px;
-}
-.skeleton-details > .skeleton:first-child {
-  width: 40%;
-}
-.skeleton-details > .button-skeleton {
-  height: 44px;
-  width: 45%;
-  margin-top: 8px;
-}
+
 .loading-note {
   border-top: 1px solid var(--line);
   padding-top: 16px;
 }
+
 .checkout:where(.mobile) {
   margin-top: 26px;
 }
-:where(.checkout.mobile) .step {
-  padding-left: 29px;
-  padding-bottom: 36px;
-}
-:where(.checkout.mobile) .received-summary {
-  flex-direction: column;
-  gap: 8px;
-}
-:where(.checkout.mobile) .qr-skeleton {
-  align-self: center;
-  width: 168px;
-  height: 168px;
-}
-:where(.checkout.mobile) .skeleton-panel {
-  gap: 20px;
-}
-:where(.checkout.mobile) .line-skeleton {
-  width: 100%;
-}
-:where(.checkout.mobile) .skeleton-details {
-  gap: 10px;
-}
-:where(.checkout.mobile) .skeleton-details > .skeleton {
-  height: 20px;
-}
-:where(.checkout.mobile) .skeleton-details > .button-skeleton {
-  height: 44px;
-}
-:where(.checkout.mobile) .action-label {
-  font-size: 9px;
-  padding: 6px;
-}
-:where(.checkout.mobile) .step-heading h2 {
-  font-size: 14px;
+
+:where(.checkout.mobile) {
+  .step {
+    padding-left: 29px;
+    padding-bottom: 36px;
+  }
+
+  .received-summary {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .qr-skeleton {
+    align-self: center;
+    width: 168px;
+    height: 168px;
+  }
+
+  .skeleton-panel {
+    gap: 20px;
+  }
+
+  .line-skeleton {
+    width: 100%;
+  }
+
+  .skeleton-details {
+    gap: 10px;
+
+    > .skeleton {
+      height: 20px;
+    }
+
+    > .button-skeleton {
+      height: 44px;
+    }
+  }
+
+  .action-label {
+    font-size: 9px;
+    padding: 6px;
+  }
+
+  .step-heading {
+    h2 {
+      font-size: 14px;
+    }
+  }
 }
 /* An expired partial-payment quote keeps its receipt, without transfer actions. */
-.confirmation-step.incomplete > .step-marker {
-  background: #fff;
-  border: 2px solid var(--ink);
-  color: var(--ink);
+
+.confirmation-step.incomplete {
+  > .step-marker {
+    background: #fff;
+    border: 2px solid var(--ink);
+    color: var(--ink);
+  }
 }
-.checkout:has(.underpaid-incomplete) .checkout-footer > span {
-  min-width: 0;
-  overflow-wrap: anywhere;
+
+.checkout:has(.underpaid-incomplete) {
+  .checkout-footer {
+    > span {
+      min-width: 0;
+      overflow-wrap: anywhere;
+    }
+  }
 }
-:where(.checkout.mobile) .confirmation-step.incomplete .step-heading {
-  height: auto;
-  min-height: 28px;
-  flex-wrap: wrap;
+
+:where(.checkout.mobile) {
+  .confirmation-step.incomplete {
+    .step-heading {
+      height: auto;
+      min-height: 28px;
+      flex-wrap: wrap;
+    }
+  }
 }
 /* Motion starts with checkout interaction; removals remain immediate. */
-.checkout.motion-ready .step-marker {
-  transition:
-    background-color var(--motion-fast) var(--ease-out),
-    color var(--motion-fast) var(--ease-out),
-    border-color var(--motion-fast) var(--ease-out),
-    box-shadow var(--motion-fast) var(--ease-out);
-}
-.checkout.motion-ready .step {
-  transition: border-left-color var(--motion-fast) var(--ease-out);
-}
-.checkout.motion-ready .motion-enter,
-.checkout.motion-ready .received-summary {
-  animation: checkout-enter var(--motion-medium) var(--ease-out);
+
+.checkout.motion-ready {
+  .step-marker {
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out),
+      box-shadow var(--motion-fast) var(--ease-out);
+  }
+
+  .step {
+    transition: border-left-color var(--motion-fast) var(--ease-out);
+  }
+
+  .motion-enter,
+  .received-summary {
+    animation: checkout-enter var(--motion-medium) var(--ease-out);
+  }
 }
 /* Address panels and QR images stay opaque, including their ancestors. */
-.checkout.motion-ready .loading-quote {
-  animation: checkout-settle var(--motion-medium) var(--ease-out);
+
+.checkout.motion-ready {
+  .loading-quote {
+    animation: checkout-settle var(--motion-medium) var(--ease-out);
+  }
 }
 /* Pulse the placeholders only while the send step is fetching its quote. */
-.checkout.motion-ready .loading-quote .skeleton {
-  animation: quote-skeleton-pulse var(--motion-skeleton) var(--ease-in-out)
-    infinite;
+
+.checkout.motion-ready {
+  .loading-quote {
+    .skeleton {
+      animation: quote-skeleton-pulse var(--motion-skeleton) var(--ease-in-out)
+        infinite;
+    }
+  }
 }
+
 @keyframes quote-skeleton-pulse {
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.55;
   }
 }
-.paid-reveal > .step-marker::before {
-  content: "3";
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-items: center;
-  pointer-events: none;
-  opacity: 0;
-  animation: paid-digit-hide var(--paid-check-delay) steps(1, end) both;
+
+.paid-reveal {
+  > .step-marker::before {
+    content: "3";
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    opacity: 0;
+    animation: paid-digit-hide var(--paid-check-delay) steps(1, end) both;
+  }
+
+  > .step-marker > .paid-step-glyph {
+    animation: paid-check-in var(--paid-check-duration) var(--paid-ease-out)
+      var(--paid-check-delay) both;
+  }
 }
-.paid-reveal > .step-marker > .paid-step-glyph {
-  animation: paid-check-in var(--paid-check-duration) var(--paid-ease-out)
-    var(--paid-check-delay) both;
-}
+
 @keyframes paid-digit-hide {
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
 }
+
 @keyframes paid-check-in {
   from {
     clip-path: inset(0 100% 0 0);
   }
+
   to {
     clip-path: inset(0);
   }
 }
+
 @media (prefers-reduced-motion: reduce) {
-  .paid-reveal *,
-  .paid-reveal *::before,
-  .paid-reveal *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-  .paid-reveal > .step-marker::before {
-    display: none;
+  .paid-reveal {
+    *,
+    *::before,
+    *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    > .step-marker::before {
+      display: none;
+    }
   }
 }
 </style>

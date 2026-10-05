@@ -66,20 +66,26 @@ const emit = defineEmits<{ requote: [] }>();
   grid-template-columns: 1fr 1fr;
   gap: 12px;
 }
+
 .recovery-card {
   padding: 16px;
   border: 1px solid var(--border);
   border-radius: 4px;
   font-size: 13px;
+
+  p {
+    margin: 8px 0 12px;
+    color: #555;
+  }
+
+  .primary {
+    padding: 11px 16px;
+  }
 }
-.recovery-card p {
-  margin: 8px 0 12px;
-  color: #555;
-}
-.recovery-card .primary {
-  padding: 11px 16px;
-}
-:where(.recovery.mobile) .recovery-grid {
-  grid-template-columns: 1fr;
+
+:where(.recovery.mobile) {
+  .recovery-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>

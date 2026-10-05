@@ -126,52 +126,62 @@ function changeCurrency(code: CurrencyCode) {
 </template>
 
 <style lang="scss">
-.selector fieldset + fieldset {
-  margin-top: 14px;
+.selector {
+  fieldset + fieldset {
+    margin-top: 14px;
+  }
 }
+
 .currency-segments {
   display: flex;
   background: var(--surface);
   padding: 4px;
   border-radius: 6px;
   margin-top: 6px;
+
+  label {
+    position: relative;
+    text-align: center;
+    flex: 1;
+    padding: 10px 8px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 13px;
+  }
+
+  input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    inset: 0;
+    cursor: pointer;
+    margin: 0;
+  }
+
+  label:has(input:focus-visible) {
+    outline: 3px solid #355bea;
+  }
+
+  .selected {
+    background: var(--ink);
+    color: white;
+  }
 }
-.currency-segments label {
-  position: relative;
-  text-align: center;
-  flex: 1;
-  padding: 10px 8px;
-  cursor: pointer;
-  border-radius: 3px;
-  font-size: 13px;
-}
-.currency-segments input {
-  position: absolute;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  inset: 0;
-  cursor: pointer;
-  margin: 0;
-}
-.currency-segments label:has(input:focus-visible) {
-  outline: 3px solid #355bea;
-}
-.currency-segments .selected {
-  background: var(--ink);
-  color: white;
-}
+
 .network-options {
   display: grid;
   gap: 8px;
   margin-top: 6px;
   transition: height var(--motion-medium, 220ms)
     var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+
+  &.is-resizing {
+    overflow: hidden;
+    align-content: start;
+  }
 }
-.network-options.is-resizing {
-  overflow: hidden;
-  align-content: start;
-}
+
 .network-option {
   display: flex;
   align-items: center;
@@ -182,110 +192,145 @@ function changeCurrency(code: CurrencyCode) {
   min-height: 66px;
   cursor: pointer;
   position: relative;
+
+  input {
+    margin: 0;
+    width: 16px;
+    height: 16px;
+    flex: none;
+    accent-color: var(--accent);
+  }
+
+  &.selected {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
 }
-.network-option input {
-  margin: 0;
-  width: 16px;
-  height: 16px;
-  flex: none;
-  accent-color: var(--accent);
-}
-.network-option.selected {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 1px var(--accent);
-}
+
 .network-info {
   min-width: 0;
   flex: 1;
+
+  strong {
+    display: block;
+    white-space: nowrap;
+    font-weight: 400;
+  }
+
+  small {
+    display: block;
+    color: var(--muted);
+    font-size: 12px;
+  }
 }
-.network-info strong {
-  display: block;
-  white-space: nowrap;
-  font-weight: 400;
-}
-.network-info small {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-}
+
 .fee {
   font-size: 13px;
   white-space: nowrap;
   color: #444;
 }
-.selector > .continue-button {
-  margin-top: 16px;
+
+.selector {
+  > .continue-button {
+    margin-top: 16px;
+  }
+
+  p {
+    font-size: 13px;
+    margin: 8px 0 16px;
+  }
 }
-.selector p {
-  font-size: 13px;
-  margin: 8px 0 16px;
+
+:where(.selector.mobile) {
+  .network-option {
+    padding: 14px 16px;
+    gap: 14px;
+    display: grid;
+    grid-template-columns: 16px 28px minmax(0, 1fr);
+    column-gap: 14px;
+    row-gap: 0;
+    min-height: 80px;
+
+    > input,
+    > .network-badge {
+      grid-row: 1/3;
+    }
+  }
+
+  .network-info {
+    grid-column: 3;
+
+    strong {
+      white-space: normal;
+    }
+
+    small {
+      line-height: 1.3;
+    }
+  }
+
+  .fee {
+    grid-column: 3;
+    font-size: 12px;
+    line-height: 1.3;
+  }
 }
-:where(.selector.mobile) .network-option {
-  padding: 14px 16px;
-  gap: 14px;
-  display: grid;
-  grid-template-columns: 16px 28px minmax(0, 1fr);
-  column-gap: 14px;
-  row-gap: 0;
-  min-height: 80px;
-}
-:where(.selector.mobile) .network-option > input,
-:where(.selector.mobile) .network-option > .network-badge {
-  grid-row: 1/3;
-}
-:where(.selector.mobile) .network-info {
-  grid-column: 3;
-}
-:where(.selector.mobile) .network-info strong {
-  white-space: normal;
-}
-:where(.selector.mobile) .network-info small {
-  line-height: 1.3;
-}
-:where(.selector.mobile) .fee {
-  grid-column: 3;
-  font-size: 12px;
-  line-height: 1.3;
-}
-.selector:where(.mobile) .primary {
-  width: 100%;
-  padding-left: 8px;
-  padding-right: 8px;
-  font-size: 13px;
-}
-.selector:where(.mobile) p {
-  margin: 8px 0 16px;
-}
-.selector:where(.mobile) p.small {
-  font-size: 12px;
+
+.selector:where(.mobile) {
+  .primary {
+    width: 100%;
+    padding-left: 8px;
+    padding-right: 8px;
+    font-size: 13px;
+  }
+
+  p {
+    margin: 8px 0 16px;
+
+    &.small {
+      font-size: 12px;
+    }
+  }
 }
 /* Motion starts with checkout interaction; removals remain immediate. */
-.checkout.motion-ready .currency-segments label,
-.checkout.motion-ready .network-option {
-  transition:
-    background-color var(--motion-fast) var(--ease-out),
-    color var(--motion-fast) var(--ease-out),
-    border-color var(--motion-fast) var(--ease-out),
-    box-shadow var(--motion-fast) var(--ease-out);
+
+.checkout.motion-ready {
+  .currency-segments label,
+  .network-option {
+    transition:
+      background-color var(--motion-fast) var(--ease-out),
+      color var(--motion-fast) var(--ease-out),
+      border-color var(--motion-fast) var(--ease-out),
+      box-shadow var(--motion-fast) var(--ease-out);
+  }
+
+  .network-option {
+    animation: checkout-enter var(--motion-medium) var(--ease-out);
+  }
 }
-.checkout.motion-ready .network-option {
-  animation: checkout-enter var(--motion-medium) var(--ease-out);
+
+.selector {
+  > p:last-child {
+    margin-bottom: 4px;
+  }
 }
-.selector > p:last-child {
-  margin-bottom: 4px;
+
+:where(.selector:not(.mobile)) {
+  .continue-button {
+    width: var(--continue-button-width, auto);
+    max-width: 100%;
+    overflow: hidden;
+    transition: width var(--motion-medium, 220ms)
+      var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
+  }
+
+  .continue-label {
+    display: block;
+    width: max-content;
+    margin-inline: 0;
+  }
 }
-:where(.selector:not(.mobile)) .continue-button {
-  width: var(--continue-button-width, auto);
-  max-width: 100%;
-  overflow: hidden;
-  transition: width var(--motion-medium, 220ms)
-    var(--ease-out, cubic-bezier(0.2, 0, 0, 1));
-}
-:where(.selector:not(.mobile)) .continue-label {
-  display: block;
-  width: max-content;
-  margin-inline: 0;
-}
+
 @media (prefers-reduced-motion: reduce) {
   .continue-button {
     transition: none;

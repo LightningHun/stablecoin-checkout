@@ -200,37 +200,47 @@ async function reset() {
   border: 1px dashed var(--border);
   color: #555;
   font-size: 12px;
+
+  summary {
+    cursor: pointer;
+  }
+
+  label {
+    display: block;
+    margin: 12px 0 4px;
+  }
+
+  select {
+    display: block;
+    width: 100%;
+    margin-top: 4px;
+    padding: 8px;
+  }
+
+  button {
+    margin: 4px 8px 4px 0;
+  }
+
+  .demo-signature-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
 }
-.demo-controls summary {
-  cursor: pointer;
+
+.demo-signature-control {
+  input {
+    width: auto;
+  }
 }
-.demo-controls label {
-  display: block;
-  margin: 12px 0 4px;
-}
-.demo-controls select {
-  display: block;
-  width: 100%;
-  margin-top: 4px;
-  padding: 8px;
-}
-.demo-controls button {
-  margin: 4px 8px 4px 0;
-}
-.demo-controls .demo-signature-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.demo-signature-control input {
-  width: auto;
-}
+
 .demo-issued-link {
   overflow-wrap: anywhere;
-}
-.demo-issued-link a {
-  display: block;
-  margin: 12px 0;
-  color: inherit;
+
+  a {
+    display: block;
+    margin: 12px 0;
+    color: inherit;
+  }
 }
 </style>

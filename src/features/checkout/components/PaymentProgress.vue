@@ -392,6 +392,7 @@ function title() {
 
 <style lang="scss">
 /* Keep keyframe names stable for finishGhost's animationend handler. */
+
 @use "../../../styles/checkout-shared" as shared;
 
 :where(.payment-progress) {
@@ -404,31 +405,40 @@ function title() {
   gap: 12px;
   align-items: center;
 }
+
 .confirmations {
   font-size: 13px;
   color: #444;
 }
+
 .confirmation-bars {
   display: flex;
   gap: 4px;
   margin: 16px 0;
+
+  span {
+    height: 4px;
+    border-radius: 4px;
+    flex: 1;
+    background: var(--line);
+  }
+
+  .complete {
+    background: var(--ink);
+  }
 }
-.confirmation-bars span {
-  height: 4px;
-  border-radius: 4px;
-  flex: 1;
-  background: var(--line);
+
+.payment-progress {
+  p {
+    font-size: 13px;
+  }
 }
-.confirmation-bars .complete {
-  background: var(--ink);
-}
-.payment-progress p {
-  font-size: 13px;
-}
+
 .result {
   font-size: 20px;
   letter-spacing: -0.4px;
 }
+
 .connection-dot {
   width: 8px;
   height: 8px;
@@ -436,62 +446,98 @@ function title() {
   background: var(--border);
   flex: none;
 }
+
 .progress-heading:has(.connection-dot) {
   flex-direction: row;
   align-items: center;
   justify-content: flex-start;
 }
-.payment-progress .connection-support > p:first-child {
-  margin-top: 8px;
+
+.payment-progress {
+  .connection-support {
+    > p:first-child {
+      margin-top: 8px;
+    }
+  }
 }
-.payment-progress[data-status="awaiting_payment"]
-  .connection-support
-  > p:first-child {
-  margin-left: 20px;
+
+.payment-progress[data-status="awaiting_payment"] {
+  .connection-support {
+    > p:first-child {
+      margin-left: 20px;
+    }
+  }
 }
-.connection-support .connection-contact {
-  margin-top: 24px;
+
+.connection-support {
+  .connection-contact {
+    margin-top: 24px;
+  }
+
+  .copy-control {
+    margin-top: 12px;
+  }
 }
-.connection-support .copy-control {
-  margin-top: 12px;
+
+:where(.payment-progress.mobile) {
+  .progress-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
 }
-:where(.payment-progress.mobile) .progress-heading {
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 12px;
+
+.underpaid-incomplete {
+  .incomplete-subtitle {
+    margin: 2px 0 16px 42px;
+    color: #444;
+  }
+
+  .receipt {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    > div {
+      min-width: 0;
+    }
+  }
+
+  .confirmation-icon.incomplete-warning {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+  }
 }
-.underpaid-incomplete .incomplete-subtitle {
-  margin: 2px 0 16px 42px;
-  color: #444;
+
+.incomplete-warning {
+  svg {
+    display: block;
+  }
 }
-.underpaid-incomplete .receipt {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+.underpaid-incomplete:where(.mobile) {
+  .receipt {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
-.underpaid-incomplete .receipt > div {
-  min-width: 0;
+
+.checkout.motion-ready {
+  .payment-progress > p,
+  .confirmation-icon,
+  .confirmations,
+  .confirmation-bars,
+  .receipt {
+    animation: checkout-enter var(--motion-medium) var(--ease-out);
+  }
 }
-.underpaid-incomplete .confirmation-icon.incomplete-warning {
-  border: 0;
-  border-radius: 0;
-  background: transparent;
-}
-.incomplete-warning svg {
-  display: block;
-}
-.underpaid-incomplete:where(.mobile) .receipt {
-  grid-template-columns: minmax(0, 1fr);
-}
-.checkout.motion-ready .payment-progress > p,
-.checkout.motion-ready .confirmation-icon,
-.checkout.motion-ready .confirmations,
-.checkout.motion-ready .confirmation-bars,
-.checkout.motion-ready .receipt {
-  animation: checkout-enter var(--motion-medium) var(--ease-out);
-}
-.payment-progress[data-status="selection"] .progress-heading strong {
-  color: var(--muted);
-  font-weight: 400;
-  font-size: 13px;
+
+.payment-progress[data-status="selection"] {
+  .progress-heading {
+    strong {
+      color: var(--muted);
+      font-weight: 400;
+      font-size: 13px;
+    }
+  }
 }
 
 .confirmation-icon {
@@ -503,50 +549,68 @@ function title() {
   background: var(--ink);
   color: #fff;
   flex: none;
+
+  &.large {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+
+  &.failed {
+    background: white;
+    border: 2px solid var(--ink);
+    color: var(--ink);
+  }
 }
-.confirmation-icon.large {
-  width: 32px;
-  height: 32px;
-  font-size: 18px;
-}
-.confirmation-icon.failed {
-  background: white;
-  border: 2px solid var(--ink);
-  color: var(--ink);
-}
+
 .progress-heading:has(.confirmation-icon) {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 10px;
 }
+
 .partial-progress {
   height: 4px;
   background: var(--line);
   margin: 16px 0;
+
+  span {
+    display: block;
+    height: 100%;
+    background: var(--ink);
+  }
 }
-.partial-progress span {
-  display: block;
-  height: 100%;
-  background: var(--ink);
-}
-:where(.payment-progress.mobile) .progress-heading:has(.confirmation-icon) {
-  grid-template-columns: auto minmax(0, 1fr);
-  align-items: center;
-}
-:where(.payment-progress.mobile) .progress-heading .confirmations {
-  grid-column: 1/-1;
+
+:where(.payment-progress.mobile) {
+  .progress-heading {
+    &:has(.confirmation-icon) {
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: center;
+    }
+
+    .confirmations {
+      grid-column: 1/-1;
+    }
+  }
 }
 
 /* One-shot paid reveal. The only outgoing content is an inert confirmation ghost. */
+
 .payment-progress {
   position: relative;
 }
 /* An initially paid snapshot remains static, including earlier generic entrances. */
-.checkout .payment-progress[data-status="paid"] .confirmation-icon,
-.checkout .payment-progress[data-status="paid"] .receipt,
-.checkout .payment-progress[data-status="paid"] > p {
-  animation: none;
+
+.checkout {
+  .payment-progress[data-status="paid"] {
+    .confirmation-icon,
+    .receipt,
+    > p {
+      animation: none;
+    }
+  }
 }
+
 .paid-confirmation-ghost {
   position: absolute;
   inset: 0 0 auto;
@@ -554,12 +618,14 @@ function title() {
   animation: paid-ghost-out var(--paid-ghost-duration) var(--paid-ease-out)
     var(--paid-ghost-delay) both;
 }
+
 .paid-ghost-heading {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
   gap: 10px;
 }
+
 .paid-ghost-icon {
   display: inline-grid;
   place-items: center;
@@ -569,130 +635,164 @@ function title() {
   background: var(--ink);
   color: #fff;
 }
+
 .paid-ghost-count {
   font-size: 13px;
   color: #444;
 }
+
 .paid-ghost-bars {
   display: flex;
   gap: 4px;
   margin: 16px 0;
+
+  > span {
+    position: relative;
+    height: 4px;
+    border-radius: 4px;
+    flex: 1;
+    background: var(--line);
+  }
+
+  > .paid-ghost-complete {
+    background: var(--ink);
+  }
+
+  > span:not(.paid-ghost-complete)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--ink);
+    transform-origin: left;
+    animation: paid-bar-fill var(--paid-bar-duration) var(--paid-ease-out) both;
+  }
 }
-.paid-ghost-bars > span {
-  position: relative;
-  height: 4px;
-  border-radius: 4px;
-  flex: 1;
-  background: var(--line);
+
+.checkout {
+  .payment-progress.paid-reveal-content {
+    > .progress-heading > .confirmation-icon.large {
+      position: relative;
+      animation: paid-mark-in var(--paid-mark-duration) var(--paid-ease-mark)
+        var(--paid-mark-delay) both;
+    }
+  }
 }
-.paid-ghost-bars > .paid-ghost-complete {
-  background: var(--ink);
+
+.paid-reveal-content {
+  .confirmation-icon.large::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border: 1px solid var(--ink);
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: 0;
+    animation: paid-ring-out var(--paid-ring-duration) var(--paid-ease-out)
+      var(--paid-ring-delay) both;
+  }
 }
-.paid-ghost-bars > span:not(.paid-ghost-complete)::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: var(--ink);
-  transform-origin: left;
-  animation: paid-bar-fill var(--paid-bar-duration) var(--paid-ease-out) both;
+
+.checkout {
+  .payment-progress.paid-reveal-content {
+    > .progress-heading > strong {
+      animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
+        var(--paid-title-delay) both;
+    }
+
+    > .receipt,
+    > p.small.muted {
+      animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
+        var(--paid-details-delay) both;
+    }
+
+    > .copy-control > button {
+      animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
+        var(--paid-button-delay) both;
+    }
+  }
 }
-.checkout
-  .payment-progress.paid-reveal-content
-  > .progress-heading
-  > .confirmation-icon.large {
-  position: relative;
-  animation: paid-mark-in var(--paid-mark-duration) var(--paid-ease-mark)
-    var(--paid-mark-delay) both;
-}
-.paid-reveal-content .confirmation-icon.large::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border: 1px solid var(--ink);
-  border-radius: inherit;
-  pointer-events: none;
-  opacity: 0;
-  animation: paid-ring-out var(--paid-ring-duration) var(--paid-ease-out)
-    var(--paid-ring-delay) both;
-}
-.checkout .payment-progress.paid-reveal-content > .progress-heading > strong {
-  animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
-    var(--paid-title-delay) both;
-}
-.checkout .payment-progress.paid-reveal-content > .receipt,
-.checkout .payment-progress.paid-reveal-content > p.small.muted {
-  animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
-    var(--paid-details-delay) both;
-}
-.checkout .payment-progress.paid-reveal-content > .copy-control > button {
-  animation: paid-rise-in var(--paid-rise-duration) var(--paid-ease-out)
-    var(--paid-button-delay) both;
-}
+
 @keyframes paid-bar-fill {
   from {
     transform: scaleX(0);
   }
+
   99.99%,
   to {
     transform: none;
   }
 }
+
 @keyframes paid-ghost-out {
   from {
     opacity: 1;
   }
+
   to {
     opacity: 0;
   }
 }
+
 @keyframes paid-mark-in {
   from {
     opacity: 0;
     transform: scale(0.6);
   }
+
   99.99%,
   to {
     opacity: 1;
     transform: none;
   }
 }
+
 @keyframes paid-ring-out {
   from {
     opacity: 0;
     transform: scale(1);
   }
+
   0.01% {
     opacity: 0.6;
     transform: scale(1);
   }
+
   99.98% {
     opacity: 0;
     transform: scale(2.6);
   }
+
   99.99%,
   to {
     opacity: 0;
     transform: none;
   }
 }
+
 @keyframes paid-rise-in {
   from {
     opacity: 0;
     transform: translateY(8px);
   }
+
   99.99%,
   to {
     opacity: 1;
     transform: none;
   }
 }
-:where(.payment-progress.mobile) .paid-ghost-heading {
-  grid-template-columns: auto minmax(0, 1fr);
+
+:where(.payment-progress.mobile) {
+  .paid-ghost-heading {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .paid-ghost-count {
+    grid-column: 1 / -1;
+  }
 }
-:where(.payment-progress.mobile) .paid-ghost-count {
-  grid-column: 1 / -1;
-}
+
 @media (prefers-reduced-motion: reduce) {
   .paid-confirmation-ghost,
   .paid-reveal-content .confirmation-icon.large::after {

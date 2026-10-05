@@ -161,77 +161,101 @@ async function copy() {
 </template>
 
 <style lang="scss">
-.copy-control > .secondary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  white-space: nowrap;
-  transition:
-    transform var(--copy-press-duration) var(--copy-ease-out),
-    background-color var(--copy-fill-duration) var(--copy-ease-out),
-    border-color var(--copy-fill-duration) var(--copy-ease-out),
-    color var(--copy-fill-duration) var(--copy-ease-out),
-    width var(--copy-width-duration) var(--copy-ease-out);
+.copy-control {
+  > .secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+    transition:
+      transform var(--copy-press-duration) var(--copy-ease-out),
+      background-color var(--copy-fill-duration) var(--copy-ease-out),
+      border-color var(--copy-fill-duration) var(--copy-ease-out),
+      color var(--copy-fill-duration) var(--copy-ease-out),
+      width var(--copy-width-duration) var(--copy-ease-out);
+  }
 }
 /* Override retained receipt animation transforms only while pressed. */
-.copy-control > .secondary:active {
-  transform: scale(0.97) !important;
+
+.copy-control {
+  > .secondary:active {
+    transform: scale(0.97) !important;
+  }
+
+  > .secondary.is-copied {
+    background-color: var(--ink);
+    border-color: var(--ink);
+    color: #fff;
+  }
 }
-.copy-control > .secondary.is-copied {
-  background-color: var(--ink);
-  border-color: var(--ink);
-  color: #fff;
-}
+
 .copy-label {
   flex-shrink: 0;
 }
-.secondary .copy-label {
-  margin-right: 0;
+
+.secondary {
+  .copy-label {
+    margin-right: 0;
+  }
 }
-.is-copied .copy-label {
-  animation: copy-label-in var(--copy-label-duration) var(--copy-ease-out);
+
+.is-copied {
+  .copy-label {
+    animation: copy-label-in var(--copy-label-duration) var(--copy-ease-out);
+  }
 }
+
 .copy-check {
   animation: copy-icon-in var(--copy-icon-duration) var(--copy-ease-icon);
 }
+
 @keyframes copy-icon-in {
   from {
     opacity: 0;
     transform: scale(0.5);
   }
+
   to {
     opacity: 1;
     transform: none;
   }
 }
+
 @keyframes copy-label-in {
   from {
     opacity: 0;
     transform: translateY(4px);
   }
+
   to {
     opacity: 1;
     transform: none;
   }
 }
+
 .copy-icon {
   width: 20px;
   height: 20px;
   flex: none;
 }
+
 .copy-fallback {
   animation: copy-label-in var(--copy-fallback-duration) var(--copy-ease-out);
   margin: 8px 0;
   max-width: 100%;
   font-size: 12px;
+
+  input {
+    width: 100%;
+    padding: 8px;
+  }
 }
-.copy-fallback input {
-  width: 100%;
-  padding: 8px;
-}
+
 @media (prefers-reduced-motion: reduce) {
-  .copy-control > .secondary:active {
-    transform: none !important;
+  .copy-control {
+    > .secondary:active {
+      transform: none !important;
+    }
   }
 }
 </style>

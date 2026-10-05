@@ -8,9 +8,10 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-  }
-  .merchant-header:where(.mobile) {
-    padding: 0 16px;
+
+    &:where(.mobile) {
+      padding: 0 16px;
+    }
   }
 }
 
@@ -43,12 +44,14 @@
     border-radius: 4px;
     font-size: 13px;
     margin-bottom: 16px;
-  }
-  .network-warning strong {
-    font-size: 14px;
-  }
-  .network-warning .network-badge {
-    background: #ffffff33;
+
+    strong {
+      font-size: 14px;
+    }
+
+    .network-badge {
+      background: #ffffff33;
+    }
   }
   &:where(.mobile) {
     .network-warning {
@@ -81,18 +84,21 @@
     grid-template-columns: 1fr 1fr;
     gap: 16px 24px;
     margin: 16px 0;
-  }
-  .receipt.columns3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .receipt dt {
-    font-size: 12px;
-    color: var(--muted);
-    margin-bottom: 3px;
-  }
-  .receipt dd {
-    margin: 0;
-    overflow-wrap: anywhere;
+
+    &.columns3 {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    dt {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 3px;
+    }
+
+    dd {
+      margin: 0;
+      overflow-wrap: anywhere;
+    }
   }
   &:where(.mobile) {
     .receipt.columns3 {
@@ -110,9 +116,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-  .recovery-heading svg {
-    flex: none;
+
+    svg {
+      flex: none;
+    }
   }
 }
 

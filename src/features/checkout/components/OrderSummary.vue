@@ -37,20 +37,25 @@ defineProps<{
   border-bottom: 1px solid var(--line);
   padding-bottom: 32px;
   margin-bottom: 36px;
+
+  h1 {
+    overflow-wrap: anywhere;
+    font-size: 40px;
+    letter-spacing: -1.8px;
+    line-height: 1.3;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+
+  &:where(.mobile) {
+    padding-bottom: 26px;
+    margin-bottom: 28px;
+  }
 }
-.order-summary h1 {
-  overflow-wrap: anywhere;
-  font-size: 40px;
-  letter-spacing: -1.8px;
-  line-height: 1.3;
-  font-weight: 600;
-  margin-top: 2px;
-}
+
 .order-summary:where(.mobile) {
-  padding-bottom: 26px;
-  margin-bottom: 28px;
-}
-.order-summary:where(.mobile) h1 {
-  font-size: 36px;
+  h1 {
+    font-size: 36px;
+  }
 }
 </style>

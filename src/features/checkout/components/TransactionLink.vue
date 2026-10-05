@@ -54,15 +54,18 @@ const shortened = computed(() => `${props.hash.slice(0, 12)}…`);
   border-bottom: 1px solid var(--border);
   padding-bottom: 1px;
   white-space: nowrap;
-}
-.transaction-link svg {
-  flex: none;
-}
-.transaction-link:hover {
-  border-bottom-color: currentColor;
-}
-.transaction-link:focus-visible {
-  outline: 3px solid #355bea;
-  outline-offset: 4px;
+
+  svg {
+    flex: none;
+  }
+
+  &:hover {
+    border-bottom-color: currentColor;
+  }
+
+  &:focus-visible {
+    outline: 3px solid #355bea;
+    outline-offset: 4px;
+  }
 }
 </style>

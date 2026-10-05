@@ -128,43 +128,55 @@ const emit = defineEmits<{ retry: [] }>();
   gap: 8px 16px;
   font-size: 13px;
 }
+
 .connection-message {
   display: flex;
   align-items: flex-start;
   gap: 10px;
   min-width: 0;
+
+  > span {
+    overflow-wrap: anywhere;
+  }
 }
-.connection-message > span {
-  overflow-wrap: anywhere;
-}
+
 .connection-icon {
   width: 16px;
   height: 16px;
   flex: none;
 }
-.connection-message .connection-icon {
-  margin-top: 2px;
+
+.connection-message {
+  .connection-icon {
+    margin-top: 2px;
+  }
 }
+
 .connection-retry-time {
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
-.connection-banner button {
-  background: none;
-  border: 0;
-  color: #fff;
-  text-decoration: underline;
-  white-space: nowrap;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-}
-.connection-banner:where(.mobile) {
-  flex-direction: column;
-  padding: 12px 16px;
-  gap: 8px;
-}
-.connection-banner:where(.mobile) button {
-  align-self: center;
+
+.connection-banner {
+  button {
+    background: none;
+    border: 0;
+    color: #fff;
+    text-decoration: underline;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  &:where(.mobile) {
+    flex-direction: column;
+    padding: 12px 16px;
+    gap: 8px;
+
+    button {
+      align-self: center;
+    }
+  }
 }
 </style>

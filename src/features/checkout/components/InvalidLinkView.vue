@@ -115,85 +115,108 @@ onMounted(() => heading.value?.focus());
 @use "../../../styles/checkout-shared" as shared;
 
 @include shared.merchant-header;
+
 :where(.invalid-link-layout) {
   @include shared.checkout-footer;
+
   @include shared.receipt;
 }
 
 /* Invalid checkout links have no payment controls or active payment session. */
+
 .invalid-link-layout {
   min-height: 100svh;
   display: flex;
   flex-direction: column;
 }
+
 .invalid-link-view {
   width: var(--column);
   max-width: calc(100% - 32px);
   margin: 72px auto 0;
   flex: 1;
 }
+
 .invalid-link-icon {
   display: block;
   margin-bottom: 22px;
 }
-.invalid-link-view h1 {
-  font-size: 28px;
-  line-height: 1.25;
-  letter-spacing: -0.6px;
-  font-weight: 600;
+
+.invalid-link-view {
+  h1 {
+    font-size: 28px;
+    line-height: 1.25;
+    letter-spacing: -0.6px;
+    font-weight: 600;
+  }
 }
+
 .invalid-link-explanation {
   color: var(--muted);
   line-height: 1.6;
   margin: 10px 0 20px;
 }
+
 .invalid-link-actions {
   display: flex;
   align-items: flex-start;
   gap: 8px;
 }
+
 .invalid-link-support {
   border-top: 1px solid var(--line);
   margin-top: 20px;
   padding-top: 20px;
+
+  .receipt {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    margin: 18px 0 24px;
+  }
+
+  > p {
+    margin: 0;
+  }
 }
-.invalid-link-support .receipt {
-  grid-template-columns: minmax(0, 1fr);
-  gap: 16px;
-  margin: 18px 0 24px;
-}
-.invalid-link-support > p {
-  margin: 0;
-}
+
 .invalid-link-footer {
   width: var(--column);
   max-width: calc(100% - 32px);
   margin: 64px auto 36px;
   justify-content: flex-end;
   gap: 16px;
+
+  a {
+    color: inherit;
+  }
 }
-.invalid-link-footer a {
-  color: inherit;
-}
-:where(.invalid-link-layout.mobile) .invalid-link-view {
-  margin-top: 36px;
-}
-:where(.invalid-link-layout.mobile) .invalid-link-view h1 {
-  font-size: 24px;
-}
-:where(.invalid-link-layout.mobile) .invalid-link-actions {
-  flex-direction: column;
-}
-:where(.invalid-link-layout.mobile) .invalid-link-actions > *,
-:where(.invalid-link-layout.mobile) .invalid-link-actions .secondary {
-  width: 100%;
-}
-:where(.invalid-link-layout.mobile) .invalid-link-actions .secondary {
-  justify-content: center;
-}
-:where(.invalid-link-layout.mobile) .invalid-link-footer {
-  justify-content: flex-start;
-  flex-wrap: wrap;
-  margin-bottom: 28px;
+
+:where(.invalid-link-layout.mobile) {
+  .invalid-link-view {
+    margin-top: 36px;
+
+    h1 {
+      font-size: 24px;
+    }
+  }
+
+  .invalid-link-actions {
+    flex-direction: column;
+
+    > *,
+    .secondary {
+      width: 100%;
+    }
+
+    .secondary {
+      justify-content: center;
+    }
+  }
+
+  .invalid-link-footer {
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
 }
 </style>
