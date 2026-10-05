@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n({ useScope: "global" });
 import { computed, ref } from "vue";
 import { parseUnits, formatUnits } from "../domain/money";
 import { isResult, isTerminal } from "../domain/paymentModel";
@@ -65,30 +67,37 @@ const partialPercent = computed(() => {
 });
 function title() {
   const p = props.payment;
-  if (!p) return "Updates by itself once your transfer is seen.";
+  if (!p) return t("progress.automatic");
   switch (p.status) {
     case "awaiting_payment":
       return props.health === "stale"
         ? props.connectionIssue && props.retryScheduled
-          ? "Connection lost — reconnecting"
-          : "Connection lost"
-        : "Waiting for your transfer";
+          ? t("progress.reconnecting")
+          : t("progress.lost")
+        : t("progress.waiting");
     case "detected":
-      return "Your money arrived";
+      return t("progress.detected");
     case "confirming":
-      return "Confirming your transfer";
+      return t("progress.confirming");
     case "paid":
-      return "Paid";
+      return t("progress.paid");
     case "underpaid":
       return expiredUnderpayment.value
-        ? "Payment incomplete"
-        : `Received ${p.amount_received} of ${p.quote.total_due} ${p.quote.crypto_currency}`;
+        ? t("progress.incomplete")
+        : t("progress.partial", {
+            received: p.amount_received,
+            total: p.quote.total_due,
+            currency: p.quote.crypto_currency,
+          });
     case "overpaid":
-      return `Paid — with ${p.amount_excess} ${p.quote.crypto_currency} extra`;
+      return t("progress.overpaid", {
+        amount: p.amount_excess,
+        currency: p.quote.crypto_currency,
+      });
     case "expired":
-      return "Nothing received in the last verified update.";
+      return t("progress.expired");
     case "failed":
-      return "Payment failed";
+      return t("progress.failed");
   }
 }
 </script>
@@ -113,13 +122,15 @@ function title() {
         <span class="paid-ghost-icon">✓</span>
         <strong>{{
           ghost.status === "detected"
-            ? "Your money arrived"
-            : "Confirming your transfer"
+            ? t("progress.detected")
+            : t("progress.confirming")
         }}</strong>
-        <span class="mono paid-ghost-count"
-          >{{ ghost.required_confirmations }} of
-          {{ ghost.required_confirmations }} confirmations</span
-        >
+        <span class="mono paid-ghost-count">{{
+          t("progress.confirmations", {
+            count: ghost.required_confirmations,
+            required: ghost.required_confirmations,
+          })
+        }}</span>
       </div>
       <div class="paid-ghost-bars">
         <span
@@ -129,10 +140,11 @@ function title() {
         ></span>
       </div>
       <p>
-        {{ ghost.quote.network_name }} is confirming the transfer. Nothing to do
-        on your side.
+        {{
+          t("progress.confirmingNetwork", { network: ghost.quote.network_name })
+        }}
       </p>
-      <p>♙ Your rate is locked in — this quote no longer expires.</p>
+      <p>{{ t("progress.locked") }}</p>
     </div>
     <div class="progress-heading">
       <span
@@ -188,25 +200,45 @@ function title() {
           (payment.status === 'detected' || payment.status === 'confirming')
         "
         class="mono confirmations"
-        >{{ payment.confirmations }} of
-        {{ payment.required_confirmations }} confirmations</span
+        >{{
+          t("progress.confirmations", {
+            count: payment.confirmations,
+            required: payment.required_confirmations,
+          })
+        }}</span
       >
     </div>
-    <p
+    <i18n-t
       v-if="expiredUnderpayment"
+      keypath="progress.incompleteSubtitle"
+      tag="p"
+      scope="global"
       class="incomplete-subtitle"
       data-testid="incomplete-subtitle"
     >
-      <span class="mono">{{ expiredUnderpayment.amount_received }}</span> of
-      <span class="mono"
-        >{{ expiredUnderpayment.quote.total_due }}
-        {{ expiredUnderpayment.quote.crypto_currency }}</span
+      <template #received
+        >
+<span class="mono">{{
+          expiredUnderpayment.amount_received
+        }}</span>
+</template
       >
-      received · the rate for the rest expired at
-      <time :datetime="expiredUnderpayment.quote.expires_at">{{
-        formatHourMinute(expiredUnderpayment.quote.expires_at)
-      }}</time>
-    </p>
+      <template #total
+        >
+<span class="mono"
+          >{{ expiredUnderpayment.quote.total_due }}
+          {{ expiredUnderpayment.quote.crypto_currency }}</span
+        >
+</template
+      >
+      <template #time
+        >
+<time :datetime="expiredUnderpayment.quote.expires_at">{{
+          formatHourMinute(expiredUnderpayment.quote.expires_at)
+        }}</time>
+</template
+      >
+    </i18n-t>
     <div
       v-if="payment?.status === 'underpaid' && !expiredUnderpayment"
       class="partial-progress"
@@ -226,57 +258,73 @@ function title() {
           ></span>
         </div>
         <p>
-          {{ payment.quote.network_name }} is confirming the transfer. Nothing
-          to do on your side.
+          {{
+            t("progress.confirmingNetwork", {
+              network: payment.quote.network_name,
+            })
+          }}
         </p>
-        <p>♙ Your rate is locked in — this quote no longer expires.</p>
+        <p>{{ t("progress.locked") }}</p>
       </template>
       <p
         v-if="payment.status === 'awaiting_payment' && !connectionIssue"
         class="muted"
       >
-        {{
-          health === "stale"
-            ? "Current server status is unknown. If you already sent funds, do not send again."
-            : "This page updates by itself — no need to refresh. Wait here after sending the transfer."
-        }}
+        {{ health === "stale" ? t("progress.unknown") : t("progress.wait") }}
       </p>
       <p
         v-if="expiredUnderpayment"
         class="muted"
         data-testid="incomplete-description"
       >
-        The remaining {{ expiredUnderpayment.amount_outstanding }}
-        {{ expiredUnderpayment.quote.crypto_currency }} was not received before
-        the rate expired. Do not send anything more to this address. Your
-        previous payment is still recorded. Contact
-        {{ expiredUnderpayment.merchant.name }} with the details below for next
-        steps.
+        {{
+          t("progress.incompleteDescription", {
+            amount: expiredUnderpayment.amount_outstanding,
+            currency: expiredUnderpayment.quote.crypto_currency,
+            merchant: expiredUnderpayment.merchant.name,
+          })
+        }}
       </p>
       <p v-else-if="payment.status === 'underpaid'" class="muted">
         <template v-if="canSendRemaining">
-          Send only the outstanding {{ payment.amount_outstanding }}
-          {{ payment.quote.crypto_currency }}. Your previous payment is counted
-          once; completion needs server confirmation.
+          {{
+            t("progress.sendOutstanding", {
+              amount: payment.amount_outstanding,
+              currency: payment.quote.crypto_currency,
+            })
+          }}
         </template>
         <template v-else>
-          Outstanding balance: {{ payment.amount_outstanding }}
-          {{ payment.quote.crypto_currency }}. Your previous payment is still
-          recorded; completion needs server confirmation.
+          {{
+            t("progress.outstanding", {
+              amount: payment.amount_outstanding,
+              currency: payment.quote.crypto_currency,
+            })
+          }}
         </template>
       </p>
       <p v-if="payment.status === 'overpaid'">
-        The order needed {{ payment.quote.total_due }}
-        {{ payment.quote.crypto_currency }}. An extra
-        {{ payment.amount_excess }} {{ payment.quote.crypto_currency }} was
-        received. Ask {{ payment.merchant.name }} about next steps with your
-        payment reference.
+        {{
+          t("progress.excessDescription", {
+            total: payment.quote.total_due,
+            currency: payment.quote.crypto_currency,
+            excess: payment.amount_excess,
+            merchant: payment.merchant.name,
+          })
+        }}
       </p>
       <template v-if="payment.status === 'failed'">
-        <p>Reason: {{ payment.reason.replaceAll("_", " ") }}.</p>
         <p>
-          Do not send again. Ask {{ payment.merchant.name }} for assistance with
-          the details below. This cannot be fixed here.
+          {{
+            t("progress.reason", {
+              reason: payment.reason.replaceAll("_", " "),
+            })
+          }}
+        </p>
+        <p>
+          {{
+            t("progress.failedDescription", { merchant: payment.merchant.name })
+          }}
         </p>
       </template>
       <dl
@@ -295,10 +343,10 @@ function title() {
           <dt>
             {{
               expiredUnderpayment
-                ? "Received"
+                ? t("receipt.received")
                 : payment.status === "underpaid"
-                  ? "First transfer"
-                  : "Amount received"
+                  ? t("receipt.firstTransfer")
+                  : t("receipt.amountReceived")
             }}
           </dt>
           <dd class="mono">
@@ -306,14 +354,14 @@ function title() {
           </dd>
         </div>
         <div v-if="expiredUnderpayment">
-          <dt>Still owed</dt>
+          <dt>{{ t("receipt.owed") }}</dt>
           <dd class="mono">
             {{ expiredUnderpayment.amount_outstanding }}
             {{ expiredUnderpayment.quote.crypto_currency }}
           </dd>
         </div>
         <div v-if="'tx_hash' in payment">
-          <dt>Transaction</dt>
+          <dt>{{ t("receipt.transaction") }}</dt>
           <dd class="mono">
             <TransactionLink
               :hash="payment.tx_hash"
@@ -322,28 +370,28 @@ function title() {
           </dd>
         </div>
         <div v-if="expiredUnderpayment">
-          <dt>Payment reference</dt>
+          <dt>{{ t("receipt.reference") }}</dt>
           <dd class="mono">{{ expiredUnderpayment.payment_reference }}</dd>
         </div>
         <div v-if="payment.status === 'detected'">
-          <dt>Detected</dt>
+          <dt>{{ t("receipt.detected") }}</dt>
           <dd>{{ formatClockTime(payment.detected_at) }}</dd>
         </div>
         <div v-if="'settled_at' in payment">
-          <dt>Settled</dt>
+          <dt>{{ t("receipt.settled") }}</dt>
           <dd>{{ new Date(payment.settled_at).toLocaleString("en-GB") }}</dd>
         </div>
         <template v-if="isResult(payment.status)">
           <div>
-            <dt>Order</dt>
+            <dt>{{ t("receipt.order") }}</dt>
             <dd class="mono">{{ payment.order_id }}</dd>
           </div>
           <div>
-            <dt>Network</dt>
+            <dt>{{ t("common.network") }}</dt>
             <dd>{{ payment.quote.network_name }}</dd>
           </div>
           <div>
-            <dt>Payment reference</dt>
+            <dt>{{ t("receipt.reference") }}</dt>
             <dd class="mono">{{ payment.payment_reference }}</dd>
           </div>
         </template>
@@ -359,23 +407,31 @@ function title() {
               payment.reason
             : payment.payment_reference
         "
-        :label="payment.status === 'failed' ? 'Copy details' : 'Copy reference'"
+        :label="
+          payment.status === 'failed'
+            ? t('common.copyDetails')
+            : t('common.copyReference')
+        "
       />
       <div v-if="connectionIssue" class="connection-support">
         <p class="muted">
-          <template v-if="lastChecked !== null">
-            Last checked {{ formatClockTime(lastChecked) }}.
-          </template>
-          Current server status is unknown. If you already sent funds, do not
-          send again.
+          {{
+            t("connection.support", {
+              lastChecked:
+                lastChecked !== null
+                  ? t("connection.lastChecked", {
+                      time: formatClockTime(lastChecked),
+                    })
+                  : "",
+            })
+          }}
         </p>
         <p class="connection-contact">
-          If this keeps up, contact {{ payment.merchant.name }} and quote your
-          order ID.
+          {{ t("connection.contact", { merchant: payment.merchant.name }) }}
         </p>
         <CopyButton
           :value="payment.order_id"
-          label="Copy order ID"
+          :label="t('common.copyOrderId')"
           testid="copy-order-id"
         />
       </div>
@@ -383,13 +439,11 @@ function title() {
         v-else-if="health === 'stale' && lastChecked !== null"
         class="small muted"
       >
-        Last checked {{ formatClockTime(lastChecked) }}. Showing the last
-        verified payment facts.
+        {{ t("connection.stale", { time: formatClockTime(lastChecked) }) }}
       </p>
     </template>
   </div>
 </template>
-
 <style lang="scss">
 /* Keep keyframe names stable for finishGhost's animationend handler. */
 

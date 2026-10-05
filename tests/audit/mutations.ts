@@ -76,8 +76,8 @@ export const mutations: Mutation[] = [
     runner: 'playwright', testFile: checkoutTests, testName: 'T12 underpaid sends only the outstanding amount and duplicate delivery is idempotent', expectedFailure: '43', category: 'mandatory',
   },
   {
-    id: 'M09', description: 'Add an unsupported automatic excess-refund promise', requirements: ['R09', 'T13'], file: progress,
-    patches: patch('        payment reference.', '        payment reference. The excess will be refunded automatically.'),
+    id: 'M09', description: 'Add an unsupported automatic excess-refund promise', requirements: ['R09', 'T13'], file: 'src/i18n/locales/en.ts',
+    patches: patch('about next steps with your payment reference.', 'about next steps with your payment reference. The excess will be refunded automatically.'),
     runner: 'playwright', testFile: checkoutTests, testName: 'T13 overpaid exposes exact facts without an automatic refund or another send', expectedFailure: 'will be refunded', category: 'mandatory',
   },
   {

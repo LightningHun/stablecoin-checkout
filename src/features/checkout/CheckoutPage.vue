@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n({ useScope: "global" });
 import {
   computed,
   effectScope,
@@ -95,7 +97,10 @@ const manualRetryLimitReached = fromSession(
   (s) => s.manualRetryLimitReached.value,
   false,
 );
-const manualRetryInSeconds = fromSession((s) => s.manualRetryInSeconds.value, 0);
+const manualRetryInSeconds = fromSession(
+  (s) => s.manualRetryInSeconds.value,
+  0,
+);
 const restoringPayment = computed(
   () => restorePending.value || controller.value?.restoring.value || false,
 );
@@ -108,7 +113,10 @@ const localDemoRecovery =
   ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname) &&
   !requiresValidation;
 const recoveringDemo = ref(false);
-const recoveryError = ref("");
+const recoveryFailed = ref(false);
+const recoveryError = computed(() =>
+  recoveryFailed.value ? t("checkout.resetFailed") : "",
+);
 async function recoverDemo() {
   if (
     !localDemoRecovery ||
@@ -118,13 +126,12 @@ async function recoverDemo() {
   )
     return;
   recoveringDemo.value = true;
-  recoveryError.value = "";
+  recoveryFailed.value = false;
   try {
     await resetDemoServer();
     if (!disposed) resetDemo();
   } catch {
-    recoveryError.value =
-      "Demo reset could not be confirmed. The checkout remains locked. Check the local server and try again.";
+    recoveryFailed.value = true;
   } finally {
     recoveringDemo.value = false;
   }
@@ -144,9 +151,9 @@ const initialLoadFailed = computed(
   () => initialPaymentPending.value && !!error.value && !busy.value,
 );
 watch(
-  merchant,
-  (value) => {
-    document.title = value?.name || "Checkout";
+  () => merchant.value?.name || t("common.checkout"),
+  (title) => {
+    document.title = title;
   },
   { immediate: true },
 );
@@ -178,9 +185,7 @@ const displayedNetwork = computed(() =>
 const funds = computed(
   () => payment.value && "amount_received" in payment.value,
 );
-const result = computed(
-  () => payment.value && isResult(payment.value.status),
-);
+const result = computed(() => payment.value && isResult(payment.value.status));
 const isUnderpaidQuoteExpired = computed(
   () => payment.value?.status === "underpaid" && remaining.value === 0,
 );
@@ -334,7 +339,8 @@ async function startSession() {
   restorePending.value = storedReference !== null && !creationPending;
   await session.initialize();
   if (creationPending) return;
-  if (storedReference) await finishRestore(await session.restore(storedReference));
+  if (storedReference)
+    await finishRestore(await session.restore(storedReference));
   else await loadCheckoutInformation();
 }
 async function initializePage() {
@@ -360,14 +366,20 @@ onScopeDispose(() => {
     :can-go-back="canGoBack"
   />
   <template v-else>
-    <header v-if="linkState === 'ready'" class="merchant-header" :class="{ mobile }">
+    <header
+      v-if="linkState === 'ready'"
+      class="merchant-header"
+      :class="{ mobile }"
+    >
       <MerchantBrand v-if="merchant" :merchant="merchant" />
       <div
         v-else
         class="merchant"
         :aria-busy="!initialLoadFailed"
         :aria-label="
-          initialLoadFailed ? 'Merchant unavailable' : 'Loading merchant'
+          initialLoadFailed
+            ? t('checkout.merchantUnavailable')
+            : t('checkout.loadingMerchant')
         "
       >
         <span
@@ -377,11 +389,13 @@ onScopeDispose(() => {
         ></span>
         <span>{{
           initialLoadFailed
-            ? "Checkout details unavailable"
-            : "Loading checkout details…"
+            ? t("checkout.detailsUnavailable")
+            : t("checkout.loadingDetails")
         }}</span>
       </div>
-      <span class="order-reference mono">Order {{ orderId }}</span>
+      <span class="order-reference mono">{{
+        t("common.order", { order: orderId })
+      }}</span>
     </header>
     <ConnectionBanner
       :mobile="mobile"
@@ -414,41 +428,43 @@ onScopeDispose(() => {
       <section
         class="step"
         :class="{
-          done: !selectionVisible && !restoringPayment && !initialPaymentPending,
+          done:
+            !selectionVisible && !restoringPayment && !initialPaymentPending,
           active: selectionVisible || restoringPayment || initialPaymentPending,
         }"
       >
         <span class="step-marker" aria-hidden="true">{{
-          selectionVisible || restoringPayment || initialPaymentPending ? "1" : "✓"
+          selectionVisible || restoringPayment || initialPaymentPending
+            ? "1"
+            : "✓"
         }}</span>
         <div class="step-heading">
-          <h2>Pay with</h2>
+          <h2>{{ t("checkout.payWith") }}</h2>
           <button
             v-if="!selectionVisible && payment && canChange"
             class="text-button"
             data-testid="change"
             @click="selecting = true"
           >
-            Change
+            {{ t("checkout.change") }}
           </button>
         </div>
         <p v-if="restoringPayment" class="muted">
-          Checking for an existing payment…
+          {{ t("checkout.restoring") }}
         </p>
         <div v-else-if="initialPaymentPending || (!payment && uncertain)">
           <p class="muted">
             {{
               error
                 ? order
-                  ? "The payment request could not be verified."
-                  : "Checkout details are unavailable."
-                : "Loading checkout details…"
+                  ? t("checkout.unverifiedRequest")
+                  : t("checkout.unavailableDetails")
+                : t("checkout.loadingDetails")
             }}
           </p>
           <template v-if="localDemoRecovery && uncertain">
             <p class="muted">
-              This local demo is locked by an unfinished request. Reset all demo
-              orders and payment states to start again. No real funds are involved.
+              {{ t("checkout.lockedDemo") }}
             </p>
             <button
               class="secondary"
@@ -456,7 +472,11 @@ onScopeDispose(() => {
               :disabled="recoveringDemo"
               @click="recoverDemo"
             >
-              {{ recoveringDemo ? "Resetting demo…" : "Reset demo checkout" }}
+              {{
+                recoveringDemo
+                  ? t("checkout.resettingDemo")
+                  : t("checkout.resetDemo")
+              }}
             </button>
             <p v-if="recoveryError" role="status">{{ recoveryError }}</p>
           </template>
@@ -472,9 +492,12 @@ onScopeDispose(() => {
           @continue="start"
         />
         <div v-else class="selected-pair" data-testid="selected-network">
-          <NetworkBadge :network="displayedPair.network" /><span
-            >{{ displayedPair.currency }} on {{ displayedNetwork }}</span
-          >
+          <NetworkBadge :network="displayedPair.network" /><span>{{
+            t("common.pair", {
+              currency: displayedPair.currency,
+              network: displayedNetwork ?? "",
+            })
+          }}</span>
         </div>
       </section>
       <section
@@ -491,42 +514,53 @@ onScopeDispose(() => {
           funds && !activeSend ? "✓" : "2"
         }}</span>
         <div class="step-heading">
-          <h2>Send the exact amount</h2>
+          <h2>{{ t("checkout.sendExact") }}</h2>
           <span
             v-if="
               (payment?.status === 'underpaid' && !isUnderpaidQuoteExpired) ||
               payment?.status === 'expired'
             "
             class="action-label"
-            >Action needed</span
+            >{{ t("checkout.actionNeeded") }}</span
           >
         </div>
         <p v-if="restoringPayment" class="muted">
-          Checking for an existing payment…
+          {{ t("checkout.restoring") }}
         </p>
         <p v-else-if="initialPaymentPending" class="muted">
-          Amount, address and QR code appear after you choose a network.
+          {{ t("checkout.placeholder") }}
         </p>
         <p
           v-else-if="selectionVisible"
           class="muted"
           :class="{ 'motion-enter': payment }"
         >
-          Amount, address and QR code appear after you choose a network.
+          {{ t("checkout.placeholder") }}
         </p>
-        <div v-else-if="busy" class="loading-quote" :class="{ mobile }" data-testid="quote-loading">
+        <div
+          v-else-if="busy"
+          class="loading-quote"
+          :class="{ mobile }"
+          data-testid="quote-loading"
+        >
           <div class="network-warning" :class="draft.network">
             <NetworkBadge :network="draft.network" />
             <div>
-              <strong>{{ selectedNetwork?.name }} network only</strong>
+              <strong>{{
+                t("quote.networkOnly", { network: selectedNetwork?.name ?? "" })
+              }}</strong>
               <div>
-                {{ draft.currency }} sent on another network may be lost.
+                {{ t("quote.wrongNetwork", { currency: draft.currency }) }}
               </div>
             </div>
           </div>
           <p role="status">
-            Getting your quote for {{ draft.currency }} on
-            {{ selectedNetwork?.name }}…
+            {{
+              t("checkout.loadingQuote", {
+                currency: draft.currency,
+                network: selectedNetwork?.name ?? "",
+              })
+            }}
           </p>
           <div class="skeleton amount-skeleton"></div>
           <div class="skeleton line-skeleton"></div>
@@ -540,7 +574,7 @@ onScopeDispose(() => {
             </div>
           </div>
           <p class="muted loading-note">
-            Do not send anything until the amount and address appear.
+            {{ t("checkout.waitForQuote") }}
           </p>
         </div>
         <QuoteDetails
@@ -563,24 +597,25 @@ onScopeDispose(() => {
           role="status"
           data-testid="underpaid-quote-notice"
         >
-          Transfer details are unavailable while we check your payment. Your
-          previous payment is still recorded. Do not send more until the quote
-          is verified.
+          {{ t("checkout.checkingUnderpaid") }}
         </p>
         <p v-else-if="payment?.status === 'awaiting_payment'" role="status">
-          Quote time ended or transfer details are unavailable. Checking payment
-          status before you can continue. If already sent, do not send again.
+          {{ t("checkout.checkingExpired") }}
         </p>
         <div
           v-else-if="payment && 'amount_received' in payment"
           class="received-summary"
         >
-          <span
-            ><span class="mono"
-              >{{ payment.amount_received }}
-              {{ payment.quote.crypto_currency }}</span
+          <i18n-t keypath="checkout.received" tag="span" scope="global">
+            <template #amount
+              >
+<span class="mono"
+                >{{ payment.amount_received }}
+                {{ payment.quote.crypto_currency }}</span
+              >
+</template
             >
-            received</span
+</i18n-t
           ><TransactionLink
             class="transaction"
             :hash="payment.tx_hash"
@@ -588,10 +623,10 @@ onScopeDispose(() => {
           />
         </div>
         <p v-else-if="payment?.status === 'failed'" class="muted">
-          Transfer details were not supplied. Keep your payment reference.
+          {{ t("checkout.failedTransfer") }}
         </p>
         <p v-else class="muted">
-          The quote is unavailable. No transfer instructions can be shown.
+          {{ t("checkout.quoteUnavailable") }}
         </p>
       </section>
       <section
@@ -618,11 +653,11 @@ onScopeDispose(() => {
           }}</span>
         </span>
         <div class="step-heading">
-          <h2>Confirmation</h2>
+          <h2>{{ t("checkout.confirmation") }}</h2>
           <span
             v-if="payment?.status === 'failed' || isUnderpaidQuoteExpired"
             class="action-label outline"
-            >Can't be fixed here</span
+            >{{ t("checkout.cannotFix") }}</span
           >
         </div>
         <PaymentProgress
@@ -641,20 +676,15 @@ onScopeDispose(() => {
       <footer class="checkout-footer">
         <span>{{
           payment
-            ? "Reference " + payment.payment_reference
-            : "Order " + orderId
+            ? t("common.reference", { reference: payment.payment_reference })
+            : t("common.order", { order: orderId })
         }}</span
-        ><span>Demo checkout · no real funds</span>
+        ><span>{{ t("common.demoFooter") }}</span>
       </footer>
-      <DemoControls
-        v-if="showDemo"
-        :order-id="orderId"
-        @reset="resetDemo"
-      />
+      <DemoControls v-if="showDemo" :order-id="orderId" @reset="resetDemo" />
     </main>
   </template>
 </template>
-
 <style lang="scss">
 @use "../../styles/checkout-shared" as shared;
 

@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import type { Payment } from "../domain/paymentModel";
+const { t } = useI18n({ useScope: "global" });
 defineProps<{ mobile?: boolean; payment: Payment; busy: boolean }>();
 const emit = defineEmits<{ requote: [] }>();
 </script>
@@ -22,17 +24,21 @@ const emit = defineEmits<{ requote: [] }>();
         <path d="M12 10v5" />
         <circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none" />
       </svg>
-      This quote expired
+      {{ t("recovery.expired") }}
     </strong>
     <p class="muted">
-      The fixed rate ended. Do not use the previous transfer instructions.
+      {{ t("recovery.ended") }}
     </p>
     <div class="recovery-grid">
       <section class="recovery-card">
-        <strong>Haven't sent anything yet?</strong>
+        <strong>{{ t("recovery.notSent") }}</strong>
         <p>
-          The amount may differ from {{ payment.quote.total_due }}
-          {{ payment.quote.crypto_currency }}.
+          {{
+            t("recovery.differentAmount", {
+              amount: payment.quote.total_due,
+              currency: payment.quote.crypto_currency,
+            })
+          }}
         </p>
         <button
           data-testid="requote"
@@ -40,14 +46,13 @@ const emit = defineEmits<{ requote: [] }>();
           :disabled="busy"
           @click="emit('requote')"
         >
-          {{ busy ? "Checking payment…" : "Get a new quote" }}
+          {{ busy ? t("recovery.checking") : t("recovery.newQuote") }}
         </button>
       </section>
       <section class="recovery-card">
-        <strong>Already sent it?</strong>
+        <strong>{{ t("recovery.alreadySent") }}</strong>
         <p>
-          Don't send again. Keep your payment reference and ask the merchant for
-          assistance. Automatic monitoring has stopped.
+          {{ t("recovery.assistance") }}
         </p>
       </section>
     </div>

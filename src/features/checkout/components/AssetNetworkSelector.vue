@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, onScopeDispose, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import type { Currency, Pair, CurrencyCode } from "../domain/paymentModel";
 import { findCurrency, findNetwork } from "../domain/catalogue";
 import NetworkBadge from "./NetworkBadge.vue";
 import { useAutoHeightTransition } from "./useAutoHeightTransition";
+const { t } = useI18n({ useScope: "global" });
 const props = defineProps<{
   mobile?: boolean;
   currencies: Currency[];
@@ -56,7 +58,7 @@ function changeCurrency(code: CurrencyCode) {
 <template>
   <div class="selector" :class="{ mobile }">
     <fieldset :disabled="disabled">
-      <legend class="eyebrow">Currency</legend>
+      <legend class="eyebrow">{{ t("common.currency") }}</legend>
       <div class="currency-segments">
         <label
           v-for="c in currencies"
@@ -73,7 +75,7 @@ function changeCurrency(code: CurrencyCode) {
       </div>
     </fieldset>
     <fieldset :disabled="disabled">
-      <legend class="eyebrow">Network</legend>
+      <legend class="eyebrow">{{ t("common.network") }}</legend>
       <div ref="networkOptions" class="network-options">
         <label
           v-for="n in currency?.networks"
@@ -89,22 +91,29 @@ function changeCurrency(code: CurrencyCode) {
             @change="emit('select', { currency: pair.currency, network: n.id })"
           /><NetworkBadge :network="n.id" /><span class="network-info"
             ><strong>{{ n.name }}</strong
-            ><small
-              >{{ n.required_confirmations }}
-              {{
-                n.required_confirmations === 1
-                  ? "confirmation"
-                  : "confirmations"
-              }}
-              · about
-              {{
-                n.avg_confirmation_seconds >= 60
-                  ? n.avg_confirmation_seconds / 60 + " min"
-                  : n.avg_confirmation_seconds + " s"
-              }}</small
-            ></span
-          ><span class="fee mono"
-            >Fee {{ n.network_fee }} {{ pair.currency }}</span
+            ><small>{{
+              t("selector.timing", {
+                confirmations: t(
+                  "selector.confirmationCount",
+                  n.required_confirmations,
+                ),
+                duration:
+                  n.avg_confirmation_seconds >= 60
+                    ? t("selector.minutes", {
+                        count: n.avg_confirmation_seconds / 60,
+                      })
+                    : t("selector.seconds", {
+                        count: n.avg_confirmation_seconds,
+                      }),
+              })
+            }}</small></span
+          ><span class="fee mono">
+            {{
+              t("selector.fee", {
+                amount: n.network_fee,
+                currency: pair.currency,
+              })
+            }}</span
           ></label
         >
       </div>
@@ -118,10 +127,15 @@ function changeCurrency(code: CurrencyCode) {
       @click="emit('continue')"
     >
       <span ref="continueLabel" class="continue-label">
-        Continue with {{ pair.currency }} on {{ selected?.name }}
+        {{
+          t("selector.continue", {
+            currency: pair.currency,
+            network: selected?.name ?? "",
+          })
+        }}
       </span>
     </button>
-    <p class="small muted">Your rate is fixed when the quote is ready.</p>
+    <p class="small muted">{{ t("selector.fixedRate") }}</p>
   </div>
 </template>
 

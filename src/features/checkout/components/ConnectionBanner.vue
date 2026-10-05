@@ -1,9 +1,15 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+import { computed } from "vue";
+import { paymentErrorKey } from "../../../i18n/paymentErrors";
+import en from "../../../i18n/locales/en";
+const statusMessages = en.statuses;
+const { t } = useI18n({ useScope: "global" });
 /**
  * Connection and verification banner for the checkout page. Presentation only:
  * the page decides when it is shown and owns the retry request.
  */
-defineProps<{
+const props = defineProps<{
   mobile?: boolean;
   error: string;
   connectionIssue: boolean;
@@ -17,6 +23,16 @@ defineProps<{
   lastKnownStatus: string | null;
 }>();
 const emit = defineEmits<{ retry: [] }>();
+const displayError = computed(() => {
+  const key = paymentErrorKey(props.error);
+  return key ? t(key) : props.error;
+});
+const statusText = computed(() => {
+  const state = props.lastKnownStatus;
+  return state && Object.hasOwn(statusMessages, state)
+    ? t(`statuses.${state}`)
+    : state?.replaceAll("_", " ");
+});
 </script>
 <template>
   <div class="connection-banner" :class="{ mobile }">
@@ -37,36 +53,39 @@ const emit = defineEmits<{ retry: [] }>();
           <path d="M12 10v5" />
           <circle cx="12" cy="18" r="0.9" fill="currentColor" stroke="none" />
         </svg>
-        <span
-          ><strong>Can't reach the payment server.</strong> Showing the last
-          verified payment details.</span
-        >
+        <i18n-t keypath="connection.lastVerified" tag="span" scope="global">
+          <template #heading
+            >
+<strong>{{ t("connection.unreachable") }}</strong>
+</template
+          >
+        </i18n-t>
       </div>
       <span
         v-if="retryInSeconds !== null"
         class="connection-retry-time"
         data-testid="retry-countdown"
         aria-live="off"
-        >Retrying in {{ retryInSeconds }} s.</span
+        >{{ t("connection.retrying", { seconds: retryInSeconds }) }}</span
       >
       <span
         v-else-if="requestPending"
         class="connection-retry-time"
         data-testid="request-checking"
         aria-live="off"
-        >Checking…</span
+        >{{ t("connection.checking") }}</span
       >
       <span
         v-else-if="automaticRetriesPaused"
         data-testid="automatic-retries-paused"
-        >Automatic retries paused.</span
+        >{{ t("connection.paused") }}</span
       >
     </template>
     <span v-else role="alert"
-      ><strong>Can't reach a verified payment update.</strong> {{ error }}
-      <span v-if="lastKnownStatus"
-        >Last known state: {{ lastKnownStatus.replaceAll("_", " ") }}.</span
-      ></span
+      ><strong>{{ t("connection.unverified") }}</strong> {{ displayError }}
+      <span v-if="lastKnownStatus">{{
+        t("connection.lastState", { state: statusText ?? "" })
+      }}</span></span
     >
     <button
       v-if="!uncertain"
@@ -98,24 +117,23 @@ const emit = defineEmits<{ retry: [] }>();
       >
         <path d="M20 7v5h-5M20 12a8 8 0 1 0-2.3 5.7" />
       </svg>
-      Retry now
+      {{ t("connection.retry") }}
     </button>
     <span
       v-if="manualRetryLimitReached"
       id="manual-retry-guidance"
       data-testid="manual-retry-limit"
-      >Manual retry limit reached.</span
+      >{{ t("connection.manualLimit") }}</span
     >
     <span
       v-else-if="manualRetryInSeconds > 0"
       id="manual-retry-guidance"
       data-testid="manual-retry-cooldown"
       aria-live="off"
-      >You can retry again in {{ manualRetryInSeconds }} s.</span
+      >{{ t("connection.cooldown", { seconds: manualRetryInSeconds }) }}</span
     >
   </div>
 </template>
-
 <style lang="scss">
 .connection-banner {
   padding: 12px 24px;

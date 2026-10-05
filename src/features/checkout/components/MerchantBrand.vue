@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
 import type { MerchantInfo } from "../infrastructure/responseSchemas";
+const { t } = useI18n({ useScope: "global" });
 const props = defineProps<{ merchant?: MerchantInfo | null }>();
-const name = computed(() => props.merchant?.name.trim() || "Merchant");
+const name = computed(
+  () => props.merchant?.name.trim() || t("merchant.fallbackName"),
+);
 const initial = computed(() => [...name.value][0]);
 const failed = ref(false);
 const icon = computed(() => {

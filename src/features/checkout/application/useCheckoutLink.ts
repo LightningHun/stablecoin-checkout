@@ -1,3 +1,4 @@
+import { paymentErrors } from "../../../i18n/paymentErrors";
 import { onScopeDispose, ref, shallowRef } from "vue";
 import type { PaymentClient } from "../infrastructure/paymentClient";
 import type { CheckoutLinkVerdict } from "../infrastructure/checkoutLinkSchema";
@@ -33,7 +34,7 @@ export function useCheckoutLink(
     timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
       if (!client.validateLink)
-        throw Error("Link verification is unavailable.");
+        throw Error(paymentErrors.linkUnavailable);
       const { data } = await client.validateLink(
         params.get("order"),
         params.get("sig"),
@@ -53,7 +54,7 @@ export function useCheckoutLink(
       error.value =
         cause instanceof Error
           ? cause.message
-          : "Link verification is unavailable.";
+          : paymentErrors.linkUnavailable;
       return false;
     } finally {
       clearTimeout(timer);

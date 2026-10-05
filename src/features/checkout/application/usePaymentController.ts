@@ -1,3 +1,4 @@
+import { paymentErrors } from "../../../i18n/paymentErrors";
 import { computed, onScopeDispose, ref, shallowRef } from "vue";
 import { acceptSnapshot, hasFunds, isTerminal } from "../domain/paymentModel";
 import { findNetwork } from "../domain/catalogue";
@@ -29,7 +30,7 @@ export interface ControllerOptions {
 }
 export function usePaymentController(options: ControllerOptions = {}) {
   const uncertainMessage =
-    "The quote request outcome is uncertain. Do not send or create another payment. Ask the merchant to check your order.";
+    paymentErrors.uncertain;
   const client = options.client ?? createPaymentClient(),
     clock = options.clock ?? new ClockService();
   const pollMs = options.pollMs ?? 2000,
@@ -218,7 +219,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
     referenceMissing.value = cause instanceof ApiError && cause.status === 404;
     health.value = payment.value ? "stale" : "unavailable";
     error.value =
-      cause instanceof Error ? cause.message : "Connection unavailable";
+      cause instanceof Error ? cause.message : paymentErrors.unavailable;
     protocolBlocked.value ||= cause instanceof ApiError && cause.protocol;
     failures++;
   }
@@ -260,13 +261,13 @@ export function usePaymentController(options: ControllerOptions = {}) {
     );
     if (!next)
       throw new ApiError(
-        "Unrecognized payment identity or state regression. Transfer controls are paused.",
+        paymentErrors.identity,
         0,
         true,
       );
     if (!replace && payment.value && !isSameQuote(next.quote, payment.value.quote))
       throw new ApiError(
-        "Quote changed unexpectedly. Transfer controls are paused.",
+        paymentErrors.changedQuote,
         0,
         true,
       );
@@ -376,7 +377,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
         if (!payment.value && !stillListed && first?.networks[0])
           draft.value = { currency: first.code, network: first.networks[0].id };
         if (!first?.networks[0])
-          throw new ApiError("No payment networks are available.", 0, true);
+          throw new ApiError(paymentErrors.noNetworks, 0, true);
         if (disposed || gen !== generation.value) return;
         protocolBlocked.value = false;
         health.value = "fresh";
@@ -506,7 +507,7 @@ export function usePaymentController(options: ControllerOptions = {}) {
           result.data.quote.network !== pair.network
         )
           throw new ApiError(
-            "Quote does not match the requested network.",
+            paymentErrors.wrongNetwork,
             0,
             true,
           );

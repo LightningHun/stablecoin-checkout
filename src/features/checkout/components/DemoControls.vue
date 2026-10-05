@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from "vue";
+import { computed, ref } from "vue";
+import { useI18n } from "vue-i18n";
 import { resetDemoServer } from "../infrastructure/demoReset";
 import CopyButton from "./CopyButton.vue";
 import { statuses } from "../domain/paymentModel";
+const { t } = useI18n({ useScope: "global" });
 const props = defineProps<{ orderId: string }>();
 const emit = defineEmits<{ reset: [] }>();
 const requireSignature = ref(false);
@@ -12,8 +14,20 @@ const creatingLink = ref(false);
 const resetting = ref(false);
 const state = ref("awaiting_payment"),
   fault = ref("none"),
-  orderAmount = ref("149.90"),
-  message = ref("");
+  orderAmount = ref("149.90");
+type DemoMessage =
+  | {
+      key:
+        | "demo.messages.updated"
+        | "demo.messages.unavailable"
+        | "demo.messages.resetUnconfirmed";
+    }
+  | { text: string };
+const message = ref<DemoMessage | null>(null);
+const messageText = computed(() => {
+  const current = message.value;
+  return current ? ("key" in current ? t(current.key) : current.text) : "";
+});
 async function command(path: string, body: Record<string, unknown>) {
   try {
     const response = await fetch("/api/demo/" + path, {
@@ -32,15 +46,15 @@ async function command(path: string, body: Record<string, unknown>) {
           "title" in problem &&
           typeof problem.title === "string"
         ) {
-          message.value = problem.title;
+          message.value = { text: problem.title };
           return;
         }
       }
       throw Error("Control failed");
     }
-    message.value = "Demo updated";
+    message.value = { key: "demo.messages.updated" };
   } catch {
-    message.value = "Demo controls unavailable";
+    message.value = { key: "demo.messages.unavailable" };
   }
 }
 async function readSignatureRequirement(event: Event) {
@@ -87,9 +101,9 @@ async function createOrderLink() {
     )
       throw Error("Order link unavailable");
     checkoutUrl.value = result.checkout_url;
-    message.value = "Demo updated";
+    message.value = { key: "demo.messages.updated" };
   } catch {
-    message.value = "Demo controls unavailable";
+    message.value = { key: "demo.messages.unavailable" };
   } finally {
     creatingLink.value = false;
   }
@@ -101,8 +115,7 @@ async function reset() {
     await resetDemoServer();
     emit("reset");
   } catch {
-    message.value =
-      "Demo reset could not be confirmed. Your checkout has not been restarted.";
+    message.value = { key: "demo.messages.resetUnconfirmed" };
   } finally {
     resetting.value = false;
   }
@@ -114,10 +127,10 @@ async function reset() {
     data-testid="demo-controls"
     @toggle="readSignatureRequirement"
   >
-    <summary>Demo controls · no real funds</summary>
-    <p>Evaluator tools. Reset before exploring another completed payment.</p>
+    <summary>{{ t("demo.title") }}</summary>
+    <p>{{ t("demo.description") }}</p>
     <label>
-      Order amount (EUR)
+      {{ t("demo.orderAmount", { currency: "EUR" }) }}
       <input
         v-model="orderAmount"
         type="text"
@@ -130,13 +143,14 @@ async function reset() {
       data-testid="demo-apply-amount"
       @click="command('scenario', { orderAmount })"
     >
-      Apply amount
+      {{ t("demo.applyAmount") }}
     </button>
     <p class="small muted">
-      Applies to the next quote. Use Change or Reset demo to re-quote.
+      {{ t("demo.amountHint") }}
     </p>
     <label
-      >Payment state<select v-model="state" data-testid="demo-state">
+      >{{ t("demo.paymentState")
+      }}<select v-model="state" data-testid="demo-state">
         <option v-for="s in statuses" :key="s">{{ s }}</option>
       </select></label
     ><button
@@ -144,27 +158,30 @@ async function reset() {
       data-testid="demo-apply-state"
       @click="command('scenario', { status: state })"
     >
-      Apply state
+      {{ t("demo.applyState") }}
 </button
     ><label
-      >Connection<select v-model="fault" data-testid="demo-fault">
-        <option value="none">Healthy</option>
-        <option value="500">HTTP 500</option>
-        <option value="disconnect">Disconnect</option>
-        <option value="slow">Slow (5 seconds)</option>
+      >{{ t("demo.connection")
+      }}<select v-model="fault" data-testid="demo-fault">
+        <option value="none">{{ t("demo.faults.healthy") }}</option>
+        <option value="500">{{ t("demo.faults.http500") }}</option>
+        <option value="disconnect">{{ t("demo.faults.disconnect") }}</option>
+        <option value="slow">
+          {{ t("demo.faults.slow", { seconds: 5 }) }}
+        </option>
       </select></label
     ><button
       class="secondary"
       data-testid="demo-apply-fault"
       @click="command('scenario', { fault })"
     >
-      Apply connection
+      {{ t("demo.applyConnection") }}
 </button
     ><button
       class="secondary"
       @click="command('scenario', { advanceMs: 900000 })"
     >
-      Advance 15 minutes
+      {{ t("demo.advanceTime", { minutes: 15 }) }}
 </button
     ><button
       class="secondary"
@@ -172,10 +189,10 @@ async function reset() {
       :disabled="resetting"
       @click="reset"
     >
-      Reset demo
+      {{ t("demo.reset") }}
     </button>
     <button class="secondary" :disabled="creatingLink" @click="createOrderLink">
-      Create signed order link
+      {{ t("demo.createSignedLink") }}
     </button>
     <label class="demo-signature-control">
       <input
@@ -183,13 +200,13 @@ async function reset() {
         type="checkbox"
         @change="updateSignatureRequirement"
       />
-      Require signed links
+      {{ t("demo.requireSignedLinks") }}
     </label>
     <div v-if="checkoutUrl" class="demo-issued-link">
       <a :href="checkoutUrl" data-testid="demo-order-link">{{ checkoutUrl }}</a>
-      <CopyButton :value="checkoutUrl" label="Copy link" />
+      <CopyButton :value="checkoutUrl" :label="t('demo.copyLink')" />
     </div>
-    <p role="status">{{ message }}</p>
+    <p role="status">{{ messageText }}</p>
   </details>
 </template>
 

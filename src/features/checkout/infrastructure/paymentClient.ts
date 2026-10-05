@@ -1,3 +1,4 @@
+import { paymentErrors } from "../../../i18n/paymentErrors";
 import type { Currency, Pair, Payment } from "../domain/paymentModel";
 import { catalogueSchema } from "./catalogueSchema";
 import type { CatalogueInfo } from "./catalogueSchema";
@@ -71,7 +72,7 @@ export function createPaymentClient(
     } catch {
       throw new ApiError(
         response.ok
-          ? "The payment server returned invalid JSON. Transfer controls are paused."
+          ? paymentErrors.invalidJson
           : `HTTP ${response.status}`,
         response.ok ? 0 : response.status,
         response.ok,
@@ -100,7 +101,7 @@ export function createPaymentClient(
       return { data: parse(value), serverTime, start, end: performance.now() };
     } catch {
       throw new ApiError(
-        "The payment server returned invalid data. Transfer controls are paused.",
+        paymentErrors.invalidData,
         0,
         true,
       );

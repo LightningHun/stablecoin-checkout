@@ -1,9 +1,18 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onScopeDispose, ref, watch } from "vue";
+import { useI18n } from "vue-i18n";
+const { t } = useI18n({ useScope: "global" });
 const props = defineProps<{ value: string; label: string; testid?: string }>();
-const feedback = ref(""),
+const feedbackState = ref<"" | "copied" | "unavailable">(""),
   fallback = ref(false);
-const copied = computed(() => feedback.value === "Copied");
+const feedback = computed(() =>
+  feedbackState.value === "copied"
+    ? t("common.copied")
+    : feedbackState.value === "unavailable"
+      ? t("common.copyUnavailable")
+      : "",
+);
+const copied = computed(() => feedbackState.value === "copied");
 const button = ref<HTMLButtonElement | null>(null);
 const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 let widthGeneration = 0;
@@ -77,7 +86,7 @@ function cancelFeedback() {
 }
 function resetFeedback() {
   cancelFeedback();
-  feedback.value = "";
+  feedbackState.value = "";
   fallback.value = false;
 }
 watch(() => props.value, resetFeedback, { flush: "sync" });
@@ -89,15 +98,15 @@ async function copy() {
   try {
     await navigator.clipboard.writeText(props.value);
     if (request !== generation) return;
-    feedback.value = "Copied";
+    feedbackState.value = "copied";
     resetTimer = setTimeout(() => {
-      feedback.value = "";
+      feedbackState.value = "";
       resetTimer = undefined;
     }, 3000);
   } catch {
     if (request !== generation) return;
     fallback.value = true;
-    feedback.value = "Copy unavailable. Select and copy the value below.";
+    feedbackState.value = "unavailable";
   }
 }
 </script>
@@ -145,13 +154,14 @@ async function copy() {
         <path d="M5 15V6a2 2 0 0 1 2-2h9" />
       </svg>
       <span :key="copied ? 'copied' : 'label'" class="copy-label">{{
-        copied ? "Copied" : label
+        copied ? t("common.copied") : label
       }}</span>
     </button>
     <span class="sr-only" role="status">{{ feedback }}</span>
     <div v-if="fallback" class="copy-fallback">
       <label
-        >Copy manually<input
+        >{{ t("common.copyManually")
+        }}<input
           :value="value"
           readonly
           @focus="($event.target as HTMLInputElement).select()"

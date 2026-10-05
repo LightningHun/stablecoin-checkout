@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
+import { I18nT, useI18n } from "vue-i18n";
 import CopyButton from "./CopyButton.vue";
 import MerchantBrand from "./MerchantBrand.vue";
 
+const { t } = useI18n({ useScope: "global" });
 const props = defineProps<{
   mobile?: boolean;
   reason: string;
@@ -13,15 +15,15 @@ const props = defineProps<{
 }>();
 const heading = ref<HTMLHeadingElement | null>(null);
 const reasons: Record<string, string> = {
-  malformed_order: "The order code in the link isn’t valid",
-  unknown_order: "We can’t find an order for this link",
-  invalid_signature: "The link’s signature doesn’t match",
-  missing_signature: "The link isn’t signed",
+  malformed_order: "invalidLink.reasons.malformedOrder",
+  unknown_order: "invalidLink.reasons.unknownOrder",
+  invalid_signature: "invalidLink.reasons.invalidSignature",
+  missing_signature: "invalidLink.reasons.missingSignature",
 };
 const reasonText = computed(() =>
   Object.hasOwn(reasons, props.reason)
-    ? reasons[props.reason]
-    : "The link could not be verified",
+    ? t(reasons[props.reason]!)
+    : t("invalidLink.reasons.unverified"),
 );
 const opened = computed(() =>
   new Date(props.checkedAt).toLocaleString("en-GB", {
@@ -34,10 +36,15 @@ const opened = computed(() =>
 );
 const details = computed(() =>
   [
-    `Reason: ${reasonText.value} · ${props.reason}`,
-    `Order in the link: ${props.orderInLink || "none"}`,
-    `Opened: ${opened.value}`,
-    `Link: ${window.location.href}`,
+    t("invalidLink.details.reason", {
+      reason: reasonText.value,
+      code: props.reason,
+    }),
+    t("invalidLink.details.order", {
+      order: props.orderInLink || t("invalidLink.none"),
+    }),
+    t("invalidLink.details.opened", { time: opened.value }),
+    t("invalidLink.details.link", { url: window.location.href }),
   ].join("\n"),
 );
 function goBack() {
@@ -69,44 +76,48 @@ onMounted(() => heading.value?.focus());
         <path d="M20 17v4.5" />
         <circle cx="20" cy="24" r=".8" fill="currentColor" stroke="none" />
       </svg>
-      <h1 ref="heading" tabindex="-1">This payment link isn’t valid</h1>
+      <h1 ref="heading" tabindex="-1">{{ t("invalidLink.title") }}</h1>
       <p class="invalid-link-explanation">
-        We can’t find an order for it, so there is nothing to pay here. Nothing
-        has been charged. If a shop sent you this link, go back and start the
-        payment again — you’ll get a fresh one.
+        {{ t("invalidLink.explanation") }}
       </p>
       <div class="invalid-link-actions">
         <button v-if="canGoBack" class="primary" @click="goBack">
-          Go back
+          {{ t("invalidLink.goBack") }}
         </button>
         <CopyButton
           :value="details"
-          label="Copy details"
+          :label="t('invalidLink.copyDetails')"
           testid="copy-link-details"
         />
       </div>
-      <section class="invalid-link-support" aria-label="For support">
-        <div class="eyebrow">For support</div>
+      <section
+        class="invalid-link-support"
+        :aria-label="t('invalidLink.forSupport')"
+      >
+        <div class="eyebrow">{{ t("invalidLink.forSupport") }}</div>
         <dl class="receipt">
           <div>
-            <dt>Reason</dt>
-            <dd>
-              {{ reasonText }} · <span class="mono">{{ reason }}</span>
-            </dd>
+            <dt>{{ t("invalidLink.reason") }}</dt>
+            <I18nT keypath="invalidLink.reasonWithCode" tag="dd" scope="global">
+              <template #reason>{{ reasonText }}</template>
+              <template #code>
+                <span class="mono">{{ reason }}</span>
+              </template>
+            </I18nT>
           </div>
           <div>
-            <dt>Order in the link</dt>
+            <dt>{{ t("invalidLink.orderInLink") }}</dt>
             <dd class="mono">{{ orderInLink || "—" }}</dd>
           </div>
           <div>
-            <dt>Opened</dt>
+            <dt>{{ t("invalidLink.opened") }}</dt>
             <dd>{{ opened }}</dd>
           </div>
         </dl>
       </section>
     </main>
     <footer class="checkout-footer invalid-link-footer">
-      <span>Demo checkout · no real funds</span>
+      <span>{{ t("invalidLink.footer") }}</span>
     </footer>
   </div>
 </template>

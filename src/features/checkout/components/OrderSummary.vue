@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
 import { formatFiat } from "../domain/money";
+const { t } = useI18n({ useScope: "global" });
 defineProps<{
   mobile?: boolean;
   amount?: string;
@@ -9,19 +11,23 @@ defineProps<{
 }>();
 </script>
 <template>
-  <section class="order-summary" :class="{ mobile }" aria-label="Order total">
-    <div class="eyebrow">Total to pay</div>
+  <section
+    class="order-summary"
+    :class="{ mobile }"
+    :aria-label="t('summary.label')"
+  >
+    <div class="eyebrow">{{ t("summary.total") }}</div>
     <h1 v-if="amount !== undefined && currency" data-testid="fiat-total">
       {{ formatFiat(amount, locale, currency) }}
     </h1>
     <p v-else-if="unavailable" class="muted" role="status">
-      Order total unavailable.
+      {{ t("summary.unavailable") }}
     </p>
     <div
       v-else
       class="skeleton amount-skeleton"
       role="status"
-      aria-label="Loading order total"
+      :aria-label="t('summary.loading')"
     ></div>
   </section>
 </template>

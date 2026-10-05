@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { useI18n } from "vue-i18n";
 import { explorers } from "../../../config/explorers";
+const { t } = useI18n({ useScope: "global" });
 const props = defineProps<{ hash: string; network: string }>();
 const explorer = computed(() => {
   const config = explorers.get(props.network);
@@ -18,7 +20,9 @@ const shortened = computed(() => `${props.hash.slice(0, 12)}…`);
     class="transaction-link mono"
     :href="explorer.url"
     :title="hash"
-    :aria-label="`Transaction ${hash} on ${explorer.name} (opens in a new tab)`"
+    :aria-label="
+      t('transaction.explorerLabel', { hash, explorer: explorer.name })
+    "
     target="_blank"
     rel="noopener noreferrer"
   >

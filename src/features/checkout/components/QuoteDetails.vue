@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useI18n } from "vue-i18n";
+const { t } = useI18n({ useScope: "global" });
 import { computed, ref, watch } from "vue";
 import * as QRCode from "./paymentQr";
 import type { Payment } from "../domain/paymentModel";
@@ -6,7 +8,11 @@ import { transferAmount } from "../domain/quotePolicy";
 import NetworkBadge from "./NetworkBadge.vue";
 import CopyButton from "./CopyButton.vue";
 import { formatHourMinute } from "./formatTime";
-const props = defineProps<{ mobile?: boolean; payment: Payment; remaining: number }>();
+const props = defineProps<{
+  mobile?: boolean;
+  payment: Payment;
+  remaining: number;
+}>();
 const qr = ref("");
 const quote = computed(() => props.payment.quote);
 const amount = computed(() => transferAmount(props.payment));
@@ -46,22 +52,30 @@ const countdown = computed(() => {
 <template>
   <div class="quote-details" :class="{ mobile }">
     <div v-if="payment.status === 'underpaid'" class="notice">
-      <strong
-        >△ Your transfer was {{ payment.amount_outstanding }}
-        {{ quote.crypto_currency }} short</strong
-      >
+      <strong>{{
+        t("quote.short", {
+          amount: payment.amount_outstanding,
+          currency: quote.crypto_currency,
+        })
+      }}</strong>
       <p>
-        {{ payment.amount_received }} of {{ quote.total_due }}
-        {{ quote.crypto_currency }} arrived. Send only the rest to the same
-        address on the same network. Wait for server confirmation.
+        {{
+          t("quote.partial", {
+            received: payment.amount_received,
+            total: quote.total_due,
+            currency: quote.crypto_currency,
+          })
+        }}
       </p>
     </div>
     <div class="network-warning" :class="quote.network">
       <NetworkBadge :network="quote.network" />
       <div>
-        <strong>{{ quote.network_name }} network only</strong>
+        <strong>{{
+          t("quote.networkOnly", { network: quote.network_name })
+        }}</strong>
         <div>
-          {{ quote.crypto_currency }} sent on another network may be lost.
+          {{ t("quote.wrongNetwork", { currency: quote.crypto_currency }) }}
         </div>
       </div>
     </div>
@@ -70,8 +84,8 @@ const countdown = computed(() => {
         <div class="eyebrow">
           {{
             payment.status === "underpaid"
-              ? "Send the remaining"
-              : "Send exactly"
+              ? t("quote.sendRemaining")
+              : t("quote.sendExactly")
           }}
         </div>
         <div class="transfer-value" data-testid="transfer-amount">
@@ -79,12 +93,22 @@ const countdown = computed(() => {
           <span class="mono">{{ quote.crypto_currency }}</span>
         </div>
       </div>
-      <CopyButton :value="amount" label="Copy" testid="copy-amount" />
+      <CopyButton
+        :value="amount"
+        :label="t('common.copy')"
+        testid="copy-amount"
+      />
     </div>
     <p v-if="payment.status !== 'underpaid'" class="muted quote-fee">
-      Amount {{ quote.crypto_amount }} + {{ quote.network_fee }}
-      {{ quote.crypto_currency }} network fee · 1 {{ quote.crypto_currency }} =
-      {{ quote.exchange_rate }} {{ payment.order.currency }}
+      {{
+        t("quote.fee", {
+          amount: quote.crypto_amount,
+          fee: quote.network_fee,
+          currency: quote.crypto_currency,
+          rate: quote.exchange_rate,
+          orderCurrency: payment.order.currency,
+        })
+      }}
     </p>
     <div class="address-panel" data-testid="address-panel">
       <img
@@ -92,14 +116,14 @@ const countdown = computed(() => {
         :src="qr"
         data-testid="transfer-qr"
         class="qr"
-        alt="Payment address QR code"
+        :alt="t('quote.qrAlt')"
         width="160"
         height="160"
       />
       <div class="address-info">
         <div class="eyebrow network-label" :class="quote.network">
           <NetworkBadge :network="quote.network" />
-          {{ quote.network_name }} address
+          {{ t("quote.address", { network: quote.network_name }) }}
         </div>
         <p data-testid="transfer-address" class="address mono">
           <span
@@ -110,32 +134,37 @@ const countdown = computed(() => {
           >
         </p>
         <p class="small muted">
-          Compare every character with your wallet, not just the ends.
+          {{ t("quote.compareAddress") }}
         </p>
         <CopyButton
           :value="address"
-          label="Copy address"
+          :label="t('common.copyAddress')"
           testid="copy-address"
         />
       </div>
     </div>
     <div
-      v-if="payment.status === 'awaiting_payment' || payment.status === 'underpaid'"
+      v-if="
+        payment.status === 'awaiting_payment' || payment.status === 'underpaid'
+      "
       class="deadline"
     >
-      <span
-        >Rate locked ·
-        <strong class="mono" data-testid="countdown">{{ countdown }}</strong>
-        left</span
-      ><span class="muted"
-        >Expires
-        {{ formatHourMinute(quote.expires_at) }}</span
-      >
+      <i18n-t keypath="quote.locked" tag="span" scope="global">
+        <template #countdown
+          >
+<strong class="mono" data-testid="countdown">{{
+            countdown
+          }}</strong>
+</template
+        >
+</i18n-t
+      ><span class="muted">{{
+        t("quote.expires", { time: formatHourMinute(quote.expires_at) })
+      }}</span>
       <div class="time-rule"></div>
     </div>
   </div>
 </template>
-
 <style lang="scss">
 @use "../../../styles/checkout-shared" as shared;
 
