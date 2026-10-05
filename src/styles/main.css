@@ -67,18 +67,6 @@ legend {
   letter-spacing: 1px;
   color: #666;
 }
-.tron {
-  --accent: var(--tron);
-}
-.ethereum {
-  --accent: var(--ethereum);
-}
-.polygon {
-  --accent: var(--polygon);
-}
-.solana {
-  --accent: var(--solana);
-}
 .primary,
 .secondary {
   border-radius: 3px;

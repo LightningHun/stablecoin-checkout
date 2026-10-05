@@ -1,0 +1,21 @@
+/* Network colors and class names matching the API network IDs.
+   To style another network, add its color token and matching class here. */
+:root {
+  --tron: #df0920;
+  --ethereum: #4355cc;
+  --polygon: #7c3bea;
+  --solana: #07805f;
+}
+
+.tron {
+  --accent: var(--tron);
+}
+.ethereum {
+  --accent: var(--ethereum);
+}
+.polygon {
+  --accent: var(--polygon);
+}
+.solana {
+  --accent: var(--solana);
+}
