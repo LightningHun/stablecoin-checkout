@@ -1,44 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
+import { explorers } from "../../../config/explorers";
 const props = defineProps<{ hash: string; network: string }>();
-const explorers = new Map([
-  [
-    "ethereum",
-    {
-      name: "Etherscan",
-      base: "https://etherscan.io/tx/",
-      suffix: "",
-      pattern: /^0x[0-9a-f]{64}$/i,
-    },
-  ],
-  [
-    "polygon",
-    {
-      name: "PolygonScan",
-      base: "https://polygonscan.com/tx/",
-      suffix: "",
-      pattern: /^0x[0-9a-f]{64}$/i,
-    },
-  ],
-  [
-    "tron",
-    {
-      name: "TRONSCAN",
-      base: "https://tronscan.org/transaction/",
-      suffix: "/overview",
-      pattern: /^[0-9a-f]{64}$/i,
-    },
-  ],
-  [
-    "solana",
-    {
-      name: "Solscan",
-      base: "https://solscan.io/tx/",
-      suffix: "",
-      pattern: /^[1-9A-HJ-NP-Za-km-z]{64,88}$/,
-    },
-  ],
-]);
 const explorer = computed(() => {
   const config = explorers.get(props.network);
   if (!config || !config.pattern.test(props.hash)) return null;
