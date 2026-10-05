@@ -672,10 +672,8 @@ onScopeDispose(() => {
         />
       </section>
       <footer class="checkout-footer">
-        <span>{{
-          payment
-            ? t("common.reference", { reference: payment.payment_reference })
-            : t("common.order", { order: orderId })
+        <span v-if="payment && !selectionVisible && !busy">{{
+          t("common.reference", { reference: payment.payment_reference })
         }}</span>
       </footer>
       <DemoControls v-if="showDemo" :order-id="orderId" @reset="resetDemo" />
