@@ -7,7 +7,6 @@ export default {
     "checkout": "Checkout",
     "order": "Order {order}",
     "reference": "Reference {reference}",
-    "demoFooter": "Demo checkout · no real funds",
     "copy": "Copy",
     "copyAddress": "Copy address",
     "copyDetails": "Copy details",

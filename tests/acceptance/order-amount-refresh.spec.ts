@@ -62,7 +62,7 @@ test("applying an amount during initial catalogue loading refreshes after the st
     await page.goto("/?demo=1");
     expect(Object.keys((await held.captured) as object)).toEqual(["currencies"]);
     await page
-      .getByText("Demo controls · no real funds", { exact: true })
+      .getByText("Demo controls", { exact: true })
       .click();
     await applyAmount(page, "250");
     await expect(
@@ -97,7 +97,7 @@ test("successive amount applies share one pending live-payment read and retain t
     await page.getByTestId("continue").click();
     await expect(page.getByTestId("transfer-amount")).toHaveText(/163\.69\s*USDT/);
     await page
-      .getByText("Demo controls · no real funds", { exact: true })
+      .getByText("Demo controls", { exact: true })
       .click();
     await applyAmount(page, "250");
     await page.clock.runFor(2000);

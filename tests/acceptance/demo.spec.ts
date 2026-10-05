@@ -11,7 +11,7 @@ for (const state of statuses) {
     await page.goto('/?demo=1')
     await page.getByRole('button', { name: /Continue with/ }).click()
     await expect(page.getByTestId('transfer-amount')).toContainText('163.69')
-    await page.getByText('Demo controls · no real funds', { exact: true }).click()
+    await page.getByText('Demo controls', { exact: true }).click()
     await page.getByTestId('demo-state').selectOption(state)
     await page.getByTestId('demo-apply-state').click()
     await expect(page.getByTestId('payment-status')).toHaveAttribute('data-status', state)
@@ -27,7 +27,7 @@ for (const fault of ['500', 'disconnect', 'slow']) {
     await page.goto('/?demo=1')
     await page.getByRole('button', { name: /Continue with/ }).click()
     await expect(page.getByTestId('transfer-amount')).toContainText('163.69')
-    await page.getByText('Demo controls · no real funds', { exact: true }).click()
+    await page.getByText('Demo controls', { exact: true }).click()
     await page.getByTestId('demo-fault').selectOption(fault)
     await page.getByTestId('demo-apply-fault').click()
     if (fault !== 'slow') {

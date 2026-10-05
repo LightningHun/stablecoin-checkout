@@ -28,7 +28,7 @@ test("demo amount applies to the next selected pair and reset creates the defaul
   await page.goto("/?demo=1");
   await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
   await page
-    .getByText("Demo controls · no real funds", { exact: true })
+    .getByText("Demo controls", { exact: true })
     .click();
   await expect(
     page.getByLabel("Order amount (EUR)", { exact: true }),
@@ -76,7 +76,7 @@ test("an active quote keeps its amount until Change selection is submitted with 
     /163\.69\s*USDT/,
   );
   await page
-    .getByText("Demo controls · no real funds", { exact: true })
+    .getByText("Demo controls", { exact: true })
     .click();
   expect((await applyAmount(page, "80")).status()).toBe(200);
   await expect(
@@ -137,7 +137,7 @@ for (const amount of ["100.123", "0"]) {
     await page.goto("/?demo=1");
     await expect(page.getByTestId("fiat-total")).toHaveText("149.90 EUR");
     await page
-      .getByText("Demo controls · no real funds", { exact: true })
+      .getByText("Demo controls", { exact: true })
       .click();
     const response = await applyAmount(page, amount);
     expect(response.status()).toBe(400);

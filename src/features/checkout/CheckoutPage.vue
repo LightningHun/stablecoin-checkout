@@ -678,8 +678,7 @@ onScopeDispose(() => {
           payment
             ? t("common.reference", { reference: payment.payment_reference })
             : t("common.order", { order: orderId })
-        }}</span
-        ><span>{{ t("common.demoFooter") }}</span>
+        }}</span>
       </footer>
       <DemoControls v-if="showDemo" :order-id="orderId" @reset="resetDemo" />
     </main>

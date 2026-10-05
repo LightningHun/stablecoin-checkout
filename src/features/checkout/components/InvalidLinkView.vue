@@ -116,9 +116,6 @@ onMounted(() => heading.value?.focus());
         </dl>
       </section>
     </main>
-    <footer class="checkout-footer invalid-link-footer">
-      <span>{{ t("invalidLink.footer") }}</span>
-    </footer>
   </div>
 </template>
 
@@ -128,8 +125,6 @@ onMounted(() => heading.value?.focus());
 @include shared.merchant-header;
 
 :where(.invalid-link-layout) {
-  @include shared.checkout-footer;
-
   @include shared.receipt;
 }
 
@@ -190,18 +185,6 @@ onMounted(() => heading.value?.focus());
   }
 }
 
-.invalid-link-footer {
-  width: var(--column);
-  max-width: calc(100% - 32px);
-  margin: 64px auto 36px;
-  justify-content: flex-end;
-  gap: 16px;
-
-  a {
-    color: inherit;
-  }
-}
-
 :where(.invalid-link-layout.mobile) {
   .invalid-link-view {
     margin-top: 36px;
@@ -222,12 +205,6 @@ onMounted(() => heading.value?.focus());
     .secondary {
       justify-content: center;
     }
-  }
-
-  .invalid-link-footer {
-    justify-content: flex-start;
-    flex-wrap: wrap;
-    margin-bottom: 28px;
   }
 }
 </style>

@@ -1,6 +1,6 @@
 export default {
   demo: {
-    title: "Demo controls · no real funds",
+    title: "Demo controls",
     description:
       "Evaluator tools. Reset before exploring another completed payment.",
     orderAmount: "Order amount ({currency})",
@@ -41,7 +41,6 @@ export default {
     orderInLink: "Order in the link",
     opened: "Opened",
     none: "none",
-    footer: "Demo checkout · no real funds",
     reasons: {
       malformedOrder: "The order code in the link isn’t valid",
       unknownOrder: "We can’t find an order for this link",

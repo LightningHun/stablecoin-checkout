@@ -125,7 +125,7 @@ test("the existing Demo controls reset also preserves the lock when reset fails"
     route.fulfill({ status: 500, json: { title: "Unavailable" } }),
   );
   await page.goto("/?demo=1");
-  await page.getByText("Demo controls · no real funds").click();
+  await page.getByText("Demo controls").click();
   await page.getByTestId("demo-reset").click();
   await expect(
     page.getByText(
@@ -181,7 +181,7 @@ test("both reset buttons share one pending reset and restart only once", async (
     await page.goto("/?demo=1");
     await page.getByTestId("demo-recover").click();
     await expect(page.getByTestId("demo-recover")).toBeDisabled();
-    await page.getByText("Demo controls · no real funds").click();
+    await page.getByText("Demo controls").click();
     await page.getByTestId("demo-reset").click();
     await expect(page.getByTestId("demo-reset")).toBeDisabled();
     expect(resets).toBe(1);

@@ -148,7 +148,7 @@ test("demo panel creates a signed link and requires signatures without changing 
 }) => {
   await page.goto("/?demo=1");
   await page
-    .getByText("Demo controls · no real funds", { exact: true })
+    .getByText("Demo controls", { exact: true })
     .click();
   await page.getByRole("checkbox", { name: "Require signed links" }).check();
   await expect(
@@ -306,7 +306,7 @@ test("opening demo controls cannot overwrite a newer signature checkbox choice",
   });
   await page.goto("/?demo=1");
   await page
-    .getByText("Demo controls · no real funds", { exact: true })
+    .getByText("Demo controls", { exact: true })
     .click();
   await requestedDemo;
   const applied = page.waitForResponse(

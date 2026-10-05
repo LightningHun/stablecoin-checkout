@@ -37,7 +37,7 @@ async function start(page: Page, order: string) {
 }
 async function applyState(page: Page, state: string) {
   await page
-    .getByText("Demo controls · no real funds", { exact: true })
+    .getByText("Demo controls", { exact: true })
     .click();
   await page.getByTestId("demo-state").selectOption(state);
   await page.getByTestId("demo-apply-state").click();
@@ -215,7 +215,7 @@ test("initial information and demo amount controls target the page's order befor
   await expect(page.locator("header")).toContainText("Order ORD-88214");
   await expect(page.locator(".checkout-footer")).not.toContainText("Reference AQH");
   expect(await stored(page, "ORD-88214")).toBeNull();
-  await page.getByText("Demo controls · no real funds", { exact: true }).click();
+  await page.getByText("Demo controls", { exact: true }).click();
   await page.getByTestId("demo-order-amount").fill("250");
   const updated = page.waitForResponse((response) =>
     new URL(response.url()).pathname === "/api/demo/scenario" && response.request().postDataJSON().order_id === "ORD-88214",
