@@ -31,7 +31,6 @@
     "@types/pngjs": "6.0.5",
     "@types/qrcode": "1.5.6",
     "@vitejs/plugin-vue": "6.0.9",
-    "@vue/eslint-config-typescript": "14.9.0",
     "@vue/test-utils": "2.4.6",
     "eslint": "9.39.5",
     "eslint-plugin-vue": "10.11.1",
